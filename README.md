@@ -23,5 +23,5 @@ To build the project locally, install a Rust toolchain and run `cargo build`.
 This project is released under the terms of [the GPLv2 License](COPYING).
 
 [genksyms]: https://github.com/torvalds/linux/tree/master/scripts/genksyms
-[ksymtypes_1]: https://petrpavlu.github.io/suse-kabi-tools/ksymtypes.1.html
-[ksymtypes_5]: https://petrpavlu.github.io/suse-kabi-tools/ksymtypes.5.html
+[ksymtypes_1]: https://suse.github.io/suse-kabi-tools/ksymtypes.1.html
+[ksymtypes_5]: https://suse.github.io/suse-kabi-tools/ksymtypes.5.html
