@@ -67,7 +67,7 @@ fn myers<T: AsRef<str> + PartialEq>(a: &[T], b: &[T]) -> EditScript {
             x: usize::MAX,
             edit_index: usize::MAX,
         };
-        // Minium of 3 diagonals to allow accessing `v[1].x` when the inputs are empty.
+        // Minimum of 3 diagonals to allow accessing `v[1].x` when the inputs are empty.
         std::cmp::max(2 * max + 1, 3)
     ]);
     v[1].x = 0;

@@ -173,8 +173,8 @@ type ConsolidateOutputTypes<'a> = HashMap<&'a str, HashMap<usize, usize>>;
 /// output variant index.
 type ConsolidateFileTypes<'a> = HashMap<&'a str, usize>;
 
-/// Changes between two corpuses, recording a tuple of each modified type's `name`, its old `tokens`
-/// and its new `tokens`, along with a [`Vec`] of exported symbols affected by the change.
+/// Changes between two corpuses, recording a tuple of each modified type's name, its old tokens and
+/// its new tokens, along with a [`Vec`] of exported symbols affected by the change.
 type CompareChangedTypes<'a> = HashMap<(&'a str, &'a Tokens, &'a Tokens), Vec<&'a str>>;
 
 /// Type names processed during comparison for a specific file.
