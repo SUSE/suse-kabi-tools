@@ -128,7 +128,7 @@ sub type_compatible {
 	for my $type ($old, $new) {
 		if (!exists($types{$type})) {
 			print STDERR "error: unrecognized export type $type.\n";
-			exit 1;
+			return 0;
 		}
 	}
 	# if $new has a bit set that $old does not -> fail
