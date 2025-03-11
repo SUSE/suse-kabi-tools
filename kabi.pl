@@ -7,7 +7,8 @@ use Data::Dumper;
 
 # ( { sym => regexp, mod => regexp, fail => 0/1 }, ... )
 my @rules;
-my ($opt_verbose, $opt_rules);
+my %extrasyms;
+my ($opt_verbose, $opt_rules, $opt_extra);
 
 # if Module.symvers also lists namespaces (>=5.4)
 my $use_namespaces;
@@ -109,6 +110,24 @@ sub load_symvers {
 	return %res;
 }
 
+sub load_extra_syms {
+	my $file = shift;
+	my $new;
+
+	xopen(my $fh, '<', $file);
+	while (<$fh>) {
+		chomp;
+		my @l = split(' ', $_, -1);
+		# strip the initial "./SLEXX_SPX_BRANCH/", otherwise it gets too verbose
+		$l[0] =~ s/^\.\/[^\/]*\/(.*)$/$1/;
+		$new = { mod => $l[0], crc => $l[1], sym => $l[2] };
+
+		# Note %extrasyms is a hash of arrays (with the symbol name as the key)
+		# because multiple partner modules can use the same exported symbol
+		push @{ $extrasyms{$l[2]} }, $new;
+	}
+}
+
 # Each bit represents a restriction of the export and adding a restriction
 # fails the check
 my $type_GPL    = 0x1;
@@ -137,7 +156,7 @@ sub type_compatible {
 
 my $kabi_errors = 0;
 sub kabi_change {
-	my ($sym, $symvers, $message) = @_;
+	my ($sym, $symvers, $extrasym, $message) = @_;
 	my $fail = 1;
 
 	for my $rule (@rules) {
@@ -162,6 +181,13 @@ sub kabi_change {
 	} else {
 		print STDERR " (tolerated)\n";
 	}
+
+	# check if there are elements in the referenced array
+	if (@{$extrasym} != 0) {
+		foreach my $s (@$extrasym) {
+			print STDERR "  KABI: extra module $s->{mod} uses $sym (expected crc $s->{crc})\n";
+		}
+	}
 }
 
 sub xopen {
@@ -171,9 +197,10 @@ sub xopen {
 my $res = GetOptions(
 	'verbose|v' => \$opt_verbose,
 	'rules|r=s' => \$opt_rules,
+	'extra|e=s' => \$opt_extra,
 );
 if (!$res || @ARGV != 2) {
-	print STDERR "Usage: $0 [--rules <rules file>] Module.symvers.old Module.symvers\n";
+	print STDERR "Usage: $0 [--rules <rules file>] [--extra <extra file>] Module.symvers.old Module.symvers\n";
 	exit 1;
 }
 
@@ -183,20 +210,28 @@ $use_namespaces = symvers_uses_namespaces($ARGV[0]);
 if (defined($opt_rules)) {
 	load_rules($opt_rules);
 }
+
+if (defined($opt_extra)) {
+	load_extra_syms($opt_extra);
+}
+
 my %old = load_symvers($ARGV[0]);
 my %new = load_symvers($ARGV[1]);
 
+
 for my $sym (sort keys(%old)) {
+	# It is OK if $extrasyms{$sym} is empty due to Perl's auto-vivication
 	if (!$new{$sym}) {
-		kabi_change($sym, $old{$sym}, "lost");
+		kabi_change($sym, $old{$sym}, \@{ $extrasyms{$sym} }, "lost");
 	} elsif ($old{$sym}->{crc} ne $new{$sym}->{crc}) {
-		kabi_change($sym, $old{$sym}, "changed crc from " .
+		kabi_change($sym, $old{$sym}, \@{ $extrasyms{$sym} }, "changed crc from " .
 			"$old{$sym}->{crc} to $new{$sym}->{crc}");
 	} elsif (!type_compatible($old{$sym}->{type}, $new{$sym}->{type})) {
-		kabi_change($sym, $old{$sym}, "changed type from " .
+		kabi_change($sym, $old{$sym}, \@{ $extrasyms{$sym} }, "changed type from " .
 			"$old{$sym}->{type} to $new{$sym}->{type}");
 	}
 }
+
 if ($kabi_errors) {
 	print STDERR "KABI: aborting due to kabi changes.\n";
 	exit 1;
