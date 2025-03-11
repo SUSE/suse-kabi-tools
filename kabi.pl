@@ -27,6 +27,9 @@ sub load_rules {
 			$new->{fail} = 0;
 		} elsif (uc($verdict) eq "FAIL") {
 			$new->{fail} = 1;
+		} elsif ($verdict =~ /^\d+$/) {
+			# Support the old-style severities file prior kernel 3.0
+			$new->{fail} = $verdict > 6;
 		} else {
 			print STDERR "$file:$.: invalid verdict \"$verdict\", must be either PASS or FAIL.\n";
 			$errors++;
@@ -89,10 +92,16 @@ sub load_symvers {
 	while (<$fh>) {
 		chomp;
 		my @l = split(/\t/, $_, -1);
-		if (@l < 4) {
+		if (@l < 3) {
 			print STDERR "$file:$.: unknown line\n";
 			$errors++;
 			next;
+		}
+		if (@l == 3) {
+			# pre 2.6.18 kernels did not record the export type
+			# in Module.symvers. Just assign EXPORT_SYMBOL to
+			# everything to always pass the type check
+			push(@l, "EXPORT_SYMBOL");
 		}
 		if ($use_namespaces) {
 			$new = { crc => $l[0], mod => $l[2], type => $l[3], namespace => $l[4] };
