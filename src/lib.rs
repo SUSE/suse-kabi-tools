@@ -3,7 +3,7 @@
 
 use std::fs::File;
 use std::io;
-use std::io::prelude::*;
+use std::io::{prelude::*, BufReader};
 use std::path::{Path, PathBuf};
 
 pub mod diff;
@@ -112,6 +112,19 @@ impl Write for PathFile {
             ))
         })
     }
+}
+
+/// Reads data from a specified reader and returns its content as a [`Vec`] of [`String`] lines.
+fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
+    let reader = BufReader::new(reader);
+    let mut lines = Vec::new();
+    for maybe_line in reader.lines() {
+        match maybe_line {
+            Ok(line) => lines.push(line),
+            Err(err) => return Err(err),
+        };
+    }
+    Ok(lines)
 }
 
 /// Global debugging level.

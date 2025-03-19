@@ -1,10 +1,10 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::{debug, MapIOErr, PathFile};
+use crate::{debug, read_lines, MapIOErr, PathFile};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
-use std::io::{prelude::*, BufReader, BufWriter};
+use std::io::{prelude::*, BufWriter};
 use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -1036,19 +1036,6 @@ impl SymCorpus {
 
         Ok(())
     }
-}
-
-/// Reads data from a specified reader and returns its content as a [`Vec`] of [`String`] lines.
-fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
-    let reader = BufReader::new(reader);
-    let mut lines = Vec::new();
-    for maybe_line in reader.lines() {
-        match maybe_line {
-            Ok(line) => lines.push(line),
-            Err(err) => return Err(err),
-        };
-    }
-    Ok(lines)
 }
 
 /// Reads words from a given iterator and converts them to `Tokens`.
