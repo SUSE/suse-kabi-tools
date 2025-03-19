@@ -2,19 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
-use crate::assert_ok;
-
-macro_rules! assert_parse_err {
-    ($result:expr, $exp_desc:expr) => {
-        match $result {
-            Err(crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $exp_desc),
-            result => panic!(
-                "assertion failed: {:?} is not of type Err(crate::Error::Parse())",
-                result
-            ),
-        }
-    };
-}
+use crate::{assert_ok, assert_parse_err};
 
 #[test]
 fn read_empty_record() {

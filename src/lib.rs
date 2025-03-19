@@ -209,6 +209,21 @@ macro_rules! assert_ok {
     };
 }
 
+/// Asserts that the value is [`Err()`] with the contained error `crate::Error::Parse(exp_desc)`.
+#[cfg(any(test, doc))]
+#[macro_export]
+macro_rules! assert_parse_err {
+    ($result:expr, $exp_desc:expr) => {
+        match $result {
+            Err(crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $exp_desc),
+            result => panic!(
+                "assertion failed: {:?} is not of type Err(crate::Error::Parse())",
+                result
+            ),
+        }
+    };
+}
+
 /// Creates a [`Vec`] of [`String`] from a list of string literals.
 #[cfg(any(test, doc))]
 #[macro_export]
