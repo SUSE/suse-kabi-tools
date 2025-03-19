@@ -1,7 +1,6 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::path::Path;
 use std::time::Instant;
 use std::{env, io, process};
 use suse_kabi_tools::sym::SymCorpus;
@@ -152,19 +151,19 @@ fn handle_jobs_option<I: Iterator<Item = String>>(
 fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), ()> {
     // Parse specific command options.
     let mut args = args.into_iter();
-    let mut output = "-".to_string();
     let mut num_workers = 1;
+    let mut output = "-".to_string();
     let mut past_dash_dash = false;
     let mut maybe_path = None;
 
     while let Some(arg) = args.next() {
         if !past_dash_dash {
-            if let Some(value) = handle_value_option(&arg, &mut args, "-o", "--output")? {
-                output = value;
-                continue;
-            }
             if let Some(value) = handle_jobs_option(&arg, &mut args)? {
                 num_workers = value;
+                continue;
+            }
+            if let Some(value) = handle_value_option(&arg, &mut args, "-o", "--output")? {
+                output = value;
                 continue;
             }
             if arg == "-h" || arg == "--help" {
