@@ -577,7 +577,7 @@ impl SymCorpus {
         let path = &files[file_idx].path;
         let other_path = &files[other_file_idx].path;
         Err(crate::Error::new_parse(&format!(
-            "{}:{}: Export '{}' is duplicate. Previous occurrence found in '{}'.",
+            "{}:{}: Export '{}' is duplicate, previous occurrence found in '{}'",
             path.display(),
             line_idx + 1,
             type_name,

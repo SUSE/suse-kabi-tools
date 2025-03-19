@@ -133,7 +133,10 @@ fn read_duplicate_type_export() {
         )
         .as_bytes(),
     );
-    assert_parse_err!(result, "test2.symtypes:1: Export 'foo' is duplicate. Previous occurrence found in 'test.symtypes'.");
+    assert_parse_err!(
+        result,
+        "test2.symtypes:1: Export 'foo' is duplicate, previous occurrence found in 'test.symtypes'"
+    );
 }
 
 #[test]
