@@ -4,7 +4,7 @@
 use std::time::Instant;
 use std::{env, io, process};
 use suse_kabi_tools::sym::SymCorpus;
-use suse_kabi_tools::{debug, init_debug_level};
+use suse_kabi_tools::{debug, init_debug_level, Filter};
 
 /// An elapsed timer to measure time of some operation.
 ///
@@ -82,6 +82,7 @@ fn print_compare_usage() {
         "Options:\n",
         "  -h, --help                    display this help and exit\n",
         "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
+        "  -f FILE, --filter=FILE        consider only symbols matching patterns in FILE\n",
     ));
 }
 
@@ -227,6 +228,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
+    let mut maybe_filter_path = None;
     let mut past_dash_dash = false;
     let mut maybe_path = None;
     let mut maybe_path2 = None;
@@ -235,6 +237,10 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         if !past_dash_dash {
             if let Some(value) = handle_jobs_option(&arg, &mut args)? {
                 num_workers = value;
+                continue;
+            }
+            if let Some(value) = handle_value_option(&arg, &mut args, "-f", "--filter")? {
+                maybe_filter_path = Some(value);
                 continue;
             }
             if arg == "-h" || arg == "--help" {
@@ -295,10 +301,29 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         syms2
     };
 
+    let maybe_filter = match maybe_filter_path {
+        Some(filter_path) => {
+            let _timing = Timing::new(
+                do_timing,
+                &format!("Reading filters from '{}'", filter_path),
+            );
+
+            let mut filter = Filter::new();
+            if let Err(err) = filter.load(&filter_path) {
+                eprintln!("Failed to read filter from '{}': {}", filter_path, err);
+                return Err(());
+            }
+            Some(filter)
+        }
+        None => None,
+    };
+
     {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        if let Err(err) = syms.compare_with(&syms2, io::stdout(), num_workers) {
+        if let Err(err) =
+            syms.compare_with(&syms2, maybe_filter.as_ref(), io::stdout(), num_workers)
+        {
             eprintln!(
                 "Failed to compare symtypes from '{}' and '{}': {}",
                 path, path2, err

@@ -1,7 +1,7 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::{debug, read_lines, MapIOErr, PathFile};
+use crate::{debug, read_lines, Filter, MapIOErr, PathFile};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::{prelude::*, BufWriter};
@@ -953,9 +953,17 @@ impl SymCorpus {
     pub fn compare_with<W: Write>(
         &self,
         other_corpus: &SymCorpus,
+        maybe_filter: Option<&Filter>,
         writer: W,
         num_workers: i32,
     ) -> Result<(), crate::Error> {
+        fn matches(maybe_filter: Option<&Filter>, name: &str) -> bool {
+            match maybe_filter {
+                Some(filter) => filter.matches(name),
+                None => true,
+            }
+        }
+
         let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a comparison result";
 
@@ -965,7 +973,7 @@ impl SymCorpus {
             (&other_corpus.exports, &self.exports, "added"),
         ] {
             for name in exports_a.keys() {
-                if !exports_b.contains_key(name) {
+                if matches(maybe_filter, name) && !exports_b.contains_key(name) {
                     writeln!(writer, "Export '{}' has been {}", name, change)
                         .map_io_err(err_desc)?;
                 }
@@ -973,7 +981,11 @@ impl SymCorpus {
         }
 
         // Compare symbols that are in both corpuses.
-        let works: Vec<_> = self.exports.iter().collect();
+        let works: Vec<_> = self
+            .exports
+            .iter()
+            .filter(|(name, _)| matches(maybe_filter, name))
+            .collect();
         let next_work_idx = AtomicUsize::new(0);
 
         let changes = Mutex::new(CompareChangedTypes::new());

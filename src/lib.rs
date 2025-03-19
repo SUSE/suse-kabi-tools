@@ -1,6 +1,7 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+use std::collections::HashSet;
 use std::fs::File;
 use std::io;
 use std::io::{prelude::*, BufReader};
@@ -125,6 +126,56 @@ fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
         };
     }
     Ok(lines)
+}
+
+// TODO Support wildcards.
+pub struct Filter {
+    patterns: HashSet<String>,
+}
+
+impl Filter {
+    pub fn new() -> Self {
+        Self {
+            patterns: HashSet::new(),
+        }
+    }
+
+    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+        let path = path.as_ref();
+        debug!("Loading '{}'", path.display());
+
+        let file = PathFile::open(&path).map_err(|err| {
+            crate::Error::new_io(&format!("Failed to open file '{}'", path.display()), err)
+        })?;
+
+        // Read all content from the file.
+        let lines = match read_lines(file) {
+            Ok(lines) => lines,
+            Err(err) => return Err(crate::Error::new_io("Failed to read filter data", err)),
+        };
+
+        // Validate the patterns, reject empty ones.
+        for (line_idx, line) in lines.iter().enumerate() {
+            if line.is_empty() {
+                return Err(Error::new_parse(&format!(
+                    "{}:{}: Expected a pattern",
+                    path.display(),
+                    line_idx + 1
+                )));
+            }
+        }
+
+        // Insert the new patterns.
+        for line in lines {
+            self.patterns.insert(line);
+        }
+
+        Ok(())
+    }
+
+    pub fn matches(&self, name: &str) -> bool {
+        self.patterns.contains(name)
+    }
 }
 
 /// Global debugging level.

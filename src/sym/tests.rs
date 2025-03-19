@@ -264,7 +264,7 @@ fn compare_identical() {
     );
     assert_ok!(result);
     let mut out = Vec::new();
-    let result = syms.compare_with(&syms2, &mut out, 1);
+    let result = syms.compare_with(&syms2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -297,7 +297,7 @@ fn compare_added_export() {
     );
     assert_ok!(result);
     let mut out = Vec::new();
-    let result = syms.compare_with(&syms2, &mut out, 1);
+    let result = syms.compare_with(&syms2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -330,7 +330,7 @@ fn compare_removed_export() {
     );
     assert_ok!(result);
     let mut out = Vec::new();
-    let result = syms.compare_with(&syms2, &mut out, 1);
+    let result = syms.compare_with(&syms2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -364,7 +364,7 @@ fn compare_changed_type() {
     );
     assert_ok!(result);
     let mut out = Vec::new();
-    let result = syms.compare_with(&syms2, &mut out, 1);
+    let result = syms.compare_with(&syms2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -408,7 +408,7 @@ fn compare_changed_nested_type() {
     );
     assert_ok!(result);
     let mut out = Vec::new();
-    let result = syms.compare_with(&syms2, &mut out, 1);
+    let result = syms.compare_with(&syms2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
