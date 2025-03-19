@@ -8,6 +8,7 @@ use std::io::{prelude::*, BufReader};
 use std::path::{Path, PathBuf};
 
 pub mod diff;
+pub mod rules;
 pub mod sym;
 
 /// An error type for the crate, annotating standard errors with contextual information and
