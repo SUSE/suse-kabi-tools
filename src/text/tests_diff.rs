@@ -4,7 +4,7 @@
 use super::*;
 
 #[test]
-fn diff_trivial_empty() {
+fn myers_trivial_empty() {
     // Check a situation when no operation is needed because both inputs are empty.
     let a: [&str; 0] = [];
     let b = [];
@@ -13,7 +13,7 @@ fn diff_trivial_empty() {
 }
 
 #[test]
-fn diff_trivial_replace() {
+fn myers_trivial_replace() {
     // Check a situation when a complete replacement is needed.
     let a = ["X"];
     let b = ["Y"];
@@ -22,7 +22,7 @@ fn diff_trivial_replace() {
 }
 
 #[test]
-fn diff_trivial_insert() {
+fn myers_trivial_insert() {
     // Check a situation when an insert operation from `b` is the only step needed.
     let a = [];
     let b = ["X"];
@@ -31,7 +31,7 @@ fn diff_trivial_insert() {
 }
 
 #[test]
-fn diff_trivial_remove() {
+fn myers_trivial_remove() {
     // Check a situation when a remove operation from `a` is the only step needed.
     let a = ["X"];
     let b = [];
@@ -40,7 +40,7 @@ fn diff_trivial_remove() {
 }
 
 #[test]
-fn diff_trivial_keep() {
+fn myers_trivial_keep() {
     // Check a situation when a keep operation from `a` is the only step needed.
     let a = ["X"];
     let b = ["X"];
@@ -49,7 +49,7 @@ fn diff_trivial_keep() {
 }
 
 #[test]
-fn diff_insert_front() {
+fn myers_insert_front() {
     // Check a situation when an insert operation at the front of `a` is needed.
     let a = ["X", "Y"];
     let b = ["W", "X", "Y"];
@@ -61,7 +61,7 @@ fn diff_insert_front() {
 }
 
 #[test]
-fn diff_insert_middle() {
+fn myers_insert_middle() {
     // Check a situation when an insert operation in the middle of `a` is needed.
     let a = ["X", "Z"];
     let b = ["X", "Y", "Z"];
@@ -73,7 +73,7 @@ fn diff_insert_middle() {
 }
 
 #[test]
-fn diff_insert_end() {
+fn myers_insert_end() {
     // Check a situation when an insert operation at the end of `a` is needed.
     let a = ["X", "Y"];
     let b = ["X", "Y", "Z"];
@@ -85,7 +85,7 @@ fn diff_insert_end() {
 }
 
 #[test]
-fn diff_insert_subsequent() {
+fn myers_insert_subsequent() {
     // Check a situation when subsequent insert operations in `a` are needed.
     let a = [];
     let b = ["X", "Y", "Z"];
@@ -97,7 +97,7 @@ fn diff_insert_subsequent() {
 }
 
 #[test]
-fn diff_remove_front() {
+fn myers_remove_front() {
     // Check a situation when a remove operation from the front of `a` is needed.
     let a = ["W", "X", "Y"];
     let b = ["X", "Y"];
@@ -109,7 +109,7 @@ fn diff_remove_front() {
 }
 
 #[test]
-fn diff_remove_middle() {
+fn myers_remove_middle() {
     // Check a situation when a remove operation from the middle of `a` is needed.
     let a = ["X", "Y", "Z"];
     let b = ["X", "Z"];
@@ -121,7 +121,7 @@ fn diff_remove_middle() {
 }
 
 #[test]
-fn diff_remove_end() {
+fn myers_remove_end() {
     // Check a situation when a remove operation from the end of `a` is needed.
     let a = ["X", "Y", "Z"];
     let b = ["X", "Y"];
@@ -133,7 +133,7 @@ fn diff_remove_end() {
 }
 
 #[test]
-fn diff_remove_subsequent() {
+fn myers_remove_subsequent() {
     // Check a situation when subsequent remove operations from `a` are needed.
     let a = ["X", "Y", "Z"];
     let b = [];
@@ -145,7 +145,7 @@ fn diff_remove_subsequent() {
 }
 
 #[test]
-fn diff_keep_subsequent() {
+fn myers_keep_subsequent() {
     // Check a situation when subsequent keep operations from `a` are needed.
     let a = ["X", "Y", "Z"];
     let b = ["W", "X", "Y"];

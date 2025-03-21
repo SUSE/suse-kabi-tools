@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::{debug, read_lines, Filter, MapIOErr, PathFile};
+use crate::text::unified_diff;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::{prelude::*, BufWriter};
@@ -1167,5 +1168,5 @@ fn write_type_diff<W: Write>(
 ) -> Result<(), crate::Error> {
     let pretty = pretty_format_type(tokens);
     let other_pretty = pretty_format_type(other_tokens);
-    crate::diff::unified(&pretty, &other_pretty, writer)
+    unified_diff(&pretty, &other_pretty, writer)
 }

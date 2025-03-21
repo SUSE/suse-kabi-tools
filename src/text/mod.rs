@@ -7,7 +7,7 @@ use std::io::{prelude::*, BufWriter};
 use std::ops::{Index, IndexMut};
 
 #[cfg(test)]
-mod tests;
+mod tests_diff;
 
 // Implementation of the Myers diff algorithm:
 // Myers, E.W. An O(ND) difference algorithm and its variations. Algorithmica 1, 251--266 (1986).
@@ -150,7 +150,7 @@ fn write_hunk<W: Write>(
 }
 
 /// Compares `a` with `b` and writes their unified diff to the provided output stream.
-pub fn unified<T: AsRef<str> + PartialEq + Display, W: Write>(
+pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
     a: &[T],
     b: &[T],
     writer: W,
