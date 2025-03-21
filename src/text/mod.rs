@@ -8,6 +8,8 @@ use std::ops::{Index, IndexMut};
 
 #[cfg(test)]
 mod tests_diff;
+#[cfg(test)]
+mod tests_wildcard;
 
 // Implementation of the Myers diff algorithm:
 // Myers, E.W. An O(ND) difference algorithm and its variations. Algorithmica 1, 251--266 (1986).
@@ -262,4 +264,115 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
     }
 
     Ok(())
+}
+
+// Rust implementation of the Salz's wildcard method:
+// https://github.com/richsalz/wildmat
+// Original code has been placed in the public domain.
+
+#[derive(PartialEq)]
+enum DoMatchResult {
+    True,
+    False,
+    Abort,
+}
+
+/// Attempts to match the given text against the specified shell wildcard pattern.
+fn do_match(mut text: &[char], mut p: &[char]) -> DoMatchResult {
+    while p[0] != '\0' {
+        if text[0] == '\0' && p[0] != '*' {
+            return DoMatchResult::Abort;
+        }
+
+        match p[0] {
+            '\\' => {
+                // Literal match with following character.
+                p = &p[1..];
+                if text[0] != p[0] {
+                    return DoMatchResult::False;
+                }
+            }
+            '?' => {
+                // Match anything.
+            }
+            '*' => {
+                p = &p[1..];
+                while p[0] == '*' {
+                    // Consecutive stars act just like one.
+                    p = &p[1..];
+                }
+                if p[0] == '\0' {
+                    // Trailing star matches everything.
+                    return DoMatchResult::True;
+                }
+                while text[0] != '\0' {
+                    let matched = do_match(text, p);
+                    if matched != DoMatchResult::False {
+                        return matched;
+                    }
+                    text = &text[1..];
+                }
+                return DoMatchResult::Abort;
+            }
+            '[' => {
+                let reverse = p[1] == '^';
+                if reverse {
+                    // Inverted character class.
+                    p = &p[1..];
+                }
+                let mut matched = false;
+                if p[1] == ']' || p[1] == '-' {
+                    p = &p[1..];
+                    if p[0] == text[0] {
+                        matched = true;
+                    }
+                }
+                let mut last = p[0];
+                p = &p[1..];
+                while p[0] != '\0' && p[0] != ']' {
+                    // This next line requires a good C compiler.
+                    if if p[0] == '-' && p[1] != ']' {
+                        p = &p[1..];
+                        text[0] <= p[0] && text[0] >= last
+                    } else {
+                        text[0] == p[0]
+                    } {
+                        matched = true;
+                    }
+                    last = p[0];
+                    p = &p[1..];
+                }
+                if matched == reverse {
+                    return DoMatchResult::False;
+                }
+            }
+            _ => {
+                if text[0] != p[0] {
+                    return DoMatchResult::False;
+                }
+            }
+        }
+
+        text = &text[1..];
+        p = &p[1..];
+    }
+
+    if text[0] == '\0' {
+        DoMatchResult::True
+    } else {
+        DoMatchResult::False
+    }
+}
+
+/// Checks whether the given text matches the specified shell wildcard pattern.
+pub fn matches_wildcard(text: &str, pattern: &str) -> bool {
+    if pattern == "*" {
+        return true;
+    }
+
+    let mut text = text.chars().collect::<Vec<_>>();
+    text.push('\0');
+    let mut pattern = pattern.chars().collect::<Vec<_>>();
+    pattern.push('\0');
+    do_match(&text, &pattern) == DoMatchResult::True
 }
