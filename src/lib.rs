@@ -8,6 +8,7 @@ use std::io::{prelude::*, BufReader};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+pub mod cli;
 pub mod rules;
 pub mod sym;
 pub mod symvers;

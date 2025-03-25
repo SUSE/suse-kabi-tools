@@ -2,92 +2,44 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use std::{env, io, process};
+use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::sym::SymCorpus;
 use suse_kabi_tools::{debug, Filter, Timing};
 
 /// Prints the global usage message on the standard output.
-fn print_usage() {
-    print!(concat!(
-        "Usage: ksymtypes [OPTION...] COMMAND\n",
-        "\n",
-        "Options:\n",
-        "  -d, --debug                   enable debug output\n",
-        "  -h, --help                    display this help and exit\n",
-        "  --version                     output version information and exit\n",
-        "\n",
-        "Commands:\n",
-        "  consolidate                   consolidate symtypes into a single file\n",
-        "  compare                       show differences between two symtypes corpuses\n",
-    ));
-}
 
-/// Prints the version information on the standard output.
-fn print_version() {
-    println!("ksymtypes {}", env!("CARGO_PKG_VERSION"));
-}
+const USAGE_MSG: &str = concat!(
+    "Usage: ksymtypes [OPTION...] COMMAND\n",
+    "\n",
+    "Options:\n",
+    "  -d, --debug                   enable debug output\n",
+    "  -h, --help                    display this help and exit\n",
+    "  --version                     output version information and exit\n",
+    "\n",
+    "Commands:\n",
+    "  consolidate                   consolidate symtypes into a single file\n",
+    "  compare                       show differences between two symtypes corpuses\n"
+);
 
-/// Prints the usage message for the `consolidate` command on the standard output.
-fn print_consolidate_usage() {
-    print!(concat!(
-        "Usage: ksymtypes consolidate [OPTION...] PATH\n",
-        "Consolidate symtypes into a single file.\n",
-        "\n",
-        "Options:\n",
-        "  -h, --help                    display this help and exit\n",
-        "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
-        "  -o FILE, --output=FILE        write the result in FILE, instead of stdout\n",
-    ));
-}
+const CONSOLIDATE_USAGE_MSG: &str = concat!(
+    "Usage: ksymtypes consolidate [OPTION...] PATH\n",
+    "Consolidate symtypes into a single file.\n",
+    "\n",
+    "Options:\n",
+    "  -h, --help                    display this help and exit\n",
+    "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
+    "  -o FILE, --output=FILE        write the result in FILE, instead of stdout\n",
+);
 
-/// Prints the usage message for the `compare` command on the standard output.
-fn print_compare_usage() {
-    print!(concat!(
-        "Usage: ksymtypes compare [OPTION...] PATH PATH2\n",
-        "Show differences between two symtypes corpuses.\n",
-        "\n",
-        "Options:\n",
-        "  -h, --help                    display this help and exit\n",
-        "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
-        "  -f FILE, --filter=FILE        consider only symbols matching patterns in FILE\n",
-    ));
-}
-
-/// Handles an option with a mandatory value.
-///
-/// When the `arg` matches the `short` or `long` variant, the function returns [`Ok(Some(String))`]
-/// with the option value. Otherwise, [`Ok(None)`] is returned when the `arg` doesn't match, or
-/// [`Err`] in case of an error.
-fn handle_value_option<I: Iterator<Item = String>>(
-    arg: &str,
-    args: &mut I,
-    short: &str,
-    long: &str,
-) -> Result<Option<String>, ()> {
-    // Handle '-<short> <value>' and '--<long> <value>'.
-    if arg == short || arg == long {
-        match args.next() {
-            Some(value) => return Ok(Some(value.to_string())),
-            None => {
-                eprintln!("Missing argument for '{}'", long);
-                return Err(());
-            }
-        };
-    }
-
-    // Handle '-<short><value>'.
-    if let Some(value) = arg.strip_prefix(short) {
-        return Ok(Some(value.to_string()));
-    }
-
-    // Handle '--<long>=<value>'.
-    if let Some(rem) = arg.strip_prefix(long) {
-        if let Some(value) = rem.strip_prefix('=') {
-            return Ok(Some(value.to_string()));
-        }
-    }
-
-    Ok(None)
-}
+const COMPARE_USAGE_MSG: &str = concat!(
+    "Usage: ksymtypes compare [OPTION...] PATH PATH2\n",
+    "Show differences between two symtypes corpuses.\n",
+    "\n",
+    "Options:\n",
+    "  -h, --help                    display this help and exit\n",
+    "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
+    "  -f FILE, --filter=FILE        consider only symbols matching patterns in FILE\n",
+);
 
 /// Handles the `-j`/`--jobs` option which specifies the number of workers to perform a given
 /// operation simultaneously.
@@ -134,7 +86,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
                 continue;
             }
             if arg == "-h" || arg == "--help" {
-                print_consolidate_usage();
+                print!("{}", CONSOLIDATE_USAGE_MSG);
                 return Ok(());
             }
             if arg == "--" {
@@ -210,7 +162,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                 continue;
             }
             if arg == "-h" || arg == "--help" {
-                print_compare_usage();
+                print!("{}", COMPARE_USAGE_MSG);
                 return Ok(());
             }
             if arg == "--" {
@@ -302,56 +254,16 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
 }
 
 fn main() {
+    // Process global arguments.
     let mut args = env::args();
-
-    // Skip over the program name.
-    match args.next() {
-        Some(_) => {}
-        None => {
-            eprintln!("Unknown program name");
-            process::exit(1);
-        }
-    };
-
-    // Handle global options and stop at the command.
-    let mut maybe_command = None;
     let mut do_timing = false;
-    let mut debug_level = 0;
-    for arg in args.by_ref() {
-        if arg == "-d" || arg == "--debug" {
-            debug_level += 1;
-            continue;
-        }
-        if arg == "--timing" {
-            do_timing = true;
-            continue;
-        }
 
-        if arg == "-h" || arg == "--help" {
-            print_usage();
-            process::exit(0);
-        }
-        if arg == "--version" {
-            print_version();
-            process::exit(0);
-        }
-        if arg.starts_with('-') || arg.starts_with("--") {
-            eprintln!("Unrecognized global option '{}'", arg);
-            process::exit(1);
-        }
-        maybe_command = Some(arg);
-        break;
-    }
-
-    init_debug_level(debug_level);
-
-    let command = match maybe_command {
-        Some(command) => command,
-        None => {
-            eprintln!("No command specified");
-            process::exit(1);
-        }
-    };
+    let command = process_global_args(
+        &mut args,
+        USAGE_MSG,
+        &format!("ksymtypes {}\n", env!("CARGO_PKG_VERSION")),
+        &mut do_timing,
+    );
 
     // Process the specified command.
     let result = match command.as_str() {
