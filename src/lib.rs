@@ -226,6 +226,24 @@ macro_rules! assert_parse_err {
     };
 }
 
+/// Asserts that the value is an [`Err`] containing a [`crate::Error::Parse`] error with
+/// a description matching the shell wildcard pattern `exp_desc`.
+#[cfg(any(test, doc))]
+#[macro_export]
+macro_rules! assert_inexact_parse_err {
+    ($result:expr, $exp_desc:expr) => {
+        match $result {
+            Err(crate::Error::Parse(actual_desc)) => {
+                assert!(crate::text::matches_wildcard(&actual_desc, $exp_desc))
+            }
+            result => panic!(
+                "assertion failed: {:?} is not of type Err(crate::Error::Parse(_))",
+                result
+            ),
+        }
+    };
+}
+
 /// Creates a [`Vec`] of [`String`] from a list of string literals.
 #[cfg(any(test, doc))]
 #[macro_export]
