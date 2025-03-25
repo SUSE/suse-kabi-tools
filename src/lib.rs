@@ -131,6 +131,7 @@ fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
 }
 
 // TODO Support wildcards.
+#[derive(Default)]
 pub struct Filter {
     patterns: HashSet<String>,
 }
@@ -146,7 +147,7 @@ impl Filter {
         let path = path.as_ref();
         debug!("Loading '{}'", path.display());
 
-        let file = PathFile::open(&path).map_err(|err| {
+        let file = PathFile::open(path).map_err(|err| {
             crate::Error::new_io(&format!("Failed to open file '{}'", path.display()), err)
         })?;
 

@@ -41,7 +41,7 @@ impl Export {
 type Exports = Vec<Export>;
 
 /// A representation of a kernel ABI, loaded from symvers files.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Symvers {
     exports: Exports,
 }
@@ -60,7 +60,7 @@ impl Symvers {
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), crate::Error> {
         let path = path.as_ref();
 
-        let file = PathFile::open(&path).map_err(|err| {
+        let file = PathFile::open(path).map_err(|err| {
             crate::Error::new_io(&format!("Failed to open file '{}'", path.display()), err)
         })?;
 

@@ -56,7 +56,7 @@ impl Rule {
 }
 
 /// A collection of severity rules.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Rules {
     data: Vec<Rule>,
 }
@@ -73,7 +73,7 @@ impl Rules {
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), crate::Error> {
         let path = path.as_ref();
 
-        let file = PathFile::open(&path).map_err(|err| {
+        let file = PathFile::open(path).map_err(|err| {
             crate::Error::new_io(&format!("Failed to open file '{}'", path.display()), err)
         })?;
 
@@ -143,7 +143,7 @@ fn get_next_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<St
     if word.is_empty() {
         return None;
     }
-    return Some(word);
+    Some(word)
 }
 
 /// Parses a single severity rule.
