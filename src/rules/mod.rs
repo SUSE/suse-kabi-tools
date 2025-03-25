@@ -62,7 +62,7 @@ pub struct Rules {
 }
 
 impl Rules {
-    /// Creates a new empty rules object.
+    /// Creates a new empty `Rules` object.
     pub fn new() -> Self {
         Self { data: Vec::new() }
     }
@@ -101,7 +101,7 @@ impl Rules {
         // Parse all rules.
         let mut new_rules = Vec::new();
         for (line_idx, line) in lines.iter().enumerate() {
-            if let Some(rule) = parse_rule(path, line_idx, line.as_str())? {
+            if let Some(rule) = parse_rule(path, line_idx, line)? {
                 new_rules.push(rule);
             }
         }

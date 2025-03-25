@@ -1,8 +1,8 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::{debug, read_lines, Filter, MapIOErr, PathFile};
 use crate::text::unified_diff;
+use crate::{debug, read_lines, Filter, MapIOErr, PathFile};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::{prelude::*, BufWriter};

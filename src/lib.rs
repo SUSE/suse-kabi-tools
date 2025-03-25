@@ -199,7 +199,7 @@ macro_rules! debug {
     }
 }
 
-/// Asserts that the value is [`Ok(())`](Ok), indicating success.
+/// Asserts that the value is an [`Ok`] containing `()`, representing success.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_ok {
@@ -211,7 +211,8 @@ macro_rules! assert_ok {
     };
 }
 
-/// Asserts that the value is [`Err()`] with the contained error `crate::Error::Parse(exp_desc)`.
+/// Asserts that the value is an [`Err`] containing a [`crate::Error::Parse`] error with the
+/// description `exp_desc`.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_parse_err {
@@ -219,7 +220,7 @@ macro_rules! assert_parse_err {
         match $result {
             Err(crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $exp_desc),
             result => panic!(
-                "assertion failed: {:?} is not of type Err(crate::Error::Parse())",
+                "assertion failed: {:?} is not of type Err(crate::Error::Parse(_))",
                 result
             ),
         }
