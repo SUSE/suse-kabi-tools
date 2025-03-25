@@ -1,44 +1,51 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::{debug, read_lines, PathFile};
-use std::io::prelude::*;
+use crate::{debug, read_lines, MapIOErr, PathFile};
+use std::collections::HashMap;
+use std::io::{prelude::*, BufWriter};
 use std::path::Path;
 
 #[cfg(test)]
 mod tests;
 
-/// An export record.
+/// An export data.
 #[derive(Debug, PartialEq)]
-struct Export {
+struct ExportInfo {
     crc: u32,
-    name: String,
     module: String,
     is_gpl_only: bool,
     namespace: Option<String>,
 }
 
-impl Export {
-    /// Creates a new `Export` object.
-    pub fn new<S: Into<String>, T: Into<String>, U: Into<String>>(
+impl ExportInfo {
+    /// Creates a new `ExportInfo` object.
+    pub fn new<S: Into<String>, T: Into<String>>(
         crc: u32,
-        name: S,
-        module: T,
+        module: S,
         is_gpl_only: bool,
-        namespace: Option<U>,
+        namespace: Option<T>,
     ) -> Self {
-        Export {
+        Self {
             crc,
-            name: name.into(),
             module: module.into(),
             is_gpl_only,
             namespace: namespace.map(|n| n.into()),
         }
     }
+
+    /// Returns the type as a string slice.
+    pub fn type_as_str(&self) -> &str {
+        if self.is_gpl_only {
+            "EXPORT_SYMBOL_GPL"
+        } else {
+            "EXPORT_SYMBOL"
+        }
+    }
 }
 
 /// A collection of export records.
-type Exports = Vec<Export>;
+type Exports = HashMap<String, ExportInfo>;
 
 /// A representation of a kernel ABI, loaded from symvers files.
 #[derive(Debug, Default, PartialEq)]
@@ -88,12 +95,74 @@ impl Symvers {
         // Parse all records.
         let mut new_exports = Vec::new();
         for (line_idx, line) in lines.iter().enumerate() {
-            let export = parse_export(path, line_idx, line)?;
-            new_exports.push(export);
+            let (name, info) = parse_export(path, line_idx, line)?;
+            new_exports.push((line_idx, name, info));
         }
 
         // Add the new rules.
-        self.exports.append(&mut new_exports);
+        // TODO Check for duplicate records.
+        for (_line_idx, name, info) in new_exports {
+            self.exports.insert(name, info);
+        }
+
+        Ok(())
+    }
+
+    /// Compares symbols in the `self` and `other_symvers`.
+    ///
+    /// A human-readable report about all found changes is written to the provided output stream.
+    pub fn compare_with<W: Write>(
+        &self,
+        other_symvers: &Symvers,
+        writer: W,
+    ) -> Result<(), crate::Error> {
+        let mut writer = BufWriter::new(writer);
+        let err_desc = "Failed to write a comparison result";
+
+        let mut names = self.exports.keys().collect::<Vec<_>>();
+        names.sort();
+        let mut other_names = other_symvers.exports.keys().collect::<Vec<_>>();
+        other_names.sort();
+
+        // Check for symbols in self but not in other_symvers, and vice versa.
+        for (names_a, exports_b, change) in [
+            (&names, &other_symvers.exports, "removed"),
+            (&other_names, &self.exports, "added"),
+        ] {
+            for &name in names_a {
+                if !exports_b.contains_key(name) {
+                    writeln!(writer, "Export '{}' has been {}", name, change)
+                        .map_io_err(err_desc)?;
+                }
+            }
+        }
+
+        // Compare symbols that are in both symvers.
+        for name in names {
+            let info = self.exports.get(name).unwrap();
+            if let Some(other_info) = other_symvers.exports.get(name) {
+                if info.crc != other_info.crc {
+                    writeln!(
+                        writer,
+                        "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'",
+                        name, info.crc, other_info.crc
+                    )
+                    .map_io_err(err_desc)?;
+                }
+                if info.is_gpl_only != other_info.is_gpl_only {
+                    writeln!(
+                        writer,
+                        "Export '{}' changed type from '{}' to '{}'",
+                        name,
+                        info.type_as_str(),
+                        other_info.type_as_str()
+                    )
+                    .map_io_err(err_desc)?;
+                }
+                // TODO Tolerate the GPL -> non-GPL change.
+                // TODO Check module and namespace changes.
+            }
+        }
 
         Ok(())
     }
@@ -104,7 +173,7 @@ fn parse_export<P: AsRef<Path>>(
     path: P,
     line_idx: usize,
     line: &str,
-) -> Result<Export, crate::Error> {
+) -> Result<(String, ExportInfo), crate::Error> {
     let path = path.as_ref();
     let mut words = line.split_ascii_whitespace();
 
@@ -186,5 +255,8 @@ fn parse_export<P: AsRef<Path>>(
         )));
     }
 
-    Ok(Export::new(crc, name, module, is_gpl_only, namespace))
+    Ok((
+        name.to_string(),
+        ExportInfo::new(crc, module, is_gpl_only, namespace),
+    ))
 }

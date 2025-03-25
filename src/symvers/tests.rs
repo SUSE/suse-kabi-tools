@@ -19,9 +19,10 @@ fn read_export_basic() {
     assert_eq!(
         symvers,
         Symvers {
-            exports: vec![
-                Export::new(0x4dfa8d4b, "mutex_lock", "vmlinux", false, None::<&str>), //
-            ]
+            exports: HashMap::from([(
+                "mutex_lock".to_string(),
+                ExportInfo::new(0x4dfa8d4b, "vmlinux", false, None::<&str>)
+            )])
         }
     );
 }
@@ -40,7 +41,7 @@ fn read_empty_record() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:2: The export does not specify a CRC");
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
 
 #[test]
@@ -58,7 +59,7 @@ fn read_invalid_crc() {
         result,
         "test.symvers:1: Failed to parse the CRC value '0': string does not start with 0x or 0X"
     );
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
 
 #[test]
@@ -76,7 +77,7 @@ fn read_invalid_crc2() {
         result,
         "test.symvers:1: Failed to parse the CRC value '0xabcdefgh': *"
     );
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
 
 #[test]
@@ -91,7 +92,7 @@ fn read_no_name() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:1: The export does not specify a name");
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
 
 #[test]
@@ -109,7 +110,7 @@ fn read_no_module() {
         result,
         "test.symvers:1: The export does not specify a module"
     );
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
 
 #[test]
@@ -128,10 +129,16 @@ fn read_type() {
     assert_eq!(
         symvers,
         Symvers {
-            exports: vec![
-                Export::new(0x4dfa8d4b, "mutex_lock", "vmlinux", false, None::<&str>),
-                Export::new(0xa04f945a, "cpus_read_lock", "vmlinux", true, None::<&str>),
-            ]
+            exports: HashMap::from([
+                (
+                    "mutex_lock".to_string(),
+                    ExportInfo::new(0x4dfa8d4b, "vmlinux", false, None::<&str>)
+                ),
+                (
+                    "cpus_read_lock".to_string(),
+                    ExportInfo::new(0xa04f945a, "vmlinux", true, None::<&str>)
+                ),
+            ])
         }
     );
 }
@@ -148,7 +155,7 @@ fn read_no_type() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:1: The export does not specify a type");
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
 
 #[test]
@@ -163,7 +170,7 @@ fn read_invalid_type() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:1: Invalid export type 'EXPORT_UNUSED_SYMBOL', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL");
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
 
 #[test]
@@ -181,9 +188,10 @@ fn read_namespace() {
     assert_eq!(
         symvers,
         Symvers {
-            exports: vec![
-                Export::new(0x2303b915, "efivar_lock", "vmlinux", true, Some("EFIVAR")), //
-            ]
+            exports: HashMap::from([(
+                "efivar_lock".to_string(),
+                ExportInfo::new(0x2303b915, "vmlinux", true, Some("EFIVAR"))
+            )])
         }
     );
 }
@@ -203,5 +211,5 @@ fn read_extra_data() {
         result,
         "test.symvers:1: Unexpected string 'garbage' found at the end of the export record"
     );
-    assert_eq!(symvers, Symvers { exports: vec![] });
+    assert_eq!(symvers, Symvers::new());
 }
