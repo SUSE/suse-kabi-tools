@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io;
 use std::io::{prelude::*, BufReader};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 pub mod rules;
 pub mod sym;
@@ -48,6 +49,39 @@ impl std::fmt::Display for Error {
                 io_err.fmt(f)
             }
             Self::Parse(desc) => write!(f, "{}", desc),
+        }
+    }
+}
+
+/// An elapsed timer to measure time of some operation.
+///
+/// The time is measured between when the object is instantiated and when it is dropped. A message
+/// with the elapsed time is output when the object is dropped.
+pub enum Timing {
+    Active { desc: String, start: Instant },
+    Inactive,
+}
+
+impl Timing {
+    pub fn new(do_timing: bool, desc: &str) -> Self {
+        if do_timing {
+            Timing::Active {
+                desc: desc.to_string(),
+                start: Instant::now(),
+            }
+        } else {
+            Timing::Inactive
+        }
+    }
+}
+
+impl Drop for Timing {
+    fn drop(&mut self) {
+        match self {
+            Timing::Active { desc, start } => {
+                eprintln!("{}: {:.3?}", desc, start.elapsed());
+            }
+            Timing::Inactive => {}
         }
     }
 }

@@ -1,43 +1,9 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::time::Instant;
 use std::{env, io, process};
 use suse_kabi_tools::sym::SymCorpus;
-use suse_kabi_tools::{debug, init_debug_level, Filter};
-
-/// An elapsed timer to measure time of some operation.
-///
-/// The time is measured between when the object is instantiated and when it is dropped. A message
-/// with the elapsed time is output when the object is dropped.
-enum Timing {
-    Active { desc: String, start: Instant },
-    Inactive,
-}
-
-impl Timing {
-    fn new(do_timing: bool, desc: &str) -> Self {
-        if do_timing {
-            Timing::Active {
-                desc: desc.to_string(),
-                start: Instant::now(),
-            }
-        } else {
-            Timing::Inactive
-        }
-    }
-}
-
-impl Drop for Timing {
-    fn drop(&mut self) {
-        match self {
-            Timing::Active { desc, start } => {
-                eprintln!("{}: {:.3?}", desc, start.elapsed());
-            }
-            Timing::Inactive => {}
-        }
-    }
-}
+use suse_kabi_tools::{debug, Filter, Timing};
 
 /// Prints the global usage message on the standard output.
 fn print_usage() {
