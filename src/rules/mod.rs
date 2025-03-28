@@ -1,6 +1,7 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+use crate::text::matches_wildcard;
 use crate::{debug, read_lines, PathFile};
 use std::io::prelude::*;
 use std::iter::Peekable;
@@ -110,6 +111,33 @@ impl Rules {
         self.data.append(&mut new_rules);
 
         Ok(())
+    }
+
+    /// Looks for the first rule that matches the specified symbol and, if found, returns its
+    /// verdict on whether changes to the symbol should be tolerated. Otherwise, returns false.
+    pub fn is_tolerated(&self, symbol: &str, module: &str, maybe_namespace: Option<&str>) -> bool {
+        for rule in &self.data {
+            match &rule.pattern {
+                Pattern::Module(rule_module) => {
+                    if matches_wildcard(module, &rule_module) {
+                        return rule.verdict == Verdict::Pass;
+                    }
+                }
+                Pattern::Namespace(rule_namespace) => {
+                    if let Some(namespace) = maybe_namespace {
+                        if matches_wildcard(namespace, &rule_namespace) {
+                            return rule.verdict == Verdict::Pass;
+                        }
+                    }
+                }
+                Pattern::Symbol(rule_symbol) => {
+                    if matches_wildcard(symbol, &rule_symbol) {
+                        return rule.verdict == Verdict::Pass;
+                    }
+                }
+            }
+        }
+        false
     }
 }
 

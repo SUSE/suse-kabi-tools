@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use std::{env, io, process};
-use suse_kabi_tools::cli::process_global_args;
+use suse_kabi_tools::cli::{handle_value_option, process_global_args};
+use suse_kabi_tools::rules::Rules;
 use suse_kabi_tools::symvers::Symvers;
 use suse_kabi_tools::{debug, Timing};
 
@@ -24,18 +25,24 @@ const COMPARE_USAGE_MSG: &str = concat!(
     "\n",
     "Options:\n",
     "  -h, --help                    display this help and exit\n",
+    "  -r FILE, --rules=FILE         load severity rules from FILE\n",
 );
 
 /// Handles the `compare` command which shows differences between two symvers files.
 fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), ()> {
     // Parse specific command options.
     let mut args = args.into_iter();
+    let mut maybe_rules_path = None;
     let mut past_dash_dash = false;
     let mut maybe_path = None;
     let mut maybe_path2 = None;
 
     while let Some(arg) = args.next() {
         if !past_dash_dash {
+            if let Some(value) = handle_value_option(&arg, &mut args, "-r", "--rules")? {
+                maybe_rules_path = Some(value);
+                continue;
+            }
             if arg == "-h" || arg == "--help" {
                 print!("{}", COMPARE_USAGE_MSG);
                 return Ok(());
@@ -94,10 +101,30 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         syms2
     };
 
+    let maybe_rules = match maybe_rules_path {
+        Some(rules_path) => {
+            let _timing = Timing::new(
+                do_timing,
+                &format!("Reading severity rules from '{}'", rules_path),
+            );
+
+            let mut rules = Rules::new();
+            if let Err(err) = rules.load(&rules_path) {
+                eprintln!(
+                    "Failed to read severity rules from '{}': {}",
+                    rules_path, err
+                );
+                return Err(());
+            }
+            Some(rules)
+        }
+        None => None,
+    };
+
     {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        if let Err(err) = syms.compare_with(&syms2, io::stdout()) {
+        if let Err(err) = syms.compare_with(&syms2, maybe_rules.as_ref(), io::stdout()) {
             eprintln!(
                 "Failed to compare symvers from '{}' and '{}': {}",
                 path, path2, err

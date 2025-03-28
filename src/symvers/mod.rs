@@ -1,6 +1,7 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+use crate::rules::Rules;
 use crate::{debug, read_lines, MapIOErr, PathFile};
 use std::collections::HashMap;
 use std::io::{prelude::*, BufWriter};
@@ -114,8 +115,33 @@ impl Symvers {
     pub fn compare_with<W: Write>(
         &self,
         other_symvers: &Symvers,
+        maybe_rules: Option<&Rules>,
         writer: W,
     ) -> Result<(), crate::Error> {
+        // A helper function to handle common logic related to reporting a change. It determines if
+        // the change should be tolerated and updates the changed result.
+        fn process_change(
+            maybe_rules: Option<&Rules>,
+            name: &str,
+            info: &ExportInfo,
+            tolerated: bool,
+            changed: &mut bool,
+        ) -> &'static str {
+            let tolerated = tolerated
+                || match maybe_rules {
+                    Some(rules) => {
+                        rules.is_tolerated(name, &info.module, info.namespace.as_deref())
+                    }
+                    None => false,
+                };
+            if tolerated {
+                " (tolerated)"
+            } else {
+                *changed = true;
+                ""
+            }
+        }
+
         let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a comparison result";
 
@@ -123,15 +149,35 @@ impl Symvers {
         names.sort();
         let mut other_names = other_symvers.exports.keys().collect::<Vec<_>>();
         other_names.sort();
+        let mut changed = false;
 
         // Check for symbols in self but not in other_symvers, and vice versa.
-        for (names_a, exports_b, change) in [
-            (&names, &other_symvers.exports, "removed"),
-            (&other_names, &self.exports, "added"),
+        //
+        // Note that this code and all other checks below use the original symvers to consult the
+        // severity rules. That is, the original module and namespace values are matched against the
+        // rule patterns. A subtle detail is that added symbols, which lack a record in the original
+        // symvers, are always tolerated, so no rules come into play.
+        for (names_a, exports_a, exports_b, change, tolerate) in [
+            (
+                &names,
+                &self.exports,
+                &other_symvers.exports,
+                "removed",
+                false,
+            ),
+            (
+                &other_names,
+                &other_symvers.exports,
+                &self.exports,
+                "added",
+                true,
+            ),
         ] {
             for &name in names_a {
                 if !exports_b.contains_key(name) {
-                    writeln!(writer, "Export '{}' has been {}", name, change)
+                    let info = exports_a.get(name).unwrap();
+                    let suffix = process_change(maybe_rules, name, info, tolerate, &mut changed);
+                    writeln!(writer, "Export '{}' has been {}{}", name, change, suffix)
                         .map_io_err(err_desc)?;
                 }
             }
@@ -139,28 +185,30 @@ impl Symvers {
 
         // Compare symbols that are in both symvers.
         for name in names {
-            let info = self.exports.get(name).unwrap();
             if let Some(other_info) = other_symvers.exports.get(name) {
+                let info = self.exports.get(name).unwrap();
                 if info.crc != other_info.crc {
+                    let suffix = process_change(maybe_rules, name, info, false, &mut changed);
                     writeln!(
                         writer,
-                        "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'",
-                        name, info.crc, other_info.crc
+                        "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'{}",
+                        name, info.crc, other_info.crc, suffix
                     )
                     .map_io_err(err_desc)?;
                 }
                 if info.is_gpl_only != other_info.is_gpl_only {
+                    let tolerate = info.is_gpl_only && !other_info.is_gpl_only;
+                    let suffix = process_change(maybe_rules, name, info, tolerate, &mut changed);
                     writeln!(
                         writer,
-                        "Export '{}' changed type from '{}' to '{}'",
+                        "Export '{}' changed type from '{}' to '{}'{}",
                         name,
                         info.type_as_str(),
-                        other_info.type_as_str()
+                        other_info.type_as_str(),
+                        suffix
                     )
                     .map_io_err(err_desc)?;
                 }
-                // TODO Tolerate the GPL -> non-GPL change.
-                // TODO Check module and namespace changes.
             }
         }
 

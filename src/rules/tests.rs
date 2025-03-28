@@ -198,3 +198,83 @@ fn read_comments() {
         }
     );
 }
+
+#[test]
+fn tolerate_symbol() {
+    // Check whether a symbol name match in a rules file correctly determines if changes should be
+    // tolerated/ignored.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        concat!(
+            "foo PASS\n",
+            "bar FAIL\n",
+            "baz* PASS\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    assert!(rules.is_tolerated("foo", "lib/test_module.ko", None));
+    assert!(!rules.is_tolerated("bar", "lib/test_module.ko", None));
+    assert!(rules.is_tolerated("bazi", "lib/test_module.ko", None));
+    assert!(!rules.is_tolerated("qux", "lib/test_module.ko", None));
+}
+
+#[test]
+fn tolerate_module() {
+    // Check whether a module name match in a rules file correctly determines if changes should be
+    // tolerated/ignored.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        concat!(
+            "lib/foo.ko PASS\n",
+            "lib/bar.ko FAIL\n",
+            "lib/baz*.ko PASS\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    assert!(rules.is_tolerated("symbol_name", "lib/foo.ko", None));
+    assert!(!rules.is_tolerated("symbol_name", "lib/bar.ko", None));
+    assert!(rules.is_tolerated("symbol_name", "lib/bazi.ko", None));
+    assert!(!rules.is_tolerated("symbol_name", "lib/qux.ko", None));
+}
+
+#[test]
+fn tolerate_namespace() {
+    // Check whether a namespace match in a rules file correctly determines if changes should be
+    // tolerated/ignored.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        concat!(
+            "FOO_NS PASS\n",
+            "BAR_NS FAIL\n",
+            "BAZ*_NS PASS\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    assert!(rules.is_tolerated("symbol_name", "lib/test_module.ko", Some("FOO_NS")));
+    assert!(!rules.is_tolerated("symbol_name", "lib/test_module.ko", Some("BAR_NS")));
+    assert!(rules.is_tolerated("symbol_name", "lib/test_module.ko", Some("BAZI_NS")));
+    assert!(!rules.is_tolerated("symbol_name", "lib/test_module.ko", Some("QUX_NS")));
+}
+
+#[test]
+fn tolerate_order() {
+    // Check that whether a rules file determines if changes should be tolerated/ignored is based on
+    // the first match, and not the most specific one.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        concat!(
+            "foo* PASS\n",
+            "foobar FAIL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    assert!(rules.is_tolerated("foobar", "lib/test_module.ko", None));
+}
