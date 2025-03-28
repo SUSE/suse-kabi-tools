@@ -213,3 +213,208 @@ fn read_extra_data() {
     );
     assert_eq!(symvers, Symvers::new());
 }
+
+#[test]
+fn compare_identical() {
+    // Check that the comparison of two identical symvers shows no differences.
+    let mut symvers = Symvers::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut symvers2 = Symvers::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        concat!(
+            "0x12345678\tfoo\tvmlinux\tEXPORT_SYMBOL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut out = Vec::new();
+    let result = symvers.compare_with(&symvers2, None, &mut out);
+    assert_ok!(result);
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        concat!(
+            "", //
+        )
+    );
+}
+
+#[test]
+fn compare_added_export() {
+    // Check that the comparison of two symvers reports any newly added export.
+    let mut symvers = Symvers::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        concat!("0x12345678 foo vmlinux EXPORT_SYMBOL\n",).as_bytes(),
+    );
+    assert_ok!(result);
+    let mut symvers2 = Symvers::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut out = Vec::new();
+    let result = symvers.compare_with(&symvers2, None, &mut out);
+    assert_ok!(result);
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        concat!(
+            "Export 'bar' has been added (tolerated)\n", //
+        )
+    );
+}
+
+#[test]
+fn compare_removed_export() {
+    // Check that the comparison of two symvers reports any removed export.
+    let mut symvers = Symvers::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut symvers2 = Symvers::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        concat!(
+            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut out = Vec::new();
+    let result = symvers.compare_with(&symvers2, None, &mut out);
+    assert_ok!(result);
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        concat!(
+            "Export 'foo' has been removed\n", //
+        )
+    );
+}
+
+#[test]
+fn compare_changed_crc() {
+    // Check that the comparison of two symvers reports exports with changed CRCs.
+    let mut symvers = Symvers::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut symvers2 = Symvers::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        concat!(
+            "0x09abcdef foo vmlinux EXPORT_SYMBOL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut out = Vec::new();
+    let result = symvers.compare_with(&symvers2, None, &mut out);
+    assert_ok!(result);
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        concat!(
+            "Export 'foo' changed CRC from '0x12345678' to '0x09abcdef'\n", //
+        )
+    );
+}
+
+#[test]
+fn compare_changed_type() {
+    // Check that the comparison of two symvers reports exports with changed types.
+    let mut symvers = Symvers::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
+            "0x34567890 baz vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut symvers2 = Symvers::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 bar vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x34567890 baz vmlinux EXPORT_SYMBOL\n",
+            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut out = Vec::new();
+    let result = symvers.compare_with(&symvers2, None, &mut out);
+    assert_ok!(result);
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        concat!(
+            "Export 'bar' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'\n",
+            "Export 'baz' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (tolerated)\n", //
+        )
+    );
+}
+
+#[test]
+fn compare_ignored_changes() {
+    // Check that severity rules can be used to tolerate changes.
+    let mut symvers = Symvers::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut symvers2 = Symvers::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        concat!(
+            "0x90abcdef foo vmlinux EXPORT_SYMBOL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        concat!(
+            "vmlinux PASS\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    let mut out = Vec::new();
+    let result = symvers.compare_with(&symvers2, Some(&rules), &mut out);
+    assert_ok!(result);
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        concat!("Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated)\n",)
+    );
+}
