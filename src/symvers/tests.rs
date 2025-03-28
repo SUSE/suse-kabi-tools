@@ -11,7 +11,7 @@ fn read_export_basic() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x4dfa8d4b\tmutex_lock\tvmlinux\tEXPORT_SYMBOL\n", //
+            "0x12345678\tfoo\tvmlinux\tEXPORT_SYMBOL\n", //
         )
         .as_bytes(),
     );
@@ -20,8 +20,8 @@ fn read_export_basic() {
         symvers,
         Symvers {
             exports: HashMap::from([(
-                "mutex_lock".to_string(),
-                ExportInfo::new(0x4dfa8d4b, "vmlinux", false, None::<&str>)
+                "foo".to_string(),
+                ExportInfo::new(0x12345678, "vmlinux", false, None::<&str>)
             )])
         }
     );
@@ -34,9 +34,9 @@ fn read_empty_record() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x4dfa8d4b mutex_lock vmlinux EXPORT_SYMBOL\n",
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "\n",
-            "0x2303b915 efivar_lock vmlinux EXPORT_SYMBOL_GPL EFIVAR\n", //
+            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
         )
         .as_bytes(),
     );
@@ -51,7 +51,7 @@ fn read_invalid_crc() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0 mutex_lock vmlinux EXPORT_SYMBOL\n", //
+            "0 foo vmlinux EXPORT_SYMBOL\n", //
         )
         .as_bytes(),
     );
@@ -69,7 +69,7 @@ fn read_invalid_crc2() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0xabcdefgh mutex_lock vmlinux EXPORT_SYMBOL\n", //
+            "0xabcdefgh foo vmlinux EXPORT_SYMBOL\n", //
         )
         .as_bytes(),
     );
@@ -87,7 +87,7 @@ fn read_no_name() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x4dfa8d4b\n", //
+            "0x12345678\n", //
         )
         .as_bytes(),
     );
@@ -102,7 +102,7 @@ fn read_no_module() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x4dfa8d4b mutex_lock\n", //
+            "0x12345678 foo\n", //
         )
         .as_bytes(),
     );
@@ -120,8 +120,8 @@ fn read_type() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x4dfa8d4b mutex_lock vmlinux EXPORT_SYMBOL\n",
-            "0xa04f945a cpus_read_lock vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL\n", //
         )
         .as_bytes(),
     );
@@ -131,12 +131,12 @@ fn read_type() {
         Symvers {
             exports: HashMap::from([
                 (
-                    "mutex_lock".to_string(),
-                    ExportInfo::new(0x4dfa8d4b, "vmlinux", false, None::<&str>)
+                    "foo".to_string(),
+                    ExportInfo::new(0x12345678, "vmlinux", false, None::<&str>)
                 ),
                 (
-                    "cpus_read_lock".to_string(),
-                    ExportInfo::new(0xa04f945a, "vmlinux", true, None::<&str>)
+                    "bar".to_string(),
+                    ExportInfo::new(0x90abcdef, "vmlinux", true, None::<&str>)
                 ),
             ])
         }
@@ -150,7 +150,7 @@ fn read_no_type() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x4dfa8d4b mutex_lock vmlinux\n", //
+            "0x12345678 foo vmlinux\n", //
         )
         .as_bytes(),
     );
@@ -165,7 +165,7 @@ fn read_invalid_type() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x4dfa8d4b mutex_lock vmlinux EXPORT_UNUSED_SYMBOL\n", //
+            "0x12345678 foo vmlinux EXPORT_UNUSED_SYMBOL\n", //
         )
         .as_bytes(),
     );
@@ -180,7 +180,7 @@ fn read_namespace() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x2303b915 efivar_lock vmlinux EXPORT_SYMBOL_GPL EFIVAR\n", //
+            "0x12345678 foo vmlinux EXPORT_SYMBOL_GPL FOO_NS\n", //
         )
         .as_bytes(),
     );
@@ -189,8 +189,8 @@ fn read_namespace() {
         symvers,
         Symvers {
             exports: HashMap::from([(
-                "efivar_lock".to_string(),
-                ExportInfo::new(0x2303b915, "vmlinux", true, Some("EFIVAR"))
+                "foo".to_string(),
+                ExportInfo::new(0x12345678, "vmlinux", true, Some("FOO_NS"))
             )])
         }
     );
@@ -203,7 +203,7 @@ fn read_extra_data() {
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
-            "0x2303b915 efivar_lock vmlinux EXPORT_SYMBOL_GPL EFIVAR garbage\n", //
+            "0x12345678 foo vmlinux EXPORT_SYMBOL_GPL FOO_NS garbage\n", //
         )
         .as_bytes(),
     );
