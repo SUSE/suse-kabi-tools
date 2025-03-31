@@ -119,19 +119,19 @@ impl Rules {
         for rule in &self.data {
             match &rule.pattern {
                 Pattern::Module(rule_module) => {
-                    if matches_wildcard(module, &rule_module) {
+                    if matches_wildcard(module, rule_module) {
                         return rule.verdict == Verdict::Pass;
                     }
                 }
                 Pattern::Namespace(rule_namespace) => {
                     if let Some(namespace) = maybe_namespace {
-                        if matches_wildcard(namespace, &rule_namespace) {
+                        if matches_wildcard(namespace, rule_namespace) {
                             return rule.verdict == Verdict::Pass;
                         }
                     }
                 }
                 Pattern::Symbol(rule_symbol) => {
-                    if matches_wildcard(symbol, &rule_symbol) {
+                    if matches_wildcard(symbol, rule_symbol) {
                         return rule.verdict == Verdict::Pass;
                     }
                 }
