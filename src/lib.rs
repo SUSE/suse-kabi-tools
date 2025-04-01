@@ -148,7 +148,7 @@ impl Read for PathFile {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.file.read(buf).map_err(|err| {
             io::Error::other(Error::new_io(
-                &format!("Failed to read data from file '{}'", self.path.display()),
+                format!("Failed to read data from file '{}'", self.path.display()),
                 err,
             ))
         })
@@ -159,7 +159,7 @@ impl Write for PathFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.file.write(buf).map_err(|err| {
             io::Error::other(Error::new_io(
-                &format!("Failed to write data to file '{}'", self.path.display()),
+                format!("Failed to write data to file '{}'", self.path.display()),
                 err,
             ))
         })
@@ -168,7 +168,7 @@ impl Write for PathFile {
     fn flush(&mut self) -> io::Result<()> {
         self.file.flush().map_err(|err| {
             io::Error::other(Error::new_io(
-                &format!("Failed to flush data to file '{}'", self.path.display()),
+                format!("Failed to flush data to file '{}'", self.path.display()),
                 err,
             ))
         })
@@ -206,7 +206,7 @@ impl Filter {
         debug!("Loading '{}'", path.display());
 
         let file = PathFile::open(path).map_err(|err| {
-            crate::Error::new_io(&format!("Failed to open file '{}'", path.display()), err)
+            crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
         })?;
 
         // Read all content from the file.
@@ -218,7 +218,7 @@ impl Filter {
         // Validate the patterns, reject empty ones.
         for (line_idx, line) in lines.iter().enumerate() {
             if line.is_empty() {
-                return Err(Error::new_parse(&format!(
+                return Err(Error::new_parse(format!(
                     "{}:{}: Expected a pattern",
                     path.display(),
                     line_idx + 1

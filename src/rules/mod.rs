@@ -75,7 +75,7 @@ impl Rules {
         let path = path.as_ref();
 
         let file = PathFile::open(path).map_err(|err| {
-            crate::Error::new_io(&format!("Failed to open file '{}'", path.display()), err)
+            crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
         })?;
 
         self.load_buffer(path, file)
@@ -206,7 +206,7 @@ fn parse_rule<P: AsRef<Path>>(
             "PASS" => Verdict::Pass,
             "FAIL" => Verdict::Fail,
             _ => {
-                return Err(crate::Error::new_parse(&format!(
+                return Err(crate::Error::new_parse(format!(
                     "{}:{}: Invalid verdict '{}', must be either PASS or FAIL",
                     path.display(),
                     line_idx + 1,
@@ -215,7 +215,7 @@ fn parse_rule<P: AsRef<Path>>(
             }
         },
         None => {
-            return Err(crate::Error::new_parse(&format!(
+            return Err(crate::Error::new_parse(format!(
                 "{}:{}: The rule does not specify a verdict",
                 path.display(),
                 line_idx + 1
@@ -225,7 +225,7 @@ fn parse_rule<P: AsRef<Path>>(
 
     // Check that nothing else is left on the line.
     if let Some(word) = get_next_word(&mut chars) {
-        return Err(crate::Error::new_parse(&format!(
+        return Err(crate::Error::new_parse(format!(
             "{}:{}: Unexpected string '{}' found after the verdict",
             path.display(),
             line_idx + 1,

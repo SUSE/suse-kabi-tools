@@ -69,7 +69,7 @@ impl Symvers {
         let path = path.as_ref();
 
         let file = PathFile::open(path).map_err(|err| {
-            crate::Error::new_io(&format!("Failed to open file '{}'", path.display()), err)
+            crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
         })?;
 
         self.load_buffer(path, file)
@@ -227,14 +227,14 @@ fn parse_export<P: AsRef<Path>>(
 
     // Parse the CRC value.
     let crc = words.next().ok_or_else(|| {
-        crate::Error::new_parse(&format!(
+        crate::Error::new_parse(format!(
             "{}:{}: The export does not specify a CRC",
             path.display(),
             line_idx + 1
         ))
     })?;
     if !crc.starts_with("0x") && !crc.starts_with("0X") {
-        return Err(crate::Error::new_parse(&format!(
+        return Err(crate::Error::new_parse(format!(
             "{}:{}: Failed to parse the CRC value '{}': string does not start with 0x or 0X",
             path.display(),
             line_idx + 1,
@@ -242,7 +242,7 @@ fn parse_export<P: AsRef<Path>>(
         )));
     }
     let crc = u32::from_str_radix(&crc[2..], 16).map_err(|err| {
-        crate::Error::new_parse(&format!(
+        crate::Error::new_parse(format!(
             "{}:{}: Failed to parse the CRC value '{}': {}",
             path.display(),
             line_idx + 1,
@@ -253,7 +253,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Parse the export name.
     let name = words.next().ok_or_else(|| {
-        crate::Error::new_parse(&format!(
+        crate::Error::new_parse(format!(
             "{}:{}: The export does not specify a name",
             path.display(),
             line_idx + 1
@@ -262,7 +262,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Parse the module name.
     let module = words.next().ok_or_else(|| {
-        crate::Error::new_parse(&format!(
+        crate::Error::new_parse(format!(
             "{}:{}: The export does not specify a module",
             path.display(),
             line_idx + 1
@@ -271,7 +271,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Parse the export type.
     let export_type = words.next().ok_or_else(|| {
-        crate::Error::new_parse(&format!(
+        crate::Error::new_parse(format!(
             "{}:{}: The export does not specify a type",
             path.display(),
             line_idx + 1
@@ -281,7 +281,7 @@ fn parse_export<P: AsRef<Path>>(
         "EXPORT_SYMBOL" => false,
         "EXPORT_SYMBOL_GPL" => true,
         _ => {
-            return Err(crate::Error::new_parse(&format!(
+            return Err(crate::Error::new_parse(format!(
             "{}:{}: Invalid export type '{}', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL",
             path.display(),
             line_idx + 1,
@@ -295,7 +295,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Check that nothing else is left on the line.
     if let Some(word) = words.next() {
-        return Err(crate::Error::new_parse(&format!(
+        return Err(crate::Error::new_parse(format!(
             "{}:{}: Unexpected string '{}' found at the end of the export record",
             path.display(),
             line_idx + 1,

@@ -200,7 +200,7 @@ impl SymCorpus {
 
         // Determine if the input is a directory tree or a single symtypes file.
         let md = fs::metadata(path).map_err(|err| {
-            crate::Error::new_io(&format!("Failed to query path '{}'", path.display()), err)
+            crate::Error::new_io(format!("Failed to query path '{}'", path.display()), err)
         })?;
 
         if md.is_dir() {
@@ -229,7 +229,7 @@ impl SymCorpus {
 
         let dir_iter = fs::read_dir(&path).map_err(|err| {
             crate::Error::new_io(
-                &format!("Failed to read directory '{}'", path.display()),
+                format!("Failed to read directory '{}'", path.display()),
                 err,
             )
         })?;
@@ -237,7 +237,7 @@ impl SymCorpus {
         for maybe_entry in dir_iter {
             let entry = maybe_entry.map_err(|err| {
                 crate::Error::new_io(
-                    &format!("Failed to read directory '{}'", path.display()),
+                    format!("Failed to read directory '{}'", path.display()),
                     err,
                 )
             })?;
@@ -246,7 +246,7 @@ impl SymCorpus {
 
             let md = fs::symlink_metadata(&entry_path).map_err(|err| {
                 crate::Error::new_io(
-                    &format!("Failed to query path '{}'", entry_path.display()),
+                    format!("Failed to query path '{}'", entry_path.display()),
                     err,
                 )
             })?;
@@ -305,7 +305,7 @@ impl SymCorpus {
                         let path = root.join(sub_path);
                         let file = PathFile::open(&path).map_err(|err| {
                             crate::Error::new_io(
-                                &format!("Failed to open file '{}'", path.display()),
+                                format!("Failed to open file '{}'", path.display()),
                                 err,
                             )
                         })?;
@@ -397,7 +397,7 @@ impl SymCorpus {
             // Obtain a name of the record.
             let mut words = line.split_ascii_whitespace();
             let name = words.next().ok_or_else(|| {
-                crate::Error::new_parse(&format!(
+                crate::Error::new_parse(format!(
                     "{}:{}: Expected a record name",
                     path.display(),
                     line_idx + 1
@@ -407,7 +407,7 @@ impl SymCorpus {
             // Check if the record is a duplicate of another one.
             match all_names.get(name) {
                 Some(_) => {
-                    return Err(crate::Error::new_parse(&format!(
+                    return Err(crate::Error::new_parse(format!(
                         "{}:{}: Duplicate record '{}'",
                         path.display(),
                         line_idx + 1,
@@ -492,7 +492,7 @@ impl SymCorpus {
                     .get(base_name)
                     .and_then(|hash| hash.get(orig_variant_name))
                     .ok_or_else(|| {
-                        crate::Error::new_parse(&format!(
+                        crate::Error::new_parse(format!(
                             "{}:{}: Type '{}' is not known",
                             path.display(),
                             line_idx + 1,
@@ -577,7 +577,7 @@ impl SymCorpus {
         let files = load_context.files.lock().unwrap();
         let path = &files[file_idx].path;
         let other_path = &files[other_file_idx].path;
-        Err(crate::Error::new_parse(&format!(
+        Err(crate::Error::new_parse(format!(
             "{}:{}: Export '{}' is duplicate, previous occurrence found in '{}'",
             path.display(),
             line_idx + 1,
@@ -626,7 +626,7 @@ impl SymCorpus {
         let variants = types.get(name).unwrap();
         assert!(!variants.is_empty());
         if !is_explicit && variants.len() > 1 {
-            return Err(crate::Error::new_parse(&format!(
+            return Err(crate::Error::new_parse(format!(
                 "{}: Type '{}' is implicitly referenced by file '{}' but has multiple variants in the corpus",
                 corpus_path.display(),
                 name,
@@ -740,7 +740,7 @@ impl SymCorpus {
                 Ok(file) => Box::new(file),
                 Err(err) => {
                     return Err(crate::Error::new_io(
-                        &format!("Failed to create file '{}'", path.display()),
+                        format!("Failed to create file '{}'", path.display()),
                         err,
                     ))
                 }
