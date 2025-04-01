@@ -235,6 +235,21 @@ macro_rules! debug {
     }
 }
 
+/// Asserts that `actual_desc` matches the shell wildcard pattern `expected_desc`.
+#[macro_export]
+macro_rules! assert_inexact {
+    ($actual_desc:expr, $expected_desc:expr) => {{
+        let actual_desc = $actual_desc;
+        let expected_desc = $expected_desc;
+        assert!(
+            $crate::text::matches_wildcard(&actual_desc, &expected_desc),
+            "assertion matches_wildcard(actual, expected) failed:\n  actual: {}\nexpected: {}\n",
+            actual_desc,
+            expected_desc,
+        );
+    }};
+}
+
 /// Asserts that the value is an [`Ok`] containing `()`, representing success.
 #[cfg(any(test, doc))]
 #[macro_export]
@@ -271,7 +286,7 @@ macro_rules! assert_inexact_parse_err {
     ($result:expr, $exp_desc:expr) => {
         match $result {
             Err(crate::Error::Parse(actual_desc)) => {
-                assert!(crate::text::matches_wildcard(&actual_desc, $exp_desc))
+                $crate::assert_inexact!(actual_desc, $exp_desc)
             }
             result => panic!(
                 "assertion failed: {:?} is not of type Err(crate::Error::Parse(_))",
