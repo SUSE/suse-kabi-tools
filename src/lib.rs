@@ -18,6 +18,11 @@ pub mod text;
 /// providing custom errors.
 #[derive(Debug)]
 pub enum Error {
+    Context {
+        desc: String,
+        inner_err: Box<Error>,
+    },
+    CLI(String),
     IO {
         desc: String,
         io_err: std::io::Error,
@@ -26,6 +31,19 @@ pub enum Error {
 }
 
 impl Error {
+    /// Creates a new `Error::Context`.
+    pub fn new_context<S: Into<String>>(desc: S, err: Error) -> Self {
+        Self::Context {
+            desc: desc.into(),
+            inner_err: Box::new(err),
+        }
+    }
+
+    /// Creates a new `Error::CLI`.
+    pub fn new_cli<S: Into<String>>(desc: S) -> Self {
+        Self::CLI(desc.into())
+    }
+
     /// Creates a new `Error::IO`.
     pub fn new_io<S: Into<String>>(desc: S, io_err: std::io::Error) -> Self {
         Self::IO {
@@ -45,6 +63,11 @@ impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            Self::Context { desc, inner_err } => {
+                write!(f, "{}: ", desc)?;
+                inner_err.fmt(f)
+            }
+            Self::CLI(desc) => write!(f, "{}", desc),
             Self::IO { desc, io_err } => {
                 write!(f, "{}: ", desc)?;
                 io_err.fmt(f)
