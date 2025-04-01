@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::{init_debug_level, Error};
-use std::process;
 
 /// Handles a command-line option with a mandatory value.
 ///
@@ -42,21 +41,18 @@ pub fn handle_value_option<I: Iterator<Item = String>>(
 
 /// Processes command-line options, stopping at the command name.
 ///
-/// Exits the process if the function handles an option directly, or if an error occurs. Otherwise,
-/// the command name is returned.
+/// Returns [`Ok`] containing [`Some`] with the command name, or [`Ok`] containing [`None`] if the
+/// function handles an option directly (such as `--help`), or [`Err`] on error.
 pub fn process_global_args<I: Iterator<Item = String>>(
     args: &mut I,
     usage_msg: &str,
     version_msg: &str,
     do_timing: &mut bool,
-) -> String {
+) -> Result<Option<String>, Error> {
     // Skip over the program name.
     match args.next() {
         Some(_) => {}
-        None => {
-            eprintln!("Unknown program name");
-            process::exit(1);
-        }
+        None => return Err(Error::new_cli("Unknown program name")),
     };
 
     // Handle global options and stop at the command.
@@ -74,15 +70,14 @@ pub fn process_global_args<I: Iterator<Item = String>>(
 
         if arg == "-h" || arg == "--help" {
             print!("{}", usage_msg);
-            process::exit(0);
+            return Ok(None);
         }
         if arg == "--version" {
             print!("{}", version_msg);
-            process::exit(0);
+            return Ok(None);
         }
         if arg.starts_with('-') || arg.starts_with("--") {
-            eprintln!("Unrecognized global option '{}'", arg);
-            process::exit(1);
+            return Err(Error::new_cli(format!("Unrecognized global option '{}'", arg)));
         }
         maybe_command = Some(arg);
         break;
@@ -91,10 +86,7 @@ pub fn process_global_args<I: Iterator<Item = String>>(
     init_debug_level(debug_level);
 
     match maybe_command {
-        Some(command) => command,
-        None => {
-            eprintln!("No command specified");
-            process::exit(1);
-        }
+        Some(command) => Ok(Some(command)),
+        None => Err(Error::new_cli("No command specified")),
     }
 }

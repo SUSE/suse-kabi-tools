@@ -1,7 +1,8 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::{env, io, process};
+use std::{env, io};
+use std::process::ExitCode;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
 use suse_kabi_tools::symvers::Symvers;
@@ -134,17 +135,25 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     Ok(())
 }
 
-fn main() {
+fn main() -> ExitCode {
     // Process global arguments.
     let mut args = env::args();
     let mut do_timing = false;
 
-    let command = process_global_args(
+    let result = process_global_args(
         &mut args,
         USAGE_MSG,
         &format!("ksymvers {}\n", env!("CARGO_PKG_VERSION")),
         &mut do_timing,
     );
+    let command = match result {
+        Ok(Some(command)) => command,
+        Ok(None) => return ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("{}", err);
+            return ExitCode::FAILURE;
+        }
+    };
 
     // Process the specified command.
     let result = match command.as_str() {
@@ -156,10 +165,10 @@ fn main() {
     };
 
     match result {
-        Ok(()) => process::exit(0),
+        Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("{}", err);
-            process::exit(1);
+            ExitCode::FAILURE
         }
     }
 }
