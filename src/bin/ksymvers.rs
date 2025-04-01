@@ -5,7 +5,7 @@ use std::{env, io, process};
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
 use suse_kabi_tools::symvers::Symvers;
-use suse_kabi_tools::{debug, Timing};
+use suse_kabi_tools::{debug, Error, Timing};
 
 const USAGE_MSG: &str = concat!(
     "Usage: ksymvers [OPTION...] COMMAND\n",
@@ -29,7 +29,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
 );
 
 /// Handles the `compare` command which shows differences between two symvers files.
-fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), ()> {
+fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut maybe_rules_path = None;
@@ -52,8 +52,10 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                 continue;
             }
             if arg.starts_with('-') || arg.starts_with("--") {
-                eprintln!("Unrecognized compare option '{}'", arg);
-                return Err(());
+                return Err(Error::new_cli(format!(
+                    "Unrecognized compare option '{}'",
+                    arg
+                )));
             }
         }
 
@@ -65,16 +67,15 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             maybe_path2 = Some(arg);
             continue;
         }
-        eprintln!("Excess compare argument '{}' specified", arg);
-        return Err(());
+        return Err(Error::new_cli(format!(
+            "Excess compare argument '{}' specified",
+            arg
+        )));
     }
 
-    let path = maybe_path.ok_or_else(|| {
-        eprintln!("The first compare source is missing");
-    })?;
-    let path2 = maybe_path2.ok_or_else(|| {
-        eprintln!("The second compare source is missing");
-    })?;
+    let path = maybe_path.ok_or_else(|| Error::new_cli("The first compare source is missing"))?;
+    let path2 =
+        maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
 
     // Do the comparison.
     debug!("Compare '{}' and '{}'", path, path2);
@@ -83,10 +84,9 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
 
         let mut syms = Symvers::new();
-        if let Err(err) = syms.load(&path) {
-            eprintln!("Failed to read symvers from '{}': {}", path, err);
-            return Err(());
-        }
+        syms.load(&path).map_err(|err| {
+            Error::new_context(format!("Failed to read symvers from '{}'", path), err)
+        })?;
         syms
     };
 
@@ -94,10 +94,9 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path2));
 
         let mut syms2 = Symvers::new();
-        if let Err(err) = syms2.load(&path2) {
-            eprintln!("Failed to read symvers from '{}': {}", path2, err);
-            return Err(());
-        }
+        syms2.load(&path2).map_err(|err| {
+            Error::new_context(format!("Failed to read symvers from '{}'", path2), err)
+        })?;
         syms2
     };
 
@@ -109,13 +108,12 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             );
 
             let mut rules = Rules::new();
-            if let Err(err) = rules.load(&rules_path) {
-                eprintln!(
-                    "Failed to read severity rules from '{}': {}",
-                    rules_path, err
-                );
-                return Err(());
-            }
+            rules.load(&rules_path).map_err(|err| {
+                Error::new_context(
+                    format!("Failed to read severity rules from '{}'", rules_path),
+                    err,
+                )
+            })?;
             Some(rules)
         }
         None => None,
@@ -124,13 +122,13 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        if let Err(err) = syms.compare_with(&syms2, maybe_rules.as_ref(), io::stdout()) {
-            eprintln!(
-                "Failed to compare symvers from '{}' and '{}': {}",
-                path, path2, err
-            );
-            return Err(());
-        }
+        syms.compare_with(&syms2, maybe_rules.as_ref(), io::stdout())
+            .map_err(|err| {
+                Error::new_context(
+                    format!("Failed to compare symvers from '{}' and '{}'", path, path2),
+                    err,
+                )
+            })?;
     }
 
     Ok(())
@@ -151,11 +149,17 @@ fn main() {
     // Process the specified command.
     let result = match command.as_str() {
         "compare" => do_compare(do_timing, args),
-        _ => {
-            eprintln!("Unrecognized command '{}'", command);
-            Err(())
-        }
+        _ => Err(Error::new_cli(format!(
+            "Unrecognized command '{}'",
+            command
+        ))),
     };
 
-    process::exit(if result.is_ok() { 0 } else { 1 });
+    match result {
+        Ok(()) => process::exit(0),
+        Err(err) => {
+            eprintln!("{}", err);
+            process::exit(1);
+        }
+    }
 }

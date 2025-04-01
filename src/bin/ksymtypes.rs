@@ -4,7 +4,7 @@
 use std::{env, io, process};
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::sym::SymCorpus;
-use suse_kabi_tools::{debug, Filter, Timing};
+use suse_kabi_tools::{debug, Error, Filter, Timing};
 
 /// Prints the global usage message on the standard output.
 
@@ -46,19 +46,23 @@ const COMPARE_USAGE_MSG: &str = concat!(
 fn handle_jobs_option<I: Iterator<Item = String>>(
     arg: &str,
     args: &mut I,
-) -> Result<Option<i32>, ()> {
+) -> Result<Option<i32>, Error> {
     if let Some(value) = handle_value_option(arg, args, "-j", "--jobs")? {
         match value.parse::<i32>() {
             Ok(jobs) => {
                 if jobs < 1 {
-                    eprintln!("Invalid value for '{}': must be positive", arg);
-                    return Err(());
+                    return Err(Error::new_cli(format!(
+                        "Invalid value for '{}': must be positive",
+                        arg
+                    )));
                 }
                 return Ok(Some(jobs));
             }
             Err(err) => {
-                eprintln!("Invalid value for '{}': {}", arg, err);
-                return Err(());
+                return Err(Error::new_cli(format!(
+                    "Invalid value for '{}': {}",
+                    arg, err
+                )));
             }
         };
     }
@@ -67,7 +71,7 @@ fn handle_jobs_option<I: Iterator<Item = String>>(
 }
 
 /// Handles the `consolidate` command which consolidates symtypes into a single file.
-fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), ()> {
+fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
@@ -94,8 +98,10 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
                 continue;
             }
             if arg.starts_with('-') || arg.starts_with("--") {
-                eprintln!("Unrecognized consolidate option '{}'", arg);
-                return Err(());
+                return Err(Error::new_cli(format!(
+                    "Unrecognized consolidate option '{}'",
+                    arg
+                )));
             }
         }
 
@@ -103,13 +109,13 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
             maybe_path = Some(arg);
             continue;
         }
-        eprintln!("Excess consolidate argument '{}' specified", arg);
-        return Err(());
+        return Err(Error::new_cli(format!(
+            "Excess consolidate argument '{}' specified",
+            arg
+        )));
     }
 
-    let path = maybe_path.ok_or_else(|| {
-        eprintln!("The consolidate source is missing");
-    })?;
+    let path = maybe_path.ok_or_else(|| Error::new_cli("The consolidate source is missing"))?;
 
     // Do the consolidation.
     let mut syms = SymCorpus::new();
@@ -117,10 +123,9 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
     {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
-        if let Err(err) = syms.load(&path, num_workers) {
-            eprintln!("Failed to read symtypes from '{}': {}", path, err);
-            return Err(());
-        }
+        syms.load(&path, num_workers).map_err(|err| {
+            Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
+        })?;
     }
 
     {
@@ -129,20 +134,19 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
             &format!("Writing consolidated symtypes to '{}'", output),
         );
 
-        if let Err(err) = syms.write_consolidated(&output) {
-            eprintln!(
-                "Failed to write consolidated symtypes to '{}': {}",
-                output, err
-            );
-            return Err(());
-        }
+        syms.write_consolidated(&output).map_err(|err| {
+            Error::new_context(
+                format!("Failed to write consolidated symtypes to '{}'", output),
+                err,
+            )
+        })?;
     }
 
     Ok(())
 }
 
 /// Handles the `compare` command which shows differences between two symtypes corpuses.
-fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), ()> {
+fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
@@ -170,8 +174,10 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                 continue;
             }
             if arg.starts_with('-') || arg.starts_with("--") {
-                eprintln!("Unrecognized compare option '{}'", arg);
-                return Err(());
+                return Err(Error::new_cli(format!(
+                    "Unrecognized compare option '{}'",
+                    arg
+                )));
             }
         }
 
@@ -183,16 +189,15 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             maybe_path2 = Some(arg);
             continue;
         }
-        eprintln!("Excess compare argument '{}' specified", arg);
-        return Err(());
+        return Err(Error::new_cli(format!(
+            "Excess compare argument '{}' specified",
+            arg
+        )));
     }
 
-    let path = maybe_path.ok_or_else(|| {
-        eprintln!("The first compare source is missing");
-    })?;
-    let path2 = maybe_path2.ok_or_else(|| {
-        eprintln!("The second compare source is missing");
-    })?;
+    let path = maybe_path.ok_or_else(|| Error::new_cli("The first compare source is missing"))?;
+    let path2 =
+        maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
 
     // Do the comparison.
     debug!("Compare '{}' and '{}'", path, path2);
@@ -201,10 +206,9 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
         let mut syms = SymCorpus::new();
-        if let Err(err) = syms.load(&path, num_workers) {
-            eprintln!("Failed to read symtypes from '{}': {}", path, err);
-            return Err(());
-        }
+        syms.load(&path, num_workers).map_err(|err| {
+            Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
+        })?;
         syms
     };
 
@@ -212,10 +216,9 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path2));
 
         let mut syms2 = SymCorpus::new();
-        if let Err(err) = syms2.load(&path2, num_workers) {
-            eprintln!("Failed to read symtypes from '{}': {}", path2, err);
-            return Err(());
-        }
+        syms2.load(&path2, num_workers).map_err(|err| {
+            Error::new_context(format!("Failed to read symtypes from '{}'", path2), err)
+        })?;
         syms2
     };
 
@@ -227,10 +230,9 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             );
 
             let mut filter = Filter::new();
-            if let Err(err) = filter.load(&filter_path) {
-                eprintln!("Failed to read filter from '{}': {}", filter_path, err);
-                return Err(());
-            }
+            filter.load(&filter_path).map_err(|err| {
+                Error::new_context(format!("Failed to read filter from '{}'", filter_path), err)
+            })?;
             Some(filter)
         }
         None => None,
@@ -239,15 +241,13 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        if let Err(err) =
-            syms.compare_with(&syms2, maybe_filter.as_ref(), io::stdout(), num_workers)
-        {
-            eprintln!(
-                "Failed to compare symtypes from '{}' and '{}': {}",
-                path, path2, err
-            );
-            return Err(());
-        }
+        syms.compare_with(&syms2, maybe_filter.as_ref(), io::stdout(), num_workers)
+            .map_err(|err| {
+                Error::new_context(
+                    format!("Failed to compare symtypes from '{}' and '{}'", path, path2),
+                    err,
+                )
+            })?;
     }
 
     Ok(())
@@ -269,11 +269,17 @@ fn main() {
     let result = match command.as_str() {
         "consolidate" => do_consolidate(do_timing, args),
         "compare" => do_compare(do_timing, args),
-        _ => {
-            eprintln!("Unrecognized command '{}'", command);
-            Err(())
-        }
+        _ => Err(Error::new_cli(format!(
+            "Unrecognized command '{}'",
+            command
+        ))),
     };
 
-    process::exit(if result.is_ok() { 0 } else { 1 });
+    match result {
+        Ok(()) => process::exit(0),
+        Err(err) => {
+            eprintln!("{}", err);
+            process::exit(1);
+        }
+    }
 }

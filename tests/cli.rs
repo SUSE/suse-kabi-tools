@@ -5,6 +5,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 use std::process::{Command, ExitStatus};
+use suse_kabi_tools::assert_inexact;
 
 struct RunResult {
     status: ExitStatus,
@@ -120,5 +121,18 @@ fn consolidate_cmd_output() {
             "F#a.symtypes bar\n",
             "F#b.symtypes baz\n", //
         )
+    );
+}
+
+#[test]
+fn consolidate_cmd_invalid_input() {
+    // Check that the consolidate command correctly propagates inner errors and writes them on the
+    // standard error output.
+    let result = ksymtypes_run(["consolidate", "tests/missing"]);
+    assert!(!result.status.success());
+    assert_eq!(result.stdout, "");
+    assert_inexact!(
+        result.stderr,
+        "Failed to read symtypes from 'tests/missing': Failed to query path 'tests/missing': *"
     );
 }

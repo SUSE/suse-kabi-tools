@@ -1,7 +1,7 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::init_debug_level;
+use crate::{init_debug_level, Error};
 use std::process;
 
 /// Handles a command-line option with a mandatory value.
@@ -14,14 +14,13 @@ pub fn handle_value_option<I: Iterator<Item = String>>(
     args: &mut I,
     short: &str,
     long: &str,
-) -> Result<Option<String>, ()> {
+) -> Result<Option<String>, Error> {
     // Handle '-<short> <value>' and '--<long> <value>'.
     if arg == short || arg == long {
         match args.next() {
             Some(value) => return Ok(Some(value.to_string())),
             None => {
-                eprintln!("Missing argument for '{}'", long);
-                return Err(());
+                return Err(Error::new_cli(format!("Missing argument for '{}'", long)));
             }
         };
     }
