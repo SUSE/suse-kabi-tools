@@ -250,7 +250,7 @@ macro_rules! assert_inexact {
     }};
 }
 
-/// Asserts that the value is an [`Ok`] containing `()`, representing success.
+/// Asserts that `result` is an [`Ok`] containing `()`, representing success.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_ok {
@@ -262,14 +262,14 @@ macro_rules! assert_ok {
     };
 }
 
-/// Asserts that the value is an [`Err`] containing a [`crate::Error::Parse`] error with the
-/// description `exp_desc`.
+/// Asserts that `result` is an [`Err`] containing a [`crate::Error::Parse`] error with the
+/// description `expected_desc`.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_parse_err {
-    ($result:expr, $exp_desc:expr) => {
+    ($result:expr, $expected_desc:expr) => {
         match $result {
-            Err(crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $exp_desc),
+            Err(crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $expected_desc),
             result => panic!(
                 "assertion failed: {:?} is not of type Err(crate::Error::Parse(_))",
                 result
@@ -278,15 +278,15 @@ macro_rules! assert_parse_err {
     };
 }
 
-/// Asserts that the value is an [`Err`] containing a [`crate::Error::Parse`] error with
-/// a description matching the shell wildcard pattern `exp_desc`.
+/// Asserts that `result` is an [`Err`] containing a [`crate::Error::Parse`] error with
+/// a description matching the shell wildcard pattern `expected_desc`.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_inexact_parse_err {
-    ($result:expr, $exp_desc:expr) => {
+    ($result:expr, $expected_desc:expr) => {
         match $result {
             Err(crate::Error::Parse(actual_desc)) => {
-                $crate::assert_inexact!(actual_desc, $exp_desc)
+                $crate::assert_inexact!(actual_desc, $expected_desc)
             }
             result => panic!(
                 "assertion failed: {:?} is not of type Err(crate::Error::Parse(_))",
