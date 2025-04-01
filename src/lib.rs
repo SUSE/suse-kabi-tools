@@ -27,16 +27,16 @@ pub enum Error {
 
 impl Error {
     /// Creates a new `Error::IO`.
-    fn new_io(desc: &str, io_err: std::io::Error) -> Self {
-        Error::IO {
-            desc: desc.to_string(),
+    pub fn new_io<S: Into<String>>(desc: S, io_err: std::io::Error) -> Self {
+        Self::IO {
+            desc: desc.into(),
             io_err,
         }
     }
 
     /// Creates a new `Error::Parse`.
-    fn new_parse(desc: &str) -> Self {
-        Error::Parse(desc.to_string())
+    pub fn new_parse<S: Into<String>>(desc: S) -> Self {
+        Self::Parse(desc.into())
     }
 }
 
