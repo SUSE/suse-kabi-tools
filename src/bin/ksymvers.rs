@@ -1,11 +1,11 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::{env, io};
+use std::env;
 use std::process::ExitCode;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
-use suse_kabi_tools::symvers::Symvers;
+use suse_kabi_tools::symvers::{CompareFormat, CompareWriter, Symvers};
 use suse_kabi_tools::{debug, Error, Timing};
 
 const USAGE_MSG: &str = concat!(
@@ -27,6 +27,9 @@ const COMPARE_USAGE_MSG: &str = concat!(
     "Options:\n",
     "  -h, --help                    display this help and exit\n",
     "  -r FILE, --rules=FILE         load severity rules from FILE\n",
+    "  -f TYPE[:FILE], --format=TYPE[:FILE]\n",
+    "                                change the output format to TYPE, or write the\n",
+    "                                TYPE-formatted output to FILE\n",
 );
 
 /// Handles the `compare` command which shows differences between two symvers files.
@@ -34,6 +37,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut maybe_rules_path = None;
+    let mut writers_conf = vec![(CompareFormat::Pretty, "-".to_string())];
     let mut past_dash_dash = false;
     let mut maybe_path = None;
     let mut maybe_path2 = None;
@@ -42,6 +46,15 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         if !past_dash_dash {
             if let Some(value) = handle_value_option(&arg, &mut args, "-r", "--rules")? {
                 maybe_rules_path = Some(value);
+                continue;
+            }
+            if let Some(value) = handle_value_option(&arg, &mut args, "-f", "--format")? {
+                match value.split_once(':') {
+                    Some((format, path)) => {
+                        writers_conf.push((CompareFormat::try_from_str(format)?, path.to_string()))
+                    }
+                    None => writers_conf[0].0 = CompareFormat::try_from_str(&value)?,
+                }
                 continue;
             }
             if arg == "-h" || arg == "--help" {
@@ -77,6 +90,15 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let path = maybe_path.ok_or_else(|| Error::new_cli("The first compare source is missing"))?;
     let path2 =
         maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
+
+    // Materialize all writers.
+    let mut writers = Vec::new();
+    for (format, path) in writers_conf {
+        match format {
+            CompareFormat::Null => {}
+            _ => writers.push(CompareWriter::new_file(format, path)?),
+        }
+    }
 
     // Do the comparison.
     debug!("Compare '{}' and '{}'", path, path2);
@@ -123,7 +145,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        syms.compare_with(&syms2, maybe_rules.as_ref(), io::stdout())
+        syms.compare_with(&syms2, maybe_rules.as_ref(), &mut writers)
             .map_err(|err| {
                 Error::new_context(
                     format!("Failed to compare symvers from '{}' and '{}'", path, path2),

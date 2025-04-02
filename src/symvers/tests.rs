@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::{assert_inexact_parse_err, assert_ok, assert_parse_err};
+use std::slice;
 
 #[test]
 fn read_export_basic() {
@@ -235,8 +236,9 @@ fn compare_identical() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut out = Vec::new();
-    let result = symvers.compare_with(&symvers2, None, &mut out);
+    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
+    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
+    let out = writer.into_inner();
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -265,8 +267,9 @@ fn compare_added_export() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut out = Vec::new();
-    let result = symvers.compare_with(&symvers2, None, &mut out);
+    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
+    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
+    let out = writer.into_inner();
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -298,8 +301,9 @@ fn compare_removed_export() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut out = Vec::new();
-    let result = symvers.compare_with(&symvers2, None, &mut out);
+    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
+    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
+    let out = writer.into_inner();
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -330,8 +334,9 @@ fn compare_changed_crc() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut out = Vec::new();
-    let result = symvers.compare_with(&symvers2, None, &mut out);
+    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
+    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
+    let out = writer.into_inner();
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -368,8 +373,9 @@ fn compare_changed_type() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut out = Vec::new();
-    let result = symvers.compare_with(&symvers2, None, &mut out);
+    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
+    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
+    let out = writer.into_inner();
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -410,8 +416,9 @@ fn compare_ignored_changes() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut out = Vec::new();
-    let result = symvers.compare_with(&symvers2, Some(&rules), &mut out);
+    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
+    let result = symvers.compare_with(&symvers2, Some(&rules), slice::from_mut(&mut writer));
+    let out = writer.into_inner();
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),

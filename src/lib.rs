@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::io;
-use std::io::{prelude::*, BufReader};
+use std::io::{prelude::*, BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -123,7 +123,7 @@ impl MapIOErr for Result<(), std::io::Error> {
 }
 
 /// A [`std::fs::File`] wrapper that tracks the file path to provide better error context.
-struct PathFile {
+pub struct PathFile {
     path: PathBuf,
     file: File,
 }
@@ -172,6 +172,64 @@ impl Write for PathFile {
                 err,
             ))
         })
+    }
+}
+
+/// A writer to the standard output, a file or an internal buffer.
+pub enum Writer {
+    Stdout(BufWriter<io::Stdout>),
+    File(BufWriter<PathFile>),
+    Buffer(Vec<u8>),
+}
+
+impl Writer {
+    /// Creates a new [`Writer`] that writes to the specified file. Treats "-" as the standard
+    /// output.
+    pub fn new_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        let path = path.as_ref();
+
+        if path == Path::new("-") {
+            Ok(Self::Stdout(BufWriter::new(io::stdout())))
+        } else {
+            match PathFile::create(path) {
+                Ok(file) => Ok(Self::File(BufWriter::new(file))),
+                Err(err) => Err(Error::new_io(
+                    format!("Failed to create file '{}'", path.display()),
+                    err,
+                )),
+            }
+        }
+    }
+
+    /// Creates a new [`Writer`] that writes to an internal buffer.
+    pub fn new_buffer() -> Self {
+        Self::Buffer(Vec::new())
+    }
+
+    /// Obtains the internal buffer when the writer is of the appropriate type.
+    pub fn into_inner(self) -> Vec<u8> {
+        match self {
+            Self::Stdout(_) | Self::File(_) => panic!("The writer is not of type Writer::Buffer"),
+            Self::Buffer(vec) => vec,
+        }
+    }
+}
+
+impl Write for Writer {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match self {
+            Self::Stdout(stdout) => stdout.write(buf),
+            Self::File(file) => file.write(buf),
+            Self::Buffer(vec) => vec.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match self {
+            Self::Stdout(stdout) => stdout.flush(),
+            Self::File(file) => file.flush(),
+            Self::Buffer(vec) => vec.flush(),
+        }
     }
 }
 

@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::rules::Rules;
-use crate::{debug, read_lines, MapIOErr, PathFile};
+use crate::{debug, read_lines, Error, MapIOErr, PathFile, Writer};
 use std::collections::HashMap;
-use std::io::{prelude::*, BufWriter};
+use std::io::prelude::*;
 use std::path::Path;
 
 #[cfg(test)]
@@ -47,6 +47,57 @@ impl ExportInfo {
 
 /// A collection of export records.
 type Exports = HashMap<String, ExportInfo>;
+
+/// The format of the output from [`Symvers::compare_with()`].
+pub enum CompareFormat {
+    Null,
+    Pretty,
+    Names,
+}
+
+impl CompareFormat {
+    /// Obtains a [`CompareFormat`] matching the given format type, specified as a string.
+    pub fn try_from_str(format: &str) -> Result<Self, Error> {
+        match format {
+            "null" => Ok(Self::Null),
+            "pretty" => Ok(Self::Pretty),
+            "names" => Ok(Self::Names),
+            _ => Err(Error::new_parse(format!(
+                "Unrecognized format '{}'",
+                format
+            ))),
+        }
+    }
+}
+
+/// A sink for writing the output of [`Symvers::compare_with()`].
+pub struct CompareWriter {
+    format: CompareFormat,
+    write: Writer,
+}
+
+impl CompareWriter {
+    /// Creates a new [`CompareWriter`] that writes to the specified file.
+    pub fn new_file<P: AsRef<Path>>(format: CompareFormat, path: P) -> Result<Self, Error> {
+        Ok(Self {
+            format,
+            write: Writer::new_file(path)?,
+        })
+    }
+
+    /// Creates a new [`CompareWriter`] that writes to an internal buffer.
+    pub fn new_buffer(format: CompareFormat) -> Self {
+        Self {
+            format,
+            write: Writer::new_buffer(),
+        }
+    }
+
+    /// Obtains the internal buffer when the writer is of the appropriate type.
+    pub fn into_inner(self) -> Vec<u8> {
+        self.write.into_inner()
+    }
+}
 
 /// A representation of a kernel ABI, loaded from symvers files.
 #[derive(Debug, Default, PartialEq)]
@@ -109,14 +160,14 @@ impl Symvers {
         Ok(())
     }
 
-    /// Compares symbols in the `self` and `other_symvers`.
+    /// Compares symbols in `self` and `other_symvers`.
     ///
-    /// A human-readable report about all found changes is written to the provided output stream.
-    pub fn compare_with<W: Write>(
+    /// Reports any found changes to the provided output streams, formatted as requested.
+    pub fn compare_with(
         &self,
         other_symvers: &Symvers,
         maybe_rules: Option<&Rules>,
-        writer: W,
+        writers: &mut [CompareWriter],
     ) -> Result<(), crate::Error> {
         // A helper function to handle common logic related to reporting a change. It determines if
         // the change should be tolerated and updates the changed result.
@@ -124,25 +175,31 @@ impl Symvers {
             maybe_rules: Option<&Rules>,
             name: &str,
             info: &ExportInfo,
-            tolerated: bool,
+            always_tolerated: bool,
             changed: &mut bool,
-        ) -> &'static str {
-            let tolerated = tolerated
+        ) -> bool {
+            let tolerated = always_tolerated
                 || match maybe_rules {
                     Some(rules) => {
                         rules.is_tolerated(name, &info.module, info.namespace.as_deref())
                     }
                     None => false,
                 };
+            if !tolerated {
+                *changed = true;
+            }
+            tolerated
+        }
+
+        // A helper function to obtain the "(tolerated)" suffix string.
+        fn tolerated_suffix(tolerated: bool) -> &'static str {
             if tolerated {
                 " (tolerated)"
             } else {
-                *changed = true;
                 ""
             }
         }
 
-        let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a comparison result";
 
         let mut names = self.exports.keys().collect::<Vec<_>>();
@@ -157,7 +214,7 @@ impl Symvers {
         // severity rules. That is, the original module and namespace values are matched against the
         // rule patterns. A subtle detail is that added symbols, which lack a record in the original
         // symvers, are always tolerated, so no rules come into play.
-        for (names_a, exports_a, exports_b, change, tolerate) in [
+        for (names_a, exports_a, exports_b, change, always_tolerated) in [
             (
                 &names,
                 &self.exports,
@@ -176,9 +233,26 @@ impl Symvers {
             for &name in names_a {
                 if !exports_b.contains_key(name) {
                     let info = exports_a.get(name).unwrap();
-                    let suffix = process_change(maybe_rules, name, info, tolerate, &mut changed);
-                    writeln!(writer, "Export '{}' has been {}{}", name, change, suffix)
-                        .map_io_err(err_desc)?;
+                    let tolerated =
+                        process_change(maybe_rules, name, info, always_tolerated, &mut changed);
+                    for writer in &mut *writers {
+                        match writer.format {
+                            CompareFormat::Null => {}
+                            CompareFormat::Pretty => writeln!(
+                                writer.write,
+                                "Export '{}' has been {}{}",
+                                name,
+                                change,
+                                tolerated_suffix(tolerated)
+                            )
+                            .map_io_err(err_desc)?,
+                            CompareFormat::Names => {
+                                if !tolerated {
+                                    writeln!(writer.write, "{}", name).map_io_err(err_desc)?
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -188,26 +262,54 @@ impl Symvers {
             if let Some(other_info) = other_symvers.exports.get(name) {
                 let info = self.exports.get(name).unwrap();
                 if info.crc != other_info.crc {
-                    let suffix = process_change(maybe_rules, name, info, false, &mut changed);
-                    writeln!(
-                        writer,
-                        "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'{}",
-                        name, info.crc, other_info.crc, suffix
-                    )
-                    .map_io_err(err_desc)?;
+                    let tolerated = process_change(maybe_rules, name, info, false, &mut changed);
+                    for writer in &mut *writers {
+                        match writer.format {
+                            CompareFormat::Null => {}
+                            CompareFormat::Pretty => writeln!(
+                                writer.write,
+                                "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'{}",
+                                name,
+                                info.crc,
+                                other_info.crc,
+                                tolerated_suffix(tolerated)
+                            )
+                            .map_io_err(err_desc)?,
+                            CompareFormat::Names => {
+                                if !tolerated {
+                                    writeln!(writer.write, "{}", name).map_io_err(err_desc)?
+                                }
+                            }
+                        }
+                    }
                 }
                 if info.is_gpl_only != other_info.is_gpl_only {
-                    let tolerate = info.is_gpl_only && !other_info.is_gpl_only;
-                    let suffix = process_change(maybe_rules, name, info, tolerate, &mut changed);
-                    writeln!(
-                        writer,
-                        "Export '{}' changed type from '{}' to '{}'{}",
+                    let tolerated = process_change(
+                        maybe_rules,
                         name,
-                        info.type_as_str(),
-                        other_info.type_as_str(),
-                        suffix
-                    )
-                    .map_io_err(err_desc)?;
+                        info,
+                        info.is_gpl_only && !other_info.is_gpl_only,
+                        &mut changed,
+                    );
+                    for writer in &mut *writers {
+                        match writer.format {
+                            CompareFormat::Null => {}
+                            CompareFormat::Pretty => writeln!(
+                                writer.write,
+                                "Export '{}' changed type from '{}' to '{}'{}",
+                                name,
+                                info.type_as_str(),
+                                other_info.type_as_str(),
+                                tolerated_suffix(tolerated)
+                            )
+                            .map_io_err(err_desc)?,
+                            CompareFormat::Names => {
+                                if !tolerated {
+                                    writeln!(writer.write, "{}", name).map_io_err(err_desc)?
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
