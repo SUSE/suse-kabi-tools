@@ -10,7 +10,7 @@ use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, RwLock};
-use std::{fs, io, thread};
+use std::{fs, io, mem, thread};
 
 #[cfg(test)]
 mod tests;
@@ -27,7 +27,7 @@ mod tests_format;
 //     a nightly-only experimental API and so not used by the module.
 
 /// A token used in the description of a type.
-#[derive(Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 enum Token {
     TypeRef(String),
     Atom(String),
@@ -71,6 +71,7 @@ type Exports = HashMap<String, usize>;
 type FileRecords = HashMap<String, usize>;
 
 /// A representation of a single `.symtypes` file.
+#[derive(Debug, Eq, PartialEq)]
 struct SymFile {
     path: PathBuf,
     records: FileRecords,
@@ -152,7 +153,7 @@ type SymFiles = Vec<SymFile>;
 /// limit memory needed to store the corpus. On the other hand, when comparing two `Tokens` vectors
 /// for ABI equality, the code needs to consider whether all referenced subtypes are actually equal
 /// as well.
-#[derive(Default)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct SymCorpus {
     types: Types,
     exports: Exports,
@@ -166,19 +167,19 @@ struct LoadContext<'a> {
     files: Mutex<&'a mut SymFiles>,
 }
 
-/// Type names to be present in the consolidated output, along with a mapping from their internal
-/// symbol variant indices to the output variant indices.
-type ConsolidateOutputTypes<'a> = HashMap<&'a str, HashMap<usize, usize>>;
+/// Type names active during the loading of a specific file, providing for each type its variant and
+/// source line index.
+type LoadActiveTypes = HashMap<String, (usize, usize)>;
 
-/// Type names processed during consolidation for a specific file, providing for each type their
-/// output variant index.
+/// Type names processed during the consolidation for a specific file, providing for each type its
+/// variant index.
 type ConsolidateFileTypes<'a> = HashMap<&'a str, usize>;
 
 /// Changes between two corpuses, recording a tuple of each modified type's name, its old tokens and
 /// its new tokens, along with a [`Vec`] of exported symbols affected by the change.
 type CompareChangedTypes<'a> = HashMap<(&'a str, &'a Tokens, &'a Tokens), Vec<&'a str>>;
 
-/// Type names processed during comparison for a specific file.
+/// Type names processed during the comparison for a specific file.
 type CompareFileTypes<'a> = HashSet<&'a str>;
 
 impl SymCorpus {
@@ -353,12 +354,6 @@ impl SymCorpus {
         let path = path.as_ref();
         debug!("Loading '{}'", path.display());
 
-        let mut records = FileRecords::new();
-
-        // Map each variant name/index that the type has in this specific .symtypes file to one
-        // which it got assigned in the entire loaded corpus.
-        let mut remap: HashMap<String, HashMap<String, usize>> = HashMap::new();
-
         // Read all content from the file.
         let lines = match read_lines(reader) {
             Ok(lines) => lines,
@@ -366,164 +361,143 @@ impl SymCorpus {
         };
 
         // Detect whether the input is a single or consolidated symtypes file.
-        let mut is_consolidated = false;
-        for line in &lines {
-            if line.starts_with("F#") {
-                is_consolidated = true;
-                break;
-            }
-        }
+        let is_consolidated =
+            !lines.is_empty() && lines[0].starts_with("/* ") && lines[0].ends_with(" */");
 
-        let file_idx = if !is_consolidated {
-            // Record the file early to determine its file_idx.
-            let symfile = SymFile {
-                path: path.to_path_buf(),
-                records: FileRecords::new(),
-            };
-
-            let mut files = load_context.files.lock().unwrap();
-            files.push(symfile);
-            files.len() - 1
+        let mut file_idx = if !is_consolidated {
+            Self::add_file(path, load_context)
         } else {
             usize::MAX
         };
 
-        // Track names of all entries to detect duplicates.
-        let mut all_names = HashSet::new();
+        // Track which records are currently active and all per-file overrides for UNKNOWN
+        // definitions if this is a consolidated file.
+        let mut active_types = LoadActiveTypes::new();
+        let mut local_override = LoadActiveTypes::new();
+
+        let mut records = FileRecords::new();
 
         // Parse all declarations.
-        let mut file_indices = Vec::new();
         for (line_idx, line) in lines.iter().enumerate() {
-            // Obtain a name of the record.
-            let mut words = line.split_ascii_whitespace();
-            let name = words.next().ok_or_else(|| {
-                crate::Error::new_parse(format!(
-                    "{}:{}: Expected a record name",
-                    path.display(),
-                    line_idx + 1
-                ))
-            })?;
-
-            // Check if the record is a duplicate of another one.
-            match all_names.get(name) {
-                Some(_) => {
-                    return Err(crate::Error::new_parse(format!(
-                        "{}:{}: Duplicate record '{}'",
-                        path.display(),
-                        line_idx + 1,
-                        name,
-                    )))
-                }
-                None => all_names.insert(name.to_string()),
-            };
-
-            // Check for a file declaration and remember its index. File declarations are processed
-            // later after remapping of all symbol variants is known.
-            if name.starts_with("F#") {
-                file_indices.push(line_idx);
+            // Skip empty lines in consolidated files.
+            if is_consolidated && line.is_empty() {
                 continue;
             }
 
-            // Handle a type/export record.
+            // Handle file headers in consolidated files.
+            if is_consolidated && line.starts_with("/* ") && line.ends_with(" */") {
+                // Complete the current file.
+                if file_idx != usize::MAX {
+                    Self::close_file(
+                        path,
+                        file_idx,
+                        mem::take(&mut records),
+                        mem::take(&mut local_override),
+                        &active_types,
+                        load_context,
+                    )?;
+                }
 
-            // Turn the remaining words into tokens.
-            let tokens = words_into_tokens(&mut words);
+                // Open the new file.
+                file_idx = Self::add_file(&line[3..line.len() - 3], load_context);
 
-            // Parse the base name and any variant name/index, which is appended as a suffix after
-            // the `@` character.
-            let (base_name, orig_variant_name) = if is_consolidated {
-                split_type_name(name)
+                continue;
+            }
+
+            // Ok, it is a regular record, parse it.
+            let (name, tokens, is_local_override) =
+                parse_type_record(path, line_idx, line, is_consolidated)?;
+
+            // Check if the record is a duplicate of another one.
+            if records.contains_key(&name) {
+                return Err(crate::Error::new_parse(format!(
+                    "{}:{}: Duplicate record '{}'",
+                    path.display(),
+                    line_idx + 1,
+                    name,
+                )));
+            }
+
+            // Insert the type into the corpus and file records.
+            let variant_idx = Self::merge_type(&name, tokens, load_context);
+            if is_export_name(&name) {
+                Self::insert_export(&name, file_idx, line_idx, load_context)?;
+            }
+            records.insert(name.clone(), variant_idx);
+
+            // Record the type as currently active.
+            if is_local_override {
+                local_override.insert(name, (variant_idx, line_idx));
             } else {
-                (name, &name[name.len()..])
-            };
-
-            // Insert the type into the corpus.
-            let variant_idx = Self::merge_type(base_name, tokens, load_context);
-
-            if is_consolidated {
-                // Record a mapping from the original variant name/index to the new one.
-                remap
-                    .entry(base_name.to_string()) // [1]
-                    .or_default()
-                    .insert(orig_variant_name.to_string(), variant_idx);
-            } else {
-                // Insert the record.
-                records.insert(base_name.to_string(), variant_idx);
-                Self::try_insert_export(base_name, file_idx, line_idx, load_context)?;
+                active_types.insert(name, (variant_idx, line_idx));
             }
         }
 
-        // TODO Validate all references?
-
-        if !is_consolidated {
-            // Update the file records.
-            let mut files = load_context.files.lock().unwrap();
-            files[file_idx].records = records;
-            return Ok(());
+        // Complete the file.
+        if file_idx != usize::MAX {
+            Self::close_file(
+                path,
+                file_idx,
+                records,
+                local_override,
+                &active_types,
+                load_context,
+            )?;
         }
 
-        // Consolidated file needs more work.
+        Ok(())
+    }
 
-        // Handle file declarations.
-        for line_idx in file_indices {
-            let mut words = lines[line_idx].split_ascii_whitespace();
+    /// Adds a specified file to the corpus.
+    ///
+    /// Note that in the case of a consolidated file, unlike most load functions, the `path` should
+    /// point to the name of the specific symtypes file.
+    fn add_file<P: AsRef<Path>>(path: P, load_context: &LoadContext) -> usize {
+        let path = path.as_ref();
 
-            let record_name = words.next().unwrap();
-            assert!(record_name.starts_with("F#"));
-            let file_name = &record_name[2..];
+        let symfile = SymFile {
+            path: path.to_path_buf(),
+            records: FileRecords::new(),
+        };
 
-            let file_idx = {
-                let symfile = SymFile {
-                    path: Path::new(file_name).to_path_buf(),
-                    records: FileRecords::new(),
-                };
-                let mut files = load_context.files.lock().unwrap();
-                files.push(symfile);
-                files.len() - 1
-            };
+        let mut files = load_context.files.lock().unwrap();
+        files.push(symfile);
+        files.len() - 1
+    }
 
-            let mut records = FileRecords::new();
-            for type_name in words {
-                // Parse the base name and variant name/index.
-                let (base_name, orig_variant_name) = split_type_name(type_name);
+    /// Completes loading of the symtypes file specified by `file_idx` by extrapolating its records,
+    /// validating all references, and finally adding the file records to the corpus.
+    fn close_file<P: AsRef<Path>>(
+        path: P,
+        file_idx: usize,
+        mut records: FileRecords,
+        local_override: LoadActiveTypes,
+        active_types: &LoadActiveTypes,
+        load_context: &LoadContext,
+    ) -> Result<(), crate::Error> {
+        let path = path.as_ref();
 
-                // Look up how the variant got remapped.
-                let variant_idx = *remap
-                    .get(base_name)
-                    .and_then(|hash| hash.get(orig_variant_name))
-                    .ok_or_else(|| {
-                        crate::Error::new_parse(format!(
-                            "{}:{}: Type '{}' is not known",
-                            path.display(),
-                            line_idx + 1,
-                            type_name
-                        ))
-                    })?;
-
-                // Insert the record.
-                records.insert(base_name.to_string(), variant_idx);
-                Self::try_insert_export(base_name, file_idx, line_idx, load_context)?;
-            }
-
-            // Add implicit references, ones that were omitted by the F# declaration because only
-            // one variant exists in the entire consolidated file.
-            let walk_records: Vec<_> = records.iter().map(|(k, v)| (k.clone(), *v)).collect();
-            for (name, variant_idx) in walk_records {
-                let types = load_context.types.read().unwrap();
-                Self::extrapolate_file_record(
-                    path,
-                    file_name,
-                    &name,
-                    variant_idx,
-                    true,
-                    *types,
-                    &mut records,
-                )?;
-            }
-
-            let mut files = load_context.files.lock().unwrap();
-            files[file_idx].records = records;
+        // Extrapolate all records and validate references.
+        let walk_records = records.keys().map(String::clone).collect::<Vec<_>>();
+        for name in walk_records {
+            let types = load_context.types.read().unwrap();
+            // Note that all explicit types are known, so it is ok to pass usize::MAX as
+            // from_line_idx because it is unused.
+            Self::complete_file_record(
+                path,
+                usize::MAX,
+                &name,
+                true,
+                &local_override,
+                active_types,
+                *types,
+                &mut records,
+            )?;
         }
+
+        // Add the file records to the corpus.
+        let mut files = load_context.files.lock().unwrap();
+        files[file_idx].records = records;
 
         Ok(())
     }
@@ -549,18 +523,13 @@ impl SymCorpus {
         }
     }
 
-    /// Checks if a specified `type_name` is an export and, if so, registers it with its `file_idx`
-    /// in the `load_context.exports`.
-    fn try_insert_export(
+    /// Registers the specified export in the corpus and validates that it is not a duplicate.
+    fn insert_export(
         type_name: &str,
         file_idx: usize,
         line_idx: usize,
         load_context: &LoadContext,
     ) -> Result<(), crate::Error> {
-        if !is_export_name(type_name) {
-            return Ok(());
-        }
-
         // Try to add the export, return an error if it is a duplicate.
         let other_file_idx = {
             let mut exports = load_context.exports.lock().unwrap();
@@ -586,71 +555,68 @@ impl SymCorpus {
         )))
     }
 
-    /// Processes a single symbol in some file originated from an `F#` record and enhances the
-    /// specified file records with the needed implicit types.
+    /// Completes a type record by validating all its references and, in the case of a consolidated
+    /// source, enhances the specified file records with the necessary implicit types.
     ///
-    /// This function is used when reading a consolidated input file and processing its `F#`
-    /// records. Each `F#` record is in form `F#<filename> <type@variant>... <export>...`. It lists
-    /// all types and exports in a given file but is allowed to omit any referenced types which have
-    /// only one variant in the whole consolidated file. The purpose of this function is to find all
-    /// such implicit references and add them to `records`.
+    /// In a consolidated file, a file entry can omit types that the file contains if those types
+    /// were previously defined by another file. This function finds all such implicit references
+    /// and adds them to `records`.
     ///
-    /// A caller of this function should pre-fill `records` with all explicit references given on
-    /// the processed `F#` record and then call this function on each of the references. These root
-    /// calls should be invoked with `is_explicit` set to `true`. The function then recursively adds
-    /// all needed implicit types which are referenced from these roots.
-    fn extrapolate_file_record(
-        corpus_path: &Path,
-        file_name: &str,
-        name: &str,
-        variant_idx: usize,
+    /// A caller of this function should pre-fill `records` with all explicit types present in
+    /// a file entry and then call this function on each of those types. These root calls should be
+    /// invoked with `is_explicit` set to `true`. The function then recursively adds all needed
+    /// implicit types that are referenced from these roots.
+    fn complete_file_record(
+        path: &Path,
+        from_line_idx: usize,
+        type_name: &str,
         is_explicit: bool,
+        local_override: &LoadActiveTypes,
+        active_types: &LoadActiveTypes,
         types: &Types,
         records: &mut FileRecords,
     ) -> Result<(), crate::Error> {
         if is_explicit {
             // All explicit symbols need to be added by the caller.
-            assert!(records.get(name).is_some());
+            assert!(records.get(type_name).is_some());
         } else {
-            // A symbol can be implicit only if it has one variant.
-            assert!(variant_idx == 0);
-
             // See if the symbol was already processed.
-            if records.get(name).is_some() {
+            if records.get(type_name).is_some() {
                 return Ok(());
             }
-            records.insert(name.to_string(), variant_idx); // [1]
         }
 
-        // Obtain tokens for the selected variant and check it is correctly specified.
-        let variants = types.get(name).unwrap();
-        assert!(!variants.is_empty());
-        if !is_explicit && variants.len() > 1 {
-            return Err(crate::Error::new_parse(format!(
-                "{}: Type '{}' is implicitly referenced by file '{}' but has multiple variants in the corpus",
-                corpus_path.display(),
-                name,
-                file_name,
-            )));
+        let (variant_idx, line_idx) = match local_override.get(type_name) {
+            Some(&(variant_idx, line_idx)) => (variant_idx, line_idx),
+            None => *active_types.get(type_name).ok_or_else(|| {
+                crate::Error::new_parse(format!(
+                    "{}:{}: Type '{}' is not known",
+                    path.display(),
+                    from_line_idx + 1,
+                    type_name
+                ))
+            })?,
+        };
+        if !is_explicit {
+            records.insert(type_name.to_string(), variant_idx); // [1]
         }
+
+        // Look up the type definition.
+        // SAFETY: Each type reference is guaranteed to have a corresponding definition.
+        let variants = types.get(type_name).unwrap();
         let tokens = &variants[variant_idx];
 
         // Process recursively all types referenced by this symbol.
         for token in tokens {
             match token {
                 Token::TypeRef(ref_name) => {
-                    // Process the type. Note that passing variant_idx=0 is ok here:
-                    // * If the type is explicitly specified in the parent F# record then it must be
-                    //   already added in the records and the called function immediately returns.
-                    // * If the type is implicit then it can have only one variant and so only
-                    //   variant_idx=0 can be correct. The invoked function will check that no more
-                    //   than one variant is actually present.
-                    Self::extrapolate_file_record(
-                        corpus_path,
-                        file_name,
+                    Self::complete_file_record(
+                        path,
+                        line_idx,
                         ref_name,
-                        0,
                         false,
+                        local_override,
+                        active_types,
                         types,
                         records,
                     )?;
@@ -662,67 +628,34 @@ impl SymCorpus {
         Ok(())
     }
 
-    /// Processes a single symbol specified in a given file and adds it to the consolidated output.
+    /// Processes a single symbol in a given file and adds it to the consolidated output.
     ///
-    /// The specified symbol is added to `output_types` and `processed_types`, if not already
-    /// present, and all its type references get recursively processed in the same way.
+    /// The specified symbol and its required variant is added to `file_types`, if it's not already
+    /// present. All of its type references are then recursively processed in the same way.
     fn consolidate_type<'a>(
         &'a self,
         symfile: &SymFile,
         name: &'a str,
-        output_types: &mut ConsolidateOutputTypes<'a>,
-        processed_types: &mut ConsolidateFileTypes<'a>,
+        file_types: &mut ConsolidateFileTypes<'a>,
     ) {
         // See if the symbol was already processed.
-        let processed_entry = match processed_types.entry(name) {
+        let file_type_entry = match file_types.entry(name) {
             Occupied(_) => return,
-            Vacant(processed_entry) => processed_entry,
+            Vacant(file_type_entry) => file_type_entry,
         };
 
-        // Look up the internal variant index.
-        let variant_idx = match symfile.records.get(name) {
-            Some(&variant_idx) => variant_idx,
-            None => panic!(
-                "Type '{}' is not known in file '{}'",
-                name,
-                symfile.path.display()
-            ),
-        };
+        // Look up the type definition.
+        // SAFETY: Each type reference is guaranteed to have a corresponding definition.
+        let variant_idx = *symfile.records.get(name).unwrap();
+        let variants = self.types.get(name).unwrap();
 
-        // Determine the output variant index for the symbol.
-        let remap_idx;
-        match output_types.entry(name) {
-            Occupied(mut active_entry) => {
-                let remap = active_entry.get_mut();
-                let remap_len = remap.len();
-                match remap.entry(variant_idx) {
-                    Occupied(remap_entry) => {
-                        remap_idx = *remap_entry.get();
-                    }
-                    Vacant(remap_entry) => {
-                        remap_idx = remap_len;
-                        remap_entry.insert(remap_idx);
-                    }
-                }
-            }
-            Vacant(active_entry) => {
-                remap_idx = 0;
-                active_entry.insert(HashMap::from([(variant_idx, remap_idx)]));
-            }
-        };
-        processed_entry.insert(remap_idx);
+        // Record that the type is needed by the file.
+        file_type_entry.insert(variant_idx);
 
         // Process recursively all types that the symbol references.
-        let variants = match self.types.get(name) {
-            Some(variants) => variants,
-            None => panic!("Type '{}' has a missing declaration", name),
-        };
-
         for token in &variants[variant_idx] {
             match token {
-                Token::TypeRef(ref_name) => {
-                    self.consolidate_type(symfile, ref_name, output_types, processed_types)
-                }
+                Token::TypeRef(ref_name) => self.consolidate_type(symfile, ref_name, file_types),
                 Token::Atom(_word) => {}
             }
         }
@@ -753,102 +686,93 @@ impl SymCorpus {
     /// Writes the corpus in the consolidated form to the provided output stream.
     pub fn write_consolidated_buffer<W: Write>(&self, writer: W) -> Result<(), crate::Error> {
         let mut writer = BufWriter::new(writer);
+        let err_desc = "Failed to write a consolidated record";
 
-        // Initialize output data. Variable output_types records all output symbols, file_types
-        // provides per-file information.
-        let mut output_types = ConsolidateOutputTypes::new();
-        let mut file_types = vec![ConsolidateFileTypes::new(); self.files.len()];
+        // Track which records are currently active, mapping a type name to its active variant
+        // index.
+        let mut active_types: HashMap<&str, usize> = HashMap::new();
 
         // Sort all files in the corpus by their path.
         let mut file_indices = (0..self.files.len()).collect::<Vec<_>>();
         file_indices.sort_by_key(|&i| &self.files[i].path);
 
         // Process the sorted files and add their needed types to the output.
-        for &i in &file_indices {
+        let mut add_separator = false;
+        for i in file_indices {
             let symfile = &self.files[i];
 
             // Collect sorted exports in the file which are the roots for consolidation.
-            let mut exports = Vec::new();
-            for name in symfile.records.keys() {
-                if is_export_name(name) {
-                    exports.push(name.as_str());
-                }
+            let mut exports = symfile
+                .records
+                .keys()
+                .map(String::as_str)
+                .filter(|name| is_export_name(name))
+                .collect::<Vec<_>>();
+            if exports.is_empty() {
+                continue;
             }
             exports.sort();
 
-            // Add the exported types and their needed types to the output.
-            let mut processed_types = ConsolidateFileTypes::new();
-            for name in &exports {
-                self.consolidate_type(symfile, name, &mut output_types, &mut processed_types);
+            // Collect the exported types and their needed types.
+            let mut file_types = ConsolidateFileTypes::new();
+            for name in exports {
+                self.consolidate_type(symfile, name, &mut file_types);
             }
-            file_types[i] = processed_types;
-        }
 
-        // Go through all files and their output types. Check if a given type has only one variant
-        // in the output and mark it as such.
-        for file_types_item in &mut file_types {
-            for (name, remap_idx) in file_types_item {
-                let remap = output_types.get(name).unwrap();
-                if remap.len() == 1 {
-                    *remap_idx = usize::MAX;
-                }
+            // Sort all output types.
+            let mut sorted_types = file_types.into_iter().collect::<Vec<_>>();
+            sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
+
+            // Add an empty line to separate individual files.
+            if add_separator {
+                writeln!(writer).map_io_err(err_desc)?;
+            } else {
+                add_separator = true;
             }
-        }
 
-        // Sort all output types and write them to the specified file.
-        let mut sorted_records = output_types.into_iter().collect::<Vec<_>>();
-        sorted_records.sort_by_key(|(name, _remap)| (is_export_name(name), *name));
+            // Write the file header.
+            writeln!(writer, "/* {} */", symfile.path.display()).map_io_err(err_desc)?;
 
-        let err_desc = "Failed to write a consolidated record";
-
-        for (name, remap) in sorted_records {
-            let variants = self.types.get(name).unwrap();
-            let mut sorted_remap = remap
-                .iter()
-                .map(|(&variant_idx, &remap_idx)| (remap_idx, variant_idx))
-                .collect::<Vec<_>>();
-            sorted_remap.sort();
-
-            let needs_suffix = sorted_remap.len() > 1;
-            for (remap_idx, variant_idx) in sorted_remap {
+            // Write all output types.
+            for (name, variant_idx) in sorted_types {
+                // Look up the type definition.
+                // SAFETY: Each type reference is guaranteed to have a corresponding definition.
+                let variants = self.types.get(name).unwrap();
                 let tokens = &variants[variant_idx];
 
-                if needs_suffix {
-                    write!(writer, "{}@{}", name, remap_idx).map_io_err(err_desc)?;
-                } else {
+                // Check if this is an UNKNOWN type definition, and if so, record it as a local
+                // override.
+                if let Some(short_name) = try_shorten_decl(name, tokens) {
+                    writeln!(writer, "{}", short_name).map_io_err(err_desc)?;
+                    continue;
+                }
+
+                // See if the symbol matches an already active definition, or record it in the
+                // output.
+                let record = match active_types.entry(name) {
+                    Occupied(mut active_type_entry) => {
+                        if *active_type_entry.get() != variant_idx {
+                            active_type_entry.insert(variant_idx);
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    Vacant(active_type_entry) => {
+                        active_type_entry.insert(variant_idx);
+                        true
+                    }
+                };
+                if record {
                     write!(writer, "{}", name).map_io_err(err_desc)?;
+                    for token in tokens {
+                        write!(writer, " {}", token.as_str()).map_io_err(err_desc)?;
+                    }
+                    writeln!(writer).map_io_err(err_desc)?;
                 }
-                for token in tokens {
-                    write!(writer, " {}", token.as_str()).map_io_err(err_desc)?;
-                }
-                writeln!(writer).map_io_err(err_desc)?;
             }
         }
 
-        // Write file records.
-        for &i in &file_indices {
-            let symfile = &self.files[i];
-
-            // TODO Sorting, make same as above.
-            let mut sorted_types = file_types[i]
-                .iter()
-                .map(|(&name, &remap_idx)| (is_export_name(name), name, remap_idx))
-                .collect::<Vec<_>>();
-            sorted_types.sort();
-
-            // Output the F# record in form `F#<filename> <type@variant>... <export>...`. Types with
-            // only one variant in the entire consolidated file can be skipped because they can be
-            // implicitly determined by a reader.
-            write!(writer, "F#{}", symfile.path.display()).map_io_err(err_desc)?;
-            for &(_, name, remap_idx) in &sorted_types {
-                if remap_idx != usize::MAX {
-                    write!(writer, " {}@{}", name, remap_idx).map_io_err(err_desc)?;
-                } else if is_export_name(name) {
-                    write!(writer, " {}", name).map_io_err(err_desc)?;
-                }
-            }
-            writeln!(writer).map_io_err(err_desc)?;
-        }
         Ok(())
     }
 
@@ -1079,14 +1003,101 @@ fn is_export_name(type_name: &str) -> bool {
     }
 }
 
-/// Splits the specified type name into a tuple of two string slices, with the first one being the
-/// base name and the second one containing the variant name/index (or an empty string if no variant
-/// was present).
-fn split_type_name(type_name: &str) -> (&str, &str) {
-    match type_name.rfind('@') {
-        Some(i) => (&type_name[..i], &type_name[i + 1..]),
-        None => (type_name, &type_name[type_name.len()..]),
+/// Tries to shorten the specified type if it represents an UNKNOWN declaration.
+///
+/// The function maps records like
+/// `<short-type>#<name> <type> <name> { UNKNOWN }`
+/// to
+/// `<short-type>##<name>`.
+/// For instance, `s#task_struct struct task_struct { UNKNOWN }` becomes `s##task_struct`.
+fn try_shorten_decl(type_name: &str, tokens: &Tokens) -> Option<String> {
+    if tokens.len() != 5 {
+        return None;
     }
+
+    if let Some((short_type, expanded_type, base_name)) = split_type_name(type_name, "#") {
+        let unknown = [expanded_type, base_name, "{", "UNKNOWN", "}"];
+        if zip(tokens.iter(), unknown.into_iter()).all(|(token, check)| token.as_str() == check) {
+            return Some(format!("{}##{}", short_type, base_name));
+        }
+    }
+
+    None
+}
+
+/// Tries to expand the specified type if it represents an UNKNOWN declaration.
+///
+/// The function maps records like
+/// `<short-type>##<name>`
+/// to
+/// `<short-type>#<name> <type> <name> { UNKNOWN }`.
+/// For instance, `s##task_struct` becomes `s#task_struct struct task_struct { UNKNOWN }`.
+fn try_expand_decl(type_name: &str) -> Option<(String, Tokens)> {
+    if let Some((short_type, expanded_type, base_name)) = split_type_name(type_name, "##") {
+        let type_name = format!("{}#{}", short_type, base_name);
+        let tokens = vec![
+            Token::new_atom(expanded_type),
+            Token::new_atom(base_name),
+            Token::new_atom("{"),
+            Token::new_atom("UNKNOWN"),
+            Token::new_atom("}"),
+        ];
+        return Some((type_name, tokens));
+    }
+
+    None
+}
+
+/// Splits the specified type name into three string slices: the short type name, the long type
+/// name, and the base name. For instance, `s#task_struct` is split into
+/// `("s", "struct", "task_struct")`.
+fn split_type_name<'a>(type_name: &'a str, delimiter: &str) -> Option<(&'a str, &'a str, &'a str)> {
+    match type_name.split_once(delimiter) {
+        Some((short_type, base_name)) => {
+            let expanded_type = match short_type {
+                "t" => "typedef",
+                "e" => "enum",
+                "s" => "struct",
+                "u" => "union",
+                _ => return None,
+            };
+            Some((short_type, expanded_type, base_name))
+        }
+        None => None,
+    }
+}
+
+/// Parses a single symtypes record.
+fn parse_type_record<P: AsRef<Path>>(
+    path: P,
+    line_idx: usize,
+    line: &str,
+    is_consolidated: bool,
+) -> Result<(String, Tokens, bool), crate::Error> {
+    let path = path.as_ref();
+    let mut words = line.split_ascii_whitespace();
+
+    let raw_name = words.next().ok_or_else(|| {
+        crate::Error::new_parse(format!(
+            "{}:{}: Expected a record name",
+            path.display(),
+            line_idx + 1
+        ))
+    })?;
+
+    if is_consolidated {
+        // Check if it is an UNKNOWN override.
+        if let Some((name, tokens)) = try_expand_decl(raw_name) {
+            // TODO Check that all words have been exhausted.
+            return Ok((name, tokens, true));
+        }
+    }
+
+    // TODO Check that no ## is present in the type name.
+
+    // Turn the remaining words into tokens.
+    let tokens = words_into_tokens(&mut words);
+    Ok((raw_name.to_string(), tokens, false))
 }
 
 /// Processes tokens describing a type and produces its pretty-formatted version as a [`Vec`] of

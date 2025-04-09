@@ -86,11 +86,12 @@ fn consolidate_cmd() {
     assert_eq!(
         result.stdout,
         concat!(
+            "/* a.symtypes */\n",
             "s#foo struct foo { int a ; }\n",
             "bar int bar ( s#foo )\n",
-            "baz int baz ( s#foo )\n",
-            "F#a.symtypes bar\n",
-            "F#b.symtypes baz\n", //
+            "\n",
+            "/* b.symtypes */\n",
+            "baz int baz ( s#foo )\n", //
         )
     );
     assert_eq!(result.stderr, "");
@@ -115,11 +116,12 @@ fn consolidate_cmd_output() {
     assert_eq!(
         output_data,
         concat!(
+            "/* a.symtypes */\n",
             "s#foo struct foo { int a ; }\n",
             "bar int bar ( s#foo )\n",
-            "baz int baz ( s#foo )\n",
-            "F#a.symtypes bar\n",
-            "F#b.symtypes baz\n", //
+            "\n",
+            "/* b.symtypes */\n",
+            "baz int baz ( s#foo )\n", //
         )
     );
 }

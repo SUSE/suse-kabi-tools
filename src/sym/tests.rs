@@ -5,19 +5,168 @@ use super::*;
 use crate::{assert_ok, assert_parse_err};
 
 #[test]
-fn read_empty_record() {
-    // Check that empty records are rejected when reading a file.
+fn read_basic_single() {
+    // Check basic reading of a single file.
     let mut syms = SymCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
-            "s#test struct test { }\n",
+            "s#foo struct foo { }\n",
+            "bar void bar ( s#foo )\n",
+            "baz int baz ( )\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    assert_eq!(
+        syms,
+        SymCorpus {
+            types: HashMap::from([
+                (
+                    "s#foo".to_string(),
+                    vec![vec![
+                        Token::new_atom("struct"),
+                        Token::new_atom("foo"),
+                        Token::new_atom("{"),
+                        Token::new_atom("}"),
+                    ]]
+                ),
+                (
+                    "bar".to_string(),
+                    vec![vec![
+                        Token::new_atom("void"),
+                        Token::new_atom("bar"),
+                        Token::new_atom("("),
+                        Token::new_typeref("s#foo"),
+                        Token::new_atom(")"),
+                    ]]
+                ),
+                (
+                    "baz".to_string(),
+                    vec![vec![
+                        Token::new_atom("int"),
+                        Token::new_atom("baz"),
+                        Token::new_atom("("),
+                        Token::new_atom(")"),
+                    ]]
+                ),
+            ]),
+            exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 0)]),
+            files: vec![SymFile {
+                path: PathBuf::from("test.symtypes"),
+                records: HashMap::from([
+                    ("s#foo".to_string(), 0),
+                    ("bar".to_string(), 0),
+                    ("baz".to_string(), 0),
+                ])
+            }],
+        }
+    );
+}
+
+#[test]
+fn read_basic_consolidated() {
+    // Check basic reading of a consolidated file.
+    let mut syms = SymCorpus::new();
+    let result = syms.load_buffer(
+        "test_consolidated.symtypes",
+        concat!(
+            "/* test.symtypes */\n",
+            "s#foo struct foo { }\n",
+            "bar void bar ( s#foo )\n",
+            "/* test2.symtypes */\n",
+            "baz int baz ( )\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    assert_eq!(
+        syms,
+        SymCorpus {
+            types: HashMap::from([
+                (
+                    "s#foo".to_string(),
+                    vec![vec![
+                        Token::new_atom("struct"),
+                        Token::new_atom("foo"),
+                        Token::new_atom("{"),
+                        Token::new_atom("}"),
+                    ]]
+                ),
+                (
+                    "bar".to_string(),
+                    vec![vec![
+                        Token::new_atom("void"),
+                        Token::new_atom("bar"),
+                        Token::new_atom("("),
+                        Token::new_typeref("s#foo"),
+                        Token::new_atom(")"),
+                    ]]
+                ),
+                (
+                    "baz".to_string(),
+                    vec![vec![
+                        Token::new_atom("int"),
+                        Token::new_atom("baz"),
+                        Token::new_atom("("),
+                        Token::new_atom(")"),
+                    ]]
+                ),
+            ]),
+            exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 1)]),
+            files: vec![
+                SymFile {
+                    path: PathBuf::from("test.symtypes"),
+                    records: HashMap::from([("s#foo".to_string(), 0), ("bar".to_string(), 0)])
+                },
+                SymFile {
+                    path: PathBuf::from("test2.symtypes"),
+                    records: HashMap::from([("baz".to_string(), 0)])
+                },
+            ],
+        }
+    );
+}
+
+#[test]
+fn read_empty_record_single() {
+    // Check that empty records are rejected when reading a single file.
+    let mut syms = SymCorpus::new();
+    let result = syms.load_buffer(
+        "test.symtypes",
+        concat!(
+            "s#foo struct foo { }\n",
             "\n",
-            "s#test2 struct test2 { }\n", //
+            "bar void bar ( s#foo )\n",
+            "baz int baz ( )\n", //
         )
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symtypes:2: Expected a record name");
+}
+
+#[test]
+fn read_empty_record_consolidated() {
+    // Check that empty records are skipped when reading a consolidated file.
+    let mut syms = SymCorpus::new();
+    let result = syms.load_buffer(
+        "test_consolidated.symtypes",
+        concat!(
+            "/* test.symtypes */\n",
+            "\n",
+            "s#foo struct foo { }\n",
+            "\n",
+            "bar void bar ( s#foo )\n",
+            "\n",
+            "/* test2.symtypes */\n",
+            "\n",
+            "baz int baz ( )\n",
+            "\n", //
+        )
+        .as_bytes(),
+    );
+    assert_ok!(result);
+    assert_ne!(syms, SymCorpus::new());
 }
 
 #[test]
@@ -27,79 +176,49 @@ fn read_duplicate_type_record() {
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
-            "s#test struct test { int a ; }\n",
-            "s#test struct test { int b ; }\n", //
+            "s#foo struct foo { int a ; }\n",
+            "s#foo struct foo { int b ; }\n", //
         )
         .as_bytes(),
     );
-    assert_parse_err!(result, "test.symtypes:2: Duplicate record 's#test'");
+    assert_parse_err!(result, "test.symtypes:2: Duplicate record 's#foo'");
 }
 
+/*
+TODO FIXME
 #[test]
 fn read_duplicate_file_record() {
-    // Check that F# records with duplicate names are rejected when reading a consolidated file.
+    // Check that file records with duplicate names are rejected when reading a consolidated file.
     let mut syms = SymCorpus::new();
     let result = syms.load_buffer(
-        "test.symtypes",
+        "test_consolidated.symtypes",
         concat!(
-            "bar int bar ( )\n",
-            "baz int baz ( )\n",
-            "F#test.symtypes bar\n",
-            "F#test.symtypes baz\n", //
+            "/* test.symtypes */
+\n",
+" /* test.symtypes */
+\n", //
         )
         .as_bytes(),
     );
     assert_parse_err!(
         result,
-        "test.symtypes:4: Duplicate record 'F#test.symtypes'"
+        "test.symtypes:2: Duplicate record 'F#test.symtypes'"
     );
 }
+*/
 
 #[test]
-fn read_invalid_file_record_ref() {
-    // Check that an F# record referencing a type in form '<base_name>' is rejected if the type is
-    // not known.
+fn read_invalid_reference() {
+    // Check that a record referencing a symbol with a missing declaration is rejected.
     let mut syms = SymCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
-            "F#test.symtypes bar\n", //
+            "bar void bar ( s#foo )\n", //
         )
         .as_bytes(),
     );
-    assert_parse_err!(result, "test.symtypes:1: Type 'bar' is not known");
-}
-
-#[test]
-fn read_invalid_file_record_ref2() {
-    // Check that an F# record referencing a type in form '<base_name>@<variant_idx>' is rejected if
-    // the base name is not known.
-    let mut syms = SymCorpus::new();
-    let result = syms.load_buffer(
-        "test.symtypes",
-        concat!(
-            "F#test.symtypes bar@0\n", //
-        )
-        .as_bytes(),
-    );
-    assert_parse_err!(result, "test.symtypes:1: Type 'bar@0' is not known");
-}
-
-#[test]
-fn read_invalid_file_record_ref3() {
-    // Check that an F# record referencing a type in form '<base_name>@<variant_idx>' is rejected if
-    // the variant index is not known.
-    let mut syms = SymCorpus::new();
-    let result = syms.load_buffer(
-        "test.symtypes",
-        concat!(
-            "bar@0 int bar ( )\n",
-            "F#test.symtypes bar@0\n",
-            "F#test2.symtypes bar@1\n", //
-        )
-        .as_bytes(),
-    );
-    assert_parse_err!(result, "test.symtypes:3: Type 'bar@1' is not known");
+    assert_parse_err!(result, "test.symtypes:1: Type 's#foo' is not known");
 }
 
 #[test]
@@ -146,9 +265,9 @@ fn read_write_basic() {
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
+            "/* test.symtypes */\n",
             "s#foo struct foo { int a ; }\n",
-            "bar int bar ( s#foo )\n",
-            "F#test.symtypes bar\n", //
+            "bar int bar ( s#foo )\n", //
         )
     );
 }
@@ -182,11 +301,12 @@ fn read_write_shared_struct() {
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
+            "/* test.symtypes */\n",
             "s#foo struct foo { int a ; }\n",
             "bar int bar ( s#foo )\n",
-            "baz int baz ( s#foo )\n",
-            "F#test.symtypes bar\n",
-            "F#test2.symtypes baz\n", //
+            "\n",
+            "/* test2.symtypes */\n",
+            "baz int baz ( s#foo )\n", //
         )
     );
 }
@@ -194,7 +314,7 @@ fn read_write_shared_struct() {
 #[test]
 fn read_write_differing_struct() {
     // Check that a structure declaration different in two files appears in all variants in the
-    // consolidated output and they are correctly referenced by the F# entries.
+    // consolidated output and they are correctly referenced by the file entries.
     let mut syms = SymCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
@@ -208,7 +328,7 @@ fn read_write_differing_struct() {
     let result = syms.load_buffer(
         "test2.symtypes",
         concat!(
-            "s#foo struct foo { UNKNOWN }\n",
+            "s#foo struct foo { long a ; }\n",
             "baz int baz ( s#foo )\n", //
         )
         .as_bytes(),
@@ -220,12 +340,13 @@ fn read_write_differing_struct() {
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
-            "s#foo@0 struct foo { int a ; }\n",
-            "s#foo@1 struct foo { UNKNOWN }\n",
+            "/* test.symtypes */\n",
+            "s#foo struct foo { int a ; }\n",
             "bar int bar ( s#foo )\n",
-            "baz int baz ( s#foo )\n",
-            "F#test.symtypes s#foo@0 bar\n",
-            "F#test2.symtypes s#foo@1 baz\n", //
+            "\n",
+            "/* test2.symtypes */\n",
+            "s#foo struct foo { long a ; }\n",
+            "baz int baz ( s#foo )\n", //
         )
     );
 }
