@@ -39,7 +39,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
     "Options:\n",
     "  -h, --help                    display this help and exit\n",
     "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
-    "  -f FILE, --filter=FILE        consider only symbols matching patterns in FILE\n",
+    "  -l FILE, --filter=FILE        consider only symbols matching patterns in FILE\n",
 );
 
 /// Handles the `-j`/`--jobs` option which specifies the number of workers to perform a given
@@ -162,7 +162,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                 num_workers = value;
                 continue;
             }
-            if let Some(value) = handle_value_option(&arg, &mut args, "-f", "--filter")? {
+            if let Some(value) = handle_value_option(&arg, &mut args, "-l", "--filter")? {
                 maybe_filter_path = Some(value);
                 continue;
             }
