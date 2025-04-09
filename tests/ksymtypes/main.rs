@@ -30,8 +30,8 @@ fn compare_cmd() {
     // Check that the compare command trivially works.
     let result = ksymtypes_run([
         "compare",
-        "tests/compare_cmd/a.symtypes",
-        "tests/compare_cmd/b.symtypes",
+        "tests/ksymtypes/compare_cmd/a.symtypes",
+        "tests/ksymtypes/compare_cmd/b.symtypes",
     ]);
     assert!(result.status.success());
     assert_eq!(
@@ -57,8 +57,8 @@ fn compare_cmd_dash_dash() {
     let result = ksymtypes_run([
         "compare",
         "--",
-        "tests/compare_cmd/a.symtypes",
-        "tests/compare_cmd/b.symtypes",
+        "tests/ksymtypes/compare_cmd/a.symtypes",
+        "tests/ksymtypes/compare_cmd/b.symtypes",
     ]);
     assert!(result.status.success());
     assert_eq!(
@@ -81,7 +81,7 @@ fn compare_cmd_dash_dash() {
 #[test]
 fn consolidate_cmd() {
     // Check that the consolidate command trivially works.
-    let result = ksymtypes_run(["consolidate", "tests/consolidate_cmd"]);
+    let result = ksymtypes_run(["consolidate", "tests/ksymtypes/consolidate_cmd"]);
     assert!(result.status.success());
     assert_eq!(
         result.stdout,
@@ -107,7 +107,7 @@ fn consolidate_cmd_output() {
         AsRef::<OsStr>::as_ref("consolidate"),
         "--output".as_ref(),
         &output_path.as_ref(),
-        "tests/consolidate_cmd".as_ref(),
+        "tests/ksymtypes/consolidate_cmd".as_ref(),
     ]);
     assert!(result.status.success());
     assert_eq!(result.stdout, "");
