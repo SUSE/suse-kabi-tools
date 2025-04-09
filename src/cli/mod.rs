@@ -77,7 +77,10 @@ pub fn process_global_args<I: Iterator<Item = String>>(
             return Ok(None);
         }
         if arg.starts_with('-') || arg.starts_with("--") {
-            return Err(Error::new_cli(format!("Unrecognized global option '{}'", arg)));
+            return Err(Error::new_cli(format!(
+                "Unrecognized global option '{}'",
+                arg
+            )));
         }
         maybe_command = Some(arg);
         break;

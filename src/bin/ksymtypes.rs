@@ -1,13 +1,11 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::{env, io};
 use std::process::ExitCode;
+use std::{env, io};
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::sym::SymCorpus;
 use suse_kabi_tools::{debug, Error, Filter, Timing};
-
-/// Prints the global usage message on the standard output.
 
 const USAGE_MSG: &str = concat!(
     "Usage: ksymtypes [OPTION...] COMMAND\n",
