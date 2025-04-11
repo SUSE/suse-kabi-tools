@@ -26,7 +26,7 @@ jobs:
         run: |
           mkdir pages
           groff -mandoc -Thtml doc/ksymtypes.1 > pages/ksymtypes.1.html
-          groff -mandoc -Thtml doc/ksymtypes.5 > pages/ksymtypes.5.html
+          groff -mandoc -Thtml doc/suse-kabi-tools.5 > pages/suse-kabi-tools.5.html
       - name: Upload the content as artifact
         uses: actions/upload-pages-artifact@v3
         with:
