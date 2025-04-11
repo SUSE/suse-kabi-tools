@@ -4,13 +4,17 @@
 
 suse-kabi-tools is a set of Application Binary Interface (ABI) tools for the Linux kernel.
 
-The project currently contains the following tools:
+The project contains the following utilities:
 
-* ksymtypes &ndash; a tool to work with symtypes files which are produced by [genksyms][genksyms]
-  during the Linux kernel build. It allows to consolidate multiple symtypes files into a single file
-  and to compare symtypes data. For details, see the manual pages [ksymtypes(1)][ksymtypes_1] and
-  [ksymtypes(5)][ksymtypes_5].
-* suse-kabi &ndash; a wrapper used by RPM when building SUSE kernels
+* ksymtypes &ndash; a tool to work with symtypes files, which are produced by
+  [genksyms][genksyms] during the Linux kernel build. It allows you to consolidate multiple symtypes
+  files into a single file and to compare symtypes data.
+* ksymvers &ndash; a tool to work with symvers files, which are produced by [modpost][modpost]
+  during the Linux kernel build. It allows you to compare symvers data, taking into account specific
+  severity rules.
+
+Manual pages: [ksymtypes(1)][ksymtypes_1], [ksymvers(1)][ksymvers_1],
+[suse-kabi-tools(5)][suse_kabi_tools_5].
 
 ## Installation
 
@@ -24,6 +28,8 @@ To build the project locally, install a Rust toolchain and run `cargo build`.
 This project is released under the terms of [the GPLv2 license](COPYING).
 
 [genksyms]: https://github.com/torvalds/linux/tree/master/scripts/genksyms
+[modpost]: https://github.com/torvalds/linux/tree/master/scripts/mod
 [ksymtypes_1]: https://suse.github.io/suse-kabi-tools/ksymtypes.1.html
-[ksymtypes_5]: https://suse.github.io/suse-kabi-tools/ksymtypes.5.html
+[ksymvers_1]: https://suse.github.io/suse-kabi-tools/ksymvers.1.html
+[suse_kabi_tools_5]: https://suse.github.io/suse-kabi-tools/suse-kabi-tools.5.html
 [kernel_tools]: https://build.opensuse.org/package/show/Kernel:tools/suse-kabi-tools
