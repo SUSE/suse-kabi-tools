@@ -62,8 +62,8 @@ type TypeVariants = Vec<Tokens>;
 /// A mapping from a type name to all its known variants.
 type Types = HashMap<String, TypeVariants>;
 
-/// A mapping from a symbol name to an index in `SymFiles`, specifying in which file the symbol is
-/// defined.
+/// A mapping from a symbol name to an index in `SymtypesFiles`, specifying in which file the symbol
+/// is defined.
 type Exports = HashMap<String, usize>;
 
 /// A mapping from a type name to an index in `TypeVariants`, specifying its variant in a given
@@ -72,13 +72,13 @@ type FileRecords = HashMap<String, usize>;
 
 /// A representation of a single `.symtypes` file.
 #[derive(Debug, Eq, PartialEq)]
-struct SymFile {
+struct SymtypesFile {
     path: PathBuf,
     records: FileRecords,
 }
 
 /// A collection of `.symtypes` files.
-type SymFiles = Vec<SymFile>;
+type SymtypesFiles = Vec<SymtypesFile>;
 
 /// A representation of a kernel ABI, loaded from `.symtypes` files.
 ///
@@ -111,7 +111,7 @@ type SymFiles = Vec<SymFile>;
 /// The data would be represented as follows:
 ///
 /// ```text
-/// SymCorpus {
+/// SymtypesCorpus {
 ///     types: Types {
 ///         "s#foo": TypeVariants[
 ///             Tokens[Atom("struct"), Atom("foo"), Atom("{"), Atom("int"), Atom("a"), Atom(";"), Atom("}")],
@@ -128,15 +128,15 @@ type SymFiles = Vec<SymFile>;
 ///         "bar": 0,
 ///         "baz": 1,
 ///     },
-///     files: SymFiles[
-///         SymFile {
+///     files: SymtypesFiles[
+///         SymtypesFile {
 ///             path: PathBuf("test_a.symtypes"),
 ///             records: FileRecords {
 ///                 "s#foo": 0,
 ///                 "bar": 0,
 ///             }
 ///         },
-///         SymFile {
+///         SymtypesFile {
 ///             path: PathBuf("test_b.symtypes"),
 ///             records: FileRecords {
 ///                 "s#foo": 1,
@@ -154,17 +154,17 @@ type SymFiles = Vec<SymFile>;
 /// for ABI equality, the code needs to consider whether all referenced subtypes are actually equal
 /// as well.
 #[derive(Debug, Default, Eq, PartialEq)]
-pub struct SymCorpus {
+pub struct SymtypesCorpus {
     types: Types,
     exports: Exports,
-    files: SymFiles,
+    files: SymtypesFiles,
 }
 
-/// A helper struct to provide synchronized access to `SymCorpus` data during parallel loading.
+/// A helper struct to provide synchronized access to `SymtypesCorpus` data during parallel loading.
 struct LoadContext<'a> {
     types: RwLock<&'a mut Types>,
     exports: Mutex<&'a mut Exports>,
-    files: Mutex<&'a mut SymFiles>,
+    files: Mutex<&'a mut SymtypesFiles>,
 }
 
 /// Type names active during the loading of a specific file, providing for each type its variant and
@@ -182,13 +182,13 @@ type CompareChangedTypes<'a> = HashMap<(&'a str, &'a Tokens, &'a Tokens), Vec<&'
 /// Type names processed during the comparison for a specific file.
 type CompareFileTypes<'a> = HashSet<&'a str>;
 
-impl SymCorpus {
+impl SymtypesCorpus {
     /// Creates a new empty corpus.
     pub fn new() -> Self {
         Self {
             types: Types::new(),
             exports: Exports::new(),
-            files: SymFiles::new(),
+            files: SymtypesFiles::new(),
         }
     }
 
@@ -455,7 +455,7 @@ impl SymCorpus {
     fn add_file<P: AsRef<Path>>(path: P, load_context: &LoadContext) -> usize {
         let path = path.as_ref();
 
-        let symfile = SymFile {
+        let symfile = SymtypesFile {
             path: path.to_path_buf(),
             records: FileRecords::new(),
         };
@@ -634,7 +634,7 @@ impl SymCorpus {
     /// present. All of its type references are then recursively processed in the same way.
     fn consolidate_type<'a>(
         &'a self,
-        symfile: &SymFile,
+        symfile: &SymtypesFile,
         name: &'a str,
         file_types: &mut ConsolidateFileTypes<'a>,
     ) {
@@ -777,7 +777,11 @@ impl SymCorpus {
     }
 
     /// Obtains tokens which describe a specified type name, in a given corpus and file.
-    fn get_type_tokens<'a>(symtypes: &'a SymCorpus, file: &SymFile, name: &str) -> &'a Tokens {
+    fn get_type_tokens<'a>(
+        symtypes: &'a SymtypesCorpus,
+        file: &SymtypesFile,
+        name: &str,
+    ) -> &'a Tokens {
         match file.records.get(name) {
             Some(&variant_idx) => match symtypes.types.get(name) {
                 Some(variants) => &variants[variant_idx],
@@ -805,8 +809,8 @@ impl SymCorpus {
     /// The specified symbol is added to `processed_types`, if not already present, and all its type
     /// references get recursively processed in the same way.
     fn compare_types<'a>(
-        (corpus, file): (&'a SymCorpus, &'a SymFile),
-        (other_corpus, other_file): (&'a SymCorpus, &'a SymFile),
+        (corpus, file): (&'a SymtypesCorpus, &'a SymtypesFile),
+        (other_corpus, other_file): (&'a SymtypesCorpus, &'a SymtypesFile),
         name: &'a str,
         export: &'a str,
         changes: &Mutex<CompareChangedTypes<'a>>,
@@ -877,7 +881,7 @@ impl SymCorpus {
     /// A human-readable report about all found changes is written to the provided output stream.
     pub fn compare_with<W: Write>(
         &self,
-        other_corpus: &SymCorpus,
+        other_corpus: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
         writer: W,
         num_workers: i32,

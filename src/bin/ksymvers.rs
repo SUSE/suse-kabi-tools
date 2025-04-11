@@ -5,7 +5,7 @@ use std::env;
 use std::process::ExitCode;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
-use suse_kabi_tools::symvers::{CompareFormat, CompareWriter, Symvers};
+use suse_kabi_tools::symvers::{CompareFormat, CompareWriter, SymversCorpus};
 use suse_kabi_tools::{debug, Error, Timing};
 
 const USAGE_MSG: &str = concat!(
@@ -106,7 +106,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let syms = {
         let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
 
-        let mut syms = Symvers::new();
+        let mut syms = SymversCorpus::new();
         syms.load(&path).map_err(|err| {
             Error::new_context(format!("Failed to read symvers from '{}'", path), err)
         })?;
@@ -116,7 +116,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let syms2 = {
         let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path2));
 
-        let mut syms2 = Symvers::new();
+        let mut syms2 = SymversCorpus::new();
         syms2.load(&path2).map_err(|err| {
             Error::new_context(format!("Failed to read symvers from '{}'", path2), err)
         })?;

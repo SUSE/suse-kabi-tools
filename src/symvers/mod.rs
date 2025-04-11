@@ -48,7 +48,7 @@ impl ExportInfo {
 /// A collection of export records.
 type Exports = HashMap<String, ExportInfo>;
 
-/// The format of the output from [`Symvers::compare_with()`].
+/// The format of the output from [`SymversCorpus::compare_with()`].
 pub enum CompareFormat {
     Null,
     Pretty,
@@ -70,7 +70,7 @@ impl CompareFormat {
     }
 }
 
-/// A sink for writing the output of [`Symvers::compare_with()`].
+/// A sink for writing the output of [`SymversCorpus::compare_with()`].
 pub struct CompareWriter {
     format: CompareFormat,
     write: Writer,
@@ -101,12 +101,12 @@ impl CompareWriter {
 
 /// A representation of a kernel ABI, loaded from symvers files.
 #[derive(Debug, Default, PartialEq)]
-pub struct Symvers {
+pub struct SymversCorpus {
     exports: Exports,
 }
 
-impl Symvers {
-    /// Creates a new empty `Symvers` object.
+impl SymversCorpus {
+    /// Creates a new empty `SymversCorpus` object.
     pub fn new() -> Self {
         Self {
             exports: Exports::new(),
@@ -165,7 +165,7 @@ impl Symvers {
     /// Reports any found changes to the provided output streams, formatted as requested.
     pub fn compare_with(
         &self,
-        other_symvers: &Symvers,
+        other_symvers: &SymversCorpus,
         maybe_rules: Option<&Rules>,
         writers: &mut [CompareWriter],
     ) -> Result<(), crate::Error> {
@@ -313,6 +313,8 @@ impl Symvers {
                 }
             }
         }
+
+        // TODO Flush all buffers.
 
         Ok(())
     }

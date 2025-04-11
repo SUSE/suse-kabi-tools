@@ -10,7 +10,7 @@ use std::time::Instant;
 
 pub mod cli;
 pub mod rules;
-pub mod sym;
+pub mod symtypes;
 pub mod symvers;
 pub mod text;
 

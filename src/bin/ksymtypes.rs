@@ -4,7 +4,7 @@
 use std::process::ExitCode;
 use std::{env, io};
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
-use suse_kabi_tools::sym::SymCorpus;
+use suse_kabi_tools::symtypes::SymtypesCorpus;
 use suse_kabi_tools::{debug, Error, Filter, Timing};
 
 const USAGE_MSG: &str = concat!(
@@ -117,7 +117,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
     let path = maybe_path.ok_or_else(|| Error::new_cli("The consolidate source is missing"))?;
 
     // Do the consolidation.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
 
     {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
@@ -204,7 +204,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let syms = {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
-        let mut syms = SymCorpus::new();
+        let mut syms = SymtypesCorpus::new();
         syms.load(&path, num_workers).map_err(|err| {
             Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
         })?;
@@ -214,7 +214,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let syms2 = {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path2));
 
-        let mut syms2 = SymCorpus::new();
+        let mut syms2 = SymtypesCorpus::new();
         syms2.load(&path2, num_workers).map_err(|err| {
             Error::new_context(format!("Failed to read symtypes from '{}'", path2), err)
         })?;

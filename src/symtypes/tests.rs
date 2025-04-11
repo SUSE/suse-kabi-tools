@@ -7,7 +7,7 @@ use crate::{assert_ok, assert_parse_err};
 #[test]
 fn read_basic_single() {
     // Check basic reading of a single file.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -20,7 +20,7 @@ fn read_basic_single() {
     assert_ok!(result);
     assert_eq!(
         syms,
-        SymCorpus {
+        SymtypesCorpus {
             types: HashMap::from([
                 (
                     "s#foo".to_string(),
@@ -52,7 +52,7 @@ fn read_basic_single() {
                 ),
             ]),
             exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 0)]),
-            files: vec![SymFile {
+            files: vec![SymtypesFile {
                 path: PathBuf::from("test.symtypes"),
                 records: HashMap::from([
                     ("s#foo".to_string(), 0),
@@ -67,7 +67,7 @@ fn read_basic_single() {
 #[test]
 fn read_basic_consolidated() {
     // Check basic reading of a consolidated file.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test_consolidated.symtypes",
         concat!(
@@ -82,7 +82,7 @@ fn read_basic_consolidated() {
     assert_ok!(result);
     assert_eq!(
         syms,
-        SymCorpus {
+        SymtypesCorpus {
             types: HashMap::from([
                 (
                     "s#foo".to_string(),
@@ -115,11 +115,11 @@ fn read_basic_consolidated() {
             ]),
             exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 1)]),
             files: vec![
-                SymFile {
+                SymtypesFile {
                     path: PathBuf::from("test.symtypes"),
                     records: HashMap::from([("s#foo".to_string(), 0), ("bar".to_string(), 0)])
                 },
-                SymFile {
+                SymtypesFile {
                     path: PathBuf::from("test2.symtypes"),
                     records: HashMap::from([("baz".to_string(), 0)])
                 },
@@ -131,7 +131,7 @@ fn read_basic_consolidated() {
 #[test]
 fn read_empty_record_single() {
     // Check that empty records are rejected when reading a single file.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -148,7 +148,7 @@ fn read_empty_record_single() {
 #[test]
 fn read_empty_record_consolidated() {
     // Check that empty records are skipped when reading a consolidated file.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test_consolidated.symtypes",
         concat!(
@@ -166,13 +166,13 @@ fn read_empty_record_consolidated() {
         .as_bytes(),
     );
     assert_ok!(result);
-    assert_ne!(syms, SymCorpus::new());
+    assert_ne!(syms, SymtypesCorpus::new());
 }
 
 #[test]
 fn read_duplicate_type_record() {
     // Check that type records with duplicate names are rejected when reading a file.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -189,7 +189,7 @@ TODO FIXME
 #[test]
 fn read_duplicate_file_record() {
     // Check that file records with duplicate names are rejected when reading a consolidated file.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test_consolidated.symtypes",
         concat!(
@@ -210,7 +210,7 @@ fn read_duplicate_file_record() {
 #[test]
 fn read_invalid_reference() {
     // Check that a record referencing a symbol with a missing declaration is rejected.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -224,7 +224,7 @@ fn read_invalid_reference() {
 #[test]
 fn read_duplicate_type_export() {
     // Check that two exports with the same name in different files get rejected.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -249,7 +249,7 @@ fn read_duplicate_type_export() {
 #[test]
 fn read_write_basic() {
     // Check reading of a single file and writing the consolidated output.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -276,7 +276,7 @@ fn read_write_basic() {
 fn read_write_shared_struct() {
     // Check that a structure declaration shared by two files appears only once in the consolidated
     // output.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -315,7 +315,7 @@ fn read_write_shared_struct() {
 fn read_write_differing_struct() {
     // Check that a structure declaration different in two files appears in all variants in the
     // consolidated output and they are correctly referenced by the file entries.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "test.symtypes",
         concat!(
@@ -354,7 +354,7 @@ fn read_write_differing_struct() {
 #[test]
 fn compare_identical() {
     // Check that the comparison of two identical corpuses shows no differences.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "a/test.symtypes",
         concat!(
@@ -363,7 +363,7 @@ fn compare_identical() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut syms2 = SymCorpus::new();
+    let mut syms2 = SymtypesCorpus::new();
     let result = syms2.load_buffer(
         "b/test.symtypes",
         concat!(
@@ -386,7 +386,7 @@ fn compare_identical() {
 #[test]
 fn compare_added_export() {
     // Check that the comparison of two corpuses reports any newly added export.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "a/test.symtypes",
         concat!(
@@ -395,7 +395,7 @@ fn compare_added_export() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut syms2 = SymCorpus::new();
+    let mut syms2 = SymtypesCorpus::new();
     let result = syms2.load_buffer(
         "b/test.symtypes",
         concat!(
@@ -419,7 +419,7 @@ fn compare_added_export() {
 #[test]
 fn compare_removed_export() {
     // Check that the comparison of two corpuses reports any removed export.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "a/test.symtypes",
         concat!(
@@ -429,7 +429,7 @@ fn compare_removed_export() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut syms2 = SymCorpus::new();
+    let mut syms2 = SymtypesCorpus::new();
     let result = syms2.load_buffer(
         "b/test.symtypes",
         concat!(
@@ -452,7 +452,7 @@ fn compare_removed_export() {
 #[test]
 fn compare_changed_type() {
     // Check that the comparison of two corpuses reports changed types and affected exports.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "a/test.symtypes",
         concat!(
@@ -462,7 +462,7 @@ fn compare_changed_type() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut syms2 = SymCorpus::new();
+    let mut syms2 = SymtypesCorpus::new();
     let result = syms2.load_buffer(
         "b/test.symtypes",
         concat!(
@@ -496,7 +496,7 @@ fn compare_changed_nested_type() {
     // Check that the comparison of two corpuses reports also changes in subtypes even if the parent
     // type itself is modified, as long as each subtype is referenced by the parent type in both
     // inputs.
-    let mut syms = SymCorpus::new();
+    let mut syms = SymtypesCorpus::new();
     let result = syms.load_buffer(
         "a/test.symtypes",
         concat!(
@@ -506,7 +506,7 @@ fn compare_changed_nested_type() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut syms2 = SymCorpus::new();
+    let mut syms2 = SymtypesCorpus::new();
     let result = syms2.load_buffer(
         "b/test.symtypes",
         concat!(

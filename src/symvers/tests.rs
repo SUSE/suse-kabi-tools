@@ -8,7 +8,7 @@ use std::slice;
 #[test]
 fn read_export_basic() {
     // Check that basic parsing works correctly.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -19,7 +19,7 @@ fn read_export_basic() {
     assert_ok!(result);
     assert_eq!(
         symvers,
-        Symvers {
+        SymversCorpus {
             exports: HashMap::from([(
                 "foo".to_string(),
                 ExportInfo::new(0x12345678, "vmlinux", false, None::<&str>)
@@ -31,7 +31,7 @@ fn read_export_basic() {
 #[test]
 fn read_empty_record() {
     // Check that empty records are rejected when reading a symvers file.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -42,13 +42,13 @@ fn read_empty_record() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:2: The export does not specify a CRC");
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn read_invalid_crc() {
     // Check that a CRC value not starting with 0x/0X is rejected.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -60,13 +60,13 @@ fn read_invalid_crc() {
         result,
         "test.symvers:1: Failed to parse the CRC value '0': string does not start with 0x or 0X"
     );
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn read_invalid_crc2() {
     // Check that a CRC value containing non-hexadecimal digits is rejected.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -78,13 +78,13 @@ fn read_invalid_crc2() {
         result,
         "test.symvers:1: Failed to parse the CRC value '0xabcdefgh': *"
     );
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn read_no_name() {
     // Check that records without a name are rejected.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -93,13 +93,13 @@ fn read_no_name() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:1: The export does not specify a name");
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn read_no_module() {
     // Check that records without a module are rejected.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -111,13 +111,13 @@ fn read_no_module() {
         result,
         "test.symvers:1: The export does not specify a module"
     );
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn read_type() {
     // Check that the EXPORT_SYMBOL and EXPORT_SYMBOL_GPL types are correctly recognized.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -129,7 +129,7 @@ fn read_type() {
     assert_ok!(result);
     assert_eq!(
         symvers,
-        Symvers {
+        SymversCorpus {
             exports: HashMap::from([
                 (
                     "foo".to_string(),
@@ -147,7 +147,7 @@ fn read_type() {
 #[test]
 fn read_no_type() {
     // Check that records without a type are rejected.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -156,13 +156,13 @@ fn read_no_type() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:1: The export does not specify a type");
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn read_invalid_type() {
     // Check that an invalid type is rejected.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -171,13 +171,13 @@ fn read_invalid_type() {
         .as_bytes(),
     );
     assert_parse_err!(result, "test.symvers:1: Invalid export type 'EXPORT_UNUSED_SYMBOL', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL");
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn read_namespace() {
     // Check that an optional namespace is correctly accepted.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -188,7 +188,7 @@ fn read_namespace() {
     assert_ok!(result);
     assert_eq!(
         symvers,
-        Symvers {
+        SymversCorpus {
             exports: HashMap::from([(
                 "foo".to_string(),
                 ExportInfo::new(0x12345678, "vmlinux", true, Some("FOO_NS"))
@@ -200,7 +200,7 @@ fn read_namespace() {
 #[test]
 fn read_extra_data() {
     // Check that any extra data after the namespace is rejected.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
         concat!(
@@ -212,13 +212,13 @@ fn read_extra_data() {
         result,
         "test.symvers:1: Unexpected string 'garbage' found at the end of the export record"
     );
-    assert_eq!(symvers, Symvers::new());
+    assert_eq!(symvers, SymversCorpus::new());
 }
 
 #[test]
 fn compare_identical() {
     // Check that the comparison of two identical symvers shows no differences.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
         concat!(
@@ -227,7 +227,7 @@ fn compare_identical() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut symvers2 = Symvers::new();
+    let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
         concat!(
@@ -251,13 +251,13 @@ fn compare_identical() {
 #[test]
 fn compare_added_export() {
     // Check that the comparison of two symvers reports any newly added export.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
         concat!("0x12345678 foo vmlinux EXPORT_SYMBOL\n",).as_bytes(),
     );
     assert_ok!(result);
-    let mut symvers2 = Symvers::new();
+    let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
         concat!(
@@ -282,7 +282,7 @@ fn compare_added_export() {
 #[test]
 fn compare_removed_export() {
     // Check that the comparison of two symvers reports any removed export.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
         concat!(
@@ -292,7 +292,7 @@ fn compare_removed_export() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut symvers2 = Symvers::new();
+    let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
         concat!(
@@ -316,7 +316,7 @@ fn compare_removed_export() {
 #[test]
 fn compare_changed_crc() {
     // Check that the comparison of two symvers reports exports with changed CRCs.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
         concat!(
@@ -325,7 +325,7 @@ fn compare_changed_crc() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut symvers2 = Symvers::new();
+    let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
         concat!(
@@ -349,7 +349,7 @@ fn compare_changed_crc() {
 #[test]
 fn compare_changed_type() {
     // Check that the comparison of two symvers reports exports with changed types.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
         concat!(
@@ -361,7 +361,7 @@ fn compare_changed_type() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut symvers2 = Symvers::new();
+    let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
         concat!(
@@ -389,7 +389,7 @@ fn compare_changed_type() {
 #[test]
 fn compare_ignored_changes() {
     // Check that severity rules can be used to tolerate changes.
-    let mut symvers = Symvers::new();
+    let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
         concat!(
@@ -398,7 +398,7 @@ fn compare_ignored_changes() {
         .as_bytes(),
     );
     assert_ok!(result);
-    let mut symvers2 = Symvers::new();
+    let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
         concat!(
