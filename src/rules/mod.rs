@@ -1,8 +1,8 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::text::matches_wildcard;
-use crate::{debug, read_lines, PathFile};
+use crate::text::{matches_wildcard, read_lines};
+use crate::{debug, PathFile};
 use std::io::prelude::*;
 use std::iter::Peekable;
 use std::path::Path;

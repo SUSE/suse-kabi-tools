@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::rules::Rules;
-use crate::{debug, read_lines, Error, MapIOErr, PathFile, Writer};
+use crate::text::{read_lines, Writer};
+use crate::{debug, Error, MapIOErr, PathFile};
 use std::collections::HashMap;
 use std::io::prelude::*;
 use std::path::Path;

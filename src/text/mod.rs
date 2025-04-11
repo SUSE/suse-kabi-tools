@@ -1,10 +1,13 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::MapIOErr;
+use crate::{debug, Error, MapIOErr, PathFile};
+use std::collections::HashSet;
 use std::fmt::Display;
-use std::io::{prelude::*, BufWriter};
+use std::io;
+use std::io::{prelude::*, BufReader, BufWriter};
 use std::ops::{Index, IndexMut};
+use std::path::Path;
 
 #[cfg(test)]
 mod tests_diff;
@@ -375,4 +378,126 @@ pub fn matches_wildcard(text: &str, pattern: &str) -> bool {
     let mut pattern = pattern.chars().collect::<Vec<_>>();
     pattern.push('\0');
     do_match(&text, &pattern) == DoMatchResult::True
+}
+
+/// Reads data from a specified reader and returns its content as a [`Vec`] of [`String`] lines.
+pub fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
+    let reader = BufReader::new(reader);
+    let mut lines = Vec::new();
+    for maybe_line in reader.lines() {
+        match maybe_line {
+            Ok(line) => lines.push(line),
+            Err(err) => return Err(err),
+        };
+    }
+    Ok(lines)
+}
+
+/// A writer to the standard output, a file or an internal buffer.
+pub enum Writer {
+    Stdout(BufWriter<io::Stdout>),
+    File(BufWriter<PathFile>),
+    Buffer(Vec<u8>),
+}
+
+impl Writer {
+    /// Creates a new [`Writer`] that writes to the specified file. Treats "-" as the standard
+    /// output.
+    pub fn new_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        let path = path.as_ref();
+
+        if path == Path::new("-") {
+            Ok(Self::Stdout(BufWriter::new(io::stdout())))
+        } else {
+            match PathFile::create(path) {
+                Ok(file) => Ok(Self::File(BufWriter::new(file))),
+                Err(err) => Err(Error::new_io(
+                    format!("Failed to create file '{}'", path.display()),
+                    err,
+                )),
+            }
+        }
+    }
+
+    /// Creates a new [`Writer`] that writes to an internal buffer.
+    pub fn new_buffer() -> Self {
+        Self::Buffer(Vec::new())
+    }
+
+    /// Obtains the internal buffer when the writer is of the appropriate type.
+    pub fn into_inner(self) -> Vec<u8> {
+        match self {
+            Self::Stdout(_) | Self::File(_) => panic!("The writer is not of type Writer::Buffer"),
+            Self::Buffer(vec) => vec,
+        }
+    }
+}
+
+impl Write for Writer {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match self {
+            Self::Stdout(stdout) => stdout.write(buf),
+            Self::File(file) => file.write(buf),
+            Self::Buffer(vec) => vec.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match self {
+            Self::Stdout(stdout) => stdout.flush(),
+            Self::File(file) => file.flush(),
+            Self::Buffer(vec) => vec.flush(),
+        }
+    }
+}
+
+// TODO Support wildcards.
+#[derive(Default)]
+pub struct Filter {
+    patterns: HashSet<String>,
+}
+
+impl Filter {
+    pub fn new() -> Self {
+        Self {
+            patterns: HashSet::new(),
+        }
+    }
+
+    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+        let path = path.as_ref();
+        debug!("Loading '{}'", path.display());
+
+        let file = PathFile::open(path).map_err(|err| {
+            crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
+        })?;
+
+        // Read all content from the file.
+        let lines = match read_lines(file) {
+            Ok(lines) => lines,
+            Err(err) => return Err(crate::Error::new_io("Failed to read filter data", err)),
+        };
+
+        // Validate the patterns, reject empty ones.
+        for (line_idx, line) in lines.iter().enumerate() {
+            if line.is_empty() {
+                return Err(Error::new_parse(format!(
+                    "{}:{}: Expected a pattern",
+                    path.display(),
+                    line_idx + 1
+                )));
+            }
+        }
+
+        // Insert the new patterns.
+        for line in lines {
+            self.patterns.insert(line);
+        }
+
+        Ok(())
+    }
+
+    pub fn matches(&self, name: &str) -> bool {
+        self.patterns.contains(name)
+    }
 }

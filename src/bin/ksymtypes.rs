@@ -5,7 +5,8 @@ use std::process::ExitCode;
 use std::{env, io};
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::symtypes::SymtypesCorpus;
-use suse_kabi_tools::{debug, Error, Filter, Timing};
+use suse_kabi_tools::text::Filter;
+use suse_kabi_tools::{debug, Error, Timing};
 
 const USAGE_MSG: &str = concat!(
     "Usage: ksymtypes [OPTION...] COMMAND\n",
