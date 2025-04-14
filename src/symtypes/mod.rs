@@ -1,11 +1,11 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::text::{read_lines, unified_diff, Filter};
-use crate::{debug, MapIOErr, PathFile};
+use crate::text::{Filter, read_lines, unified_diff};
+use crate::{MapIOErr, PathFile, debug};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
-use std::io::{prelude::*, BufWriter};
+use std::io::{BufWriter, prelude::*};
 use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -675,7 +675,7 @@ impl SymtypesCorpus {
                     return Err(crate::Error::new_io(
                         format!("Failed to create file '{}'", path.display()),
                         err,
-                    ))
+                    ));
                 }
             }
         };
@@ -921,25 +921,27 @@ impl SymtypesCorpus {
 
         thread::scope(|s| {
             for _ in 0..num_workers {
-                s.spawn(|| loop {
-                    let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
-                    if work_idx >= works.len() {
-                        break;
-                    }
-                    let (name, file_idx) = works[work_idx];
+                s.spawn(|| {
+                    loop {
+                        let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
+                        if work_idx >= works.len() {
+                            break;
+                        }
+                        let (name, file_idx) = works[work_idx];
 
-                    let file = &self.files[*file_idx];
-                    if let Some(other_file_idx) = other_corpus.exports.get(name) {
-                        let other_file = &other_corpus.files[*other_file_idx];
-                        let mut processed = CompareFileTypes::new();
-                        Self::compare_types(
-                            (self, file),
-                            (other_corpus, other_file),
-                            name,
-                            name,
-                            &changes,
-                            &mut processed,
-                        );
+                        let file = &self.files[*file_idx];
+                        if let Some(other_file_idx) = other_corpus.exports.get(name) {
+                            let other_file = &other_corpus.files[*other_file_idx];
+                            let mut processed = CompareFileTypes::new();
+                            Self::compare_types(
+                                (self, file),
+                                (other_corpus, other_file),
+                                name,
+                                name,
+                                &changes,
+                                &mut processed,
+                            );
+                        }
                     }
                 });
             }

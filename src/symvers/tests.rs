@@ -170,7 +170,10 @@ fn read_invalid_type() {
         )
         .as_bytes(),
     );
-    assert_parse_err!(result, "test.symvers:1: Invalid export type 'EXPORT_UNUSED_SYMBOL', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL");
+    assert_parse_err!(
+        result,
+        "test.symvers:1: Invalid export type 'EXPORT_UNUSED_SYMBOL', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL"
+    );
     assert_eq!(symvers, SymversCorpus::new());
 }
 

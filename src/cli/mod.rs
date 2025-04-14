@@ -1,7 +1,7 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::{init_debug_level, Error};
+use crate::{Error, init_debug_level};
 
 /// Handles a command-line option with a mandatory value.
 ///

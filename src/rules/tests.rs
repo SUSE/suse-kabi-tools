@@ -165,8 +165,7 @@ fn read_empty_record() {
     let result = rules.load_buffer(
         "test.severities",
         concat!(
-            "\n",
-            "\n", //
+            "\n", "\n", //
         )
         .as_bytes(),
     );

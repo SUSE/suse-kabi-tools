@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::rules::Rules;
-use crate::text::{read_lines, Writer};
-use crate::{debug, Error, MapIOErr, PathFile};
+use crate::text::{Writer, read_lines};
+use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::HashMap;
 use std::io::prelude::*;
 use std::path::Path;
@@ -194,11 +194,7 @@ impl SymversCorpus {
 
         // A helper function to obtain the "(tolerated)" suffix string.
         fn tolerated_suffix(tolerated: bool) -> &'static str {
-            if tolerated {
-                " (tolerated)"
-            } else {
-                ""
-            }
+            if tolerated { " (tolerated)" } else { "" }
         }
 
         let err_desc = "Failed to write a comparison result";
@@ -387,11 +383,11 @@ fn parse_export<P: AsRef<Path>>(
         "EXPORT_SYMBOL_GPL" => true,
         _ => {
             return Err(crate::Error::new_parse(format!(
-            "{}:{}: Invalid export type '{}', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL",
-            path.display(),
-            line_idx + 1,
-            export_type
-        )))
+                "{}:{}: Invalid export type '{}', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL",
+                path.display(),
+                line_idx + 1,
+                export_type
+            )));
         }
     };
 

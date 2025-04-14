@@ -1,11 +1,11 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::{debug, Error, MapIOErr, PathFile};
+use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::io;
-use std::io::{prelude::*, BufReader, BufWriter};
+use std::io::{BufReader, BufWriter, prelude::*};
 use std::ops::{Index, IndexMut};
 use std::path::Path;
 

@@ -6,7 +6,7 @@ use std::process::ExitCode;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
 use suse_kabi_tools::symvers::{CompareFormat, CompareWriter, SymversCorpus};
-use suse_kabi_tools::{debug, Error, Timing};
+use suse_kabi_tools::{Error, Timing, debug};
 
 const USAGE_MSG: &str = concat!(
     "Usage: ksymvers [OPTION...] COMMAND\n",

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::text::{matches_wildcard, read_lines};
-use crate::{debug, PathFile};
+use crate::{PathFile, debug};
 use std::io::prelude::*;
 use std::iter::Peekable;
 use std::path::Path;
@@ -211,7 +211,7 @@ fn parse_rule<P: AsRef<Path>>(
                     path.display(),
                     line_idx + 1,
                     verdict
-                )))
+                )));
             }
         },
         None => {
@@ -219,7 +219,7 @@ fn parse_rule<P: AsRef<Path>>(
                 "{}:{}: The rule does not specify a verdict",
                 path.display(),
                 line_idx + 1
-            )))
+            )));
         }
     };
 
