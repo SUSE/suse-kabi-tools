@@ -4,25 +4,14 @@
 use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
-use std::process::{Command, ExitStatus};
 use suse_kabi_tools::assert_inexact;
 
-struct RunResult {
-    status: ExitStatus,
-    stdout: String,
-    stderr: String,
-}
+#[path = "../common/mod.rs"]
+mod common;
+use common::*;
 
 fn ksymtypes_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResult {
-    let output = Command::new(env!("CARGO_BIN_EXE_ksymtypes"))
-        .args(args)
-        .output()
-        .expect("failed to execute ksymtypes");
-    RunResult {
-        status: output.status,
-        stdout: String::from_utf8(output.stdout).unwrap(),
-        stderr: String::from_utf8(output.stderr).unwrap(),
-    }
+    tool_run(env!("CARGO_BIN_EXE_ksymtypes"), args)
 }
 
 #[test]
