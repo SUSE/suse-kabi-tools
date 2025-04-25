@@ -33,7 +33,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
 );
 
 /// Handles the `compare` command which shows differences between two symvers files.
-fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
+fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<bool, Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut maybe_rules_path = None;
@@ -59,7 +59,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", COMPARE_USAGE_MSG);
-                return Ok(());
+                return Ok(true);
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -142,7 +142,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         None => None,
     };
 
-    {
+    let changed = {
         let _timing = Timing::new(do_timing, "Comparison");
 
         syms.compare_with(&syms2, maybe_rules.as_ref(), &mut writers)
@@ -151,10 +151,10 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                     format!("Failed to compare symvers from '{}' and '{}'", path, path2),
                     err,
                 )
-            })?;
-    }
+            })?
+    };
 
-    Ok(())
+    Ok(changed)
 }
 
 fn main() -> ExitCode {
@@ -179,7 +179,13 @@ fn main() -> ExitCode {
 
     // Process the specified command.
     let result = match command.as_str() {
-        "compare" => do_compare(do_timing, args),
+        "compare" => do_compare(do_timing, args).map(|is_equal| {
+            if is_equal {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            }
+        }),
         _ => Err(Error::new_cli(format!(
             "Unrecognized command '{}'",
             command
@@ -187,7 +193,7 @@ fn main() -> ExitCode {
     };
 
     match result {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(code) => code,
         Err(err) => {
             eprintln!("{}", err);
             ExitCode::FAILURE

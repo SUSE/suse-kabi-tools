@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
-use crate::{assert_inexact_parse_err, assert_ok, assert_parse_err};
+use crate::{assert_inexact_parse_err, assert_ok, assert_ok_eq, assert_parse_err};
 use std::slice;
 
 #[test]
@@ -242,7 +242,7 @@ fn compare_identical() {
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
     let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
     let out = writer.into_inner();
-    assert_ok!(result);
+    assert_ok_eq!(result, true);
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
@@ -273,7 +273,7 @@ fn compare_added_export() {
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
     let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
     let out = writer.into_inner();
-    assert_ok!(result);
+    assert_ok_eq!(result, true);
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
@@ -307,7 +307,7 @@ fn compare_removed_export() {
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
     let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
     let out = writer.into_inner();
-    assert_ok!(result);
+    assert_ok_eq!(result, false);
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
@@ -340,7 +340,7 @@ fn compare_changed_crc() {
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
     let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
     let out = writer.into_inner();
-    assert_ok!(result);
+    assert_ok_eq!(result, false);
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
@@ -379,7 +379,7 @@ fn compare_changed_type() {
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
     let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
     let out = writer.into_inner();
-    assert_ok!(result);
+    assert_ok_eq!(result, false);
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!(
@@ -422,7 +422,7 @@ fn compare_ignored_changes() {
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
     let result = symvers.compare_with(&symvers2, Some(&rules), slice::from_mut(&mut writer));
     let out = writer.into_inner();
-    assert_ok!(result);
+    assert_ok_eq!(result, true);
     assert_eq!(
         String::from_utf8(out).unwrap(),
         concat!("Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated)\n",)

@@ -163,21 +163,23 @@ impl SymversCorpus {
 
     /// Compares symbols in `self` and `other_symvers`.
     ///
-    /// Reports any found changes to the provided output streams, formatted as requested.
+    /// Reports any found changes to the provided output streams, formatted as requested. Returns
+    /// [`Ok`] containing a `bool` indicating whether the corpuses are the same, or [`Err`] on
+    /// error.
     pub fn compare_with(
         &self,
         other_symvers: &SymversCorpus,
         maybe_rules: Option<&Rules>,
         writers: &mut [CompareWriter],
-    ) -> Result<(), crate::Error> {
+    ) -> Result<bool, crate::Error> {
         // A helper function to handle common logic related to reporting a change. It determines if
-        // the change should be tolerated and updates the changed result.
+        // the change should be tolerated and updates the is_equal result.
         fn process_change(
             maybe_rules: Option<&Rules>,
             name: &str,
             info: &ExportInfo,
             always_tolerated: bool,
-            changed: &mut bool,
+            is_equal: &mut bool,
         ) -> bool {
             let tolerated = always_tolerated
                 || match maybe_rules {
@@ -187,7 +189,7 @@ impl SymversCorpus {
                     None => false,
                 };
             if !tolerated {
-                *changed = true;
+                *is_equal = false;
             }
             tolerated
         }
@@ -203,7 +205,7 @@ impl SymversCorpus {
         names.sort();
         let mut other_names = other_symvers.exports.keys().collect::<Vec<_>>();
         other_names.sort();
-        let mut changed = false;
+        let mut is_equal = true;
 
         // Check for symbols in self but not in other_symvers, and vice versa.
         //
@@ -231,7 +233,7 @@ impl SymversCorpus {
                 if !exports_b.contains_key(name) {
                     let info = exports_a.get(name).unwrap();
                     let tolerated =
-                        process_change(maybe_rules, name, info, always_tolerated, &mut changed);
+                        process_change(maybe_rules, name, info, always_tolerated, &mut is_equal);
                     for writer in &mut *writers {
                         match writer.format {
                             CompareFormat::Null => {}
@@ -259,7 +261,7 @@ impl SymversCorpus {
             if let Some(other_info) = other_symvers.exports.get(name) {
                 let info = self.exports.get(name).unwrap();
                 if info.crc != other_info.crc {
-                    let tolerated = process_change(maybe_rules, name, info, false, &mut changed);
+                    let tolerated = process_change(maybe_rules, name, info, false, &mut is_equal);
                     for writer in &mut *writers {
                         match writer.format {
                             CompareFormat::Null => {}
@@ -286,7 +288,7 @@ impl SymversCorpus {
                         name,
                         info,
                         info.is_gpl_only && !other_info.is_gpl_only,
-                        &mut changed,
+                        &mut is_equal,
                     );
                     for writer in &mut *writers {
                         match writer.format {
@@ -313,7 +315,7 @@ impl SymversCorpus {
 
         // TODO Flush all buffers.
 
-        Ok(())
+        Ok(is_equal)
     }
 }
 
