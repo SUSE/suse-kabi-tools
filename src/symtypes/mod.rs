@@ -505,6 +505,19 @@ impl SymtypesCorpus {
     /// Adds the given type definition to the corpus if not already present, and returns its variant
     /// index.
     fn merge_type(type_name: &str, tokens: Tokens, load_context: &LoadContext) -> usize {
+        // Types are often repeated in different symtypes files. Try to find an existing type only
+        // under the read lock first.
+        {
+            let types = load_context.types.read().unwrap();
+            if let Some(variants) = types.get(type_name) {
+                for (i, variant) in variants.iter().enumerate() {
+                    if tokens == *variant {
+                        return i;
+                    }
+                }
+            }
+        }
+
         let mut types = load_context.types.write().unwrap();
         match types.get_mut(type_name) {
             Some(variants) => {
