@@ -53,7 +53,7 @@ type Exports = HashMap<String, ExportInfo>;
 pub enum CompareFormat {
     Null,
     Pretty,
-    Names,
+    Symbols,
 }
 
 impl CompareFormat {
@@ -62,7 +62,7 @@ impl CompareFormat {
         match format {
             "null" => Ok(Self::Null),
             "pretty" => Ok(Self::Pretty),
-            "names" => Ok(Self::Names),
+            "symbols" => Ok(Self::Symbols),
             _ => Err(Error::new_parse(format!(
                 "Unrecognized format '{}'",
                 format
@@ -245,7 +245,7 @@ impl SymversCorpus {
                                 tolerated_suffix(tolerated)
                             )
                             .map_io_err(err_desc)?,
-                            CompareFormat::Names => {
+                            CompareFormat::Symbols => {
                                 if !tolerated {
                                     writeln!(writer.write, "{}", name).map_io_err(err_desc)?
                                 }
@@ -274,7 +274,7 @@ impl SymversCorpus {
                                 tolerated_suffix(tolerated)
                             )
                             .map_io_err(err_desc)?,
-                            CompareFormat::Names => {
+                            CompareFormat::Symbols => {
                                 if !tolerated {
                                     writeln!(writer.write, "{}", name).map_io_err(err_desc)?
                                 }
@@ -302,7 +302,7 @@ impl SymversCorpus {
                                 tolerated_suffix(tolerated)
                             )
                             .map_io_err(err_desc)?,
-                            CompareFormat::Names => {
+                            CompareFormat::Symbols => {
                                 if !tolerated {
                                     writeln!(writer.write, "{}", name).map_io_err(err_desc)?
                                 }
