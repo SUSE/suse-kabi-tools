@@ -8,31 +8,50 @@ use crate::{Error, init_debug_level};
 /// When the `arg` matches the `short` or `long` variant, the function returns [`Ok(Some(String))`]
 /// with the option value. Otherwise, [`Ok(None)`] is returned when the `arg` doesn't match, or
 /// [`Err`] in case of an error.
-pub fn handle_value_option<I: Iterator<Item = String>>(
+pub fn handle_value_option<
+    I: Iterator<Item = String>,
+    S: Into<Option<&'static str>>,
+    L: Into<Option<&'static str>>,
+>(
     arg: &str,
     args: &mut I,
-    short: &str,
-    long: &str,
+    maybe_short: S,
+    maybe_long: L,
 ) -> Result<Option<String>, Error> {
-    // Handle '-<short> <value>' and '--<long> <value>'.
-    if arg == short || arg == long {
-        match args.next() {
-            Some(value) => return Ok(Some(value.to_string())),
-            None => {
-                return Err(Error::new_cli(format!("Missing argument for '{}'", long)));
-            }
-        };
-    }
+    let maybe_short = maybe_short.into();
+    let maybe_long = maybe_long.into();
 
-    // Handle '-<short><value>'.
-    if let Some(value) = arg.strip_prefix(short) {
-        return Ok(Some(value.to_string()));
-    }
+    // Handle '-<short> <value>' and '-<short><value>'.
+    if let Some(short) = maybe_short {
+        if arg == short {
+            match args.next() {
+                Some(value) => return Ok(Some(value.to_string())),
+                None => {
+                    return Err(Error::new_cli(format!("Missing argument for '{}'", short)));
+                }
+            };
+        }
 
-    // Handle '--<long>=<value>'.
-    if let Some(rem) = arg.strip_prefix(long) {
-        if let Some(value) = rem.strip_prefix('=') {
+        if let Some(value) = arg.strip_prefix(short) {
             return Ok(Some(value.to_string()));
+        }
+    }
+
+    // Handle '--<long> <value>' and '--<long>=<value>'.
+    if let Some(long) = maybe_long {
+        if arg == long {
+            match args.next() {
+                Some(value) => return Ok(Some(value.to_string())),
+                None => {
+                    return Err(Error::new_cli(format!("Missing argument for '{}'", long)));
+                }
+            };
+        }
+
+        if let Some(rem) = arg.strip_prefix(long) {
+            if let Some(value) = rem.strip_prefix('=') {
+                return Ok(Some(value.to_string()));
+            }
         }
     }
 
