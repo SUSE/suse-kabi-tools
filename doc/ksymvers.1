@@ -6,7 +6,15 @@ ksymvers \- a tool to work with Linux\-kernel symvers files
 .SH SYNOPSIS
 \fBksymvers\fR [\fIGENERAL\-OPTION\fR...] { \fBcompare\fR } [\fICOMMAND\-OPTION\fR...] ...
 .SH DESCRIPTION
-TODO
+\fBksymvers\fR is a tool that provides functionality to work with symvers files. These files
+summarize the exported symbols of the kernel and its modules. The data is produced by the
+\fBmodpost\fR utility from the kernel tree.
+.PP
+The tool primarily operates with a final symvers file, typically called \fIModule.symvers\fR, as it
+is produced during a single build of the Linux kernel.
+.PP
+The provided functionality is divided into integrated commands. The only currently available
+command is \fBcompare\fR, which shows the differences between two symvers files.
 .SH GENERAL OPTIONS
 .TP
 \fB\-d\fR, \fB\-\-debug\fR
@@ -20,12 +28,30 @@ Output version information and exit.
 .SH COMPARE COMMAND
 \fBksymvers\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR...] \fIFILE\fR \fIFILE2\fR
 .PP
-TODO
+The \fBcompare\fR command shows the differences between two symvers files. In a typical use case,
+the first input will point to a reference symvers file and the second input will point to a symvers
+file from a new build of the Linux kernel.
 .PP
 Available options:
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Display help information for the command and exit.
+.TP
+\fB-r\fR \fIFILE\fR, \fB\-\-rules\fR=\fIFILE\fR
+Load kABI severity rules from \fIFILE\fR.
+.TP
+\fB\-f\fR \fITYPE[:FILE]\fR, \fB\-\-format\fR=\fITYPE[:FILE]\fR
+Change the output format to \fITYPE\fR, or write the \fITYPE\fR-formatted output to \fIFILE\fR.
+.IP
+The \fITYPE\fR can be one of the following:
+.RS 14
+.IP \[bu] 2
+\fInull\fR \(en produces no output,
+.IP \[bu] 2
+\fIpretty\fR \(en produces human-readable output,
+.IP \[bu] 2
+\fIsymbols\fR \(en shows only the names of symbols that have changed.
+.RE
 .SH EXAMPLES
 TODO
 .SH SEE ALSO

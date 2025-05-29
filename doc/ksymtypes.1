@@ -4,7 +4,7 @@
 .SH NAME
 ksymtypes \- a tool to work with Linux\-kernel symtypes files
 .SH SYNOPSIS
-\fBksymtypes\fR [\fIGENERAL\-OPTION\fR...] {\fBconsolidate\fR | \fBcompare\fR } [\fICOMMAND\-OPTION\fR...]
+\fBksymtypes\fR [\fIGENERAL\-OPTION\fR...] {\fBconsolidate\fR | \fBcompare\fR } [\fICOMMAND\-OPTION\fR...] ...
 .SH DESCRIPTION
 \fBksymtypes\fR is a tool that provides functionality to work with symtypes files. These files
 describe the Application Binary Interface (ABI) of the kernel and its modules. The data is produced
@@ -14,10 +14,10 @@ The tool primarily operates with sets of symtypes files as they are produced dur
 of the Linux kernel. Each such set describes the ABI of a specific kernel and its modules. The tool
 refers to this set as a "symtypes corpus".
 .PP
-The provided functionality is split into several integrated commands. The currently available
-commands are \fBconsolidate\fR and \fBcompare\fR. The \fBconsolidate\fR command takes a symtypes
-corpus composed of a set of symtypes files and produces its consolidated variant by merging
-duplicated types. The \fBcompare\fR command shows differences between two symtypes corpuses.
+The provided functionality is divided into integrated commands. The currently available commands are
+\fBconsolidate\fR and \fBcompare\fR. The \fBconsolidate\fR command takes a symtypes corpus composed
+of a set of symtypes files and produces its consolidated variant by merging duplicated types. The
+\fBcompare\fR command shows the differences between two symtypes corpuses.
 .SH GENERAL OPTIONS
 .TP
 \fB\-d\fR, \fB\-\-debug\fR
@@ -49,10 +49,10 @@ Write the result in \fIFILE\fR, instead of the standard output.
 .SH COMPARE COMMAND
 \fBksymtypes\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR...] \fIPATH\fR \fIPATH2\fR
 .PP
-The \fBcompare\fR command shows differences between two symtypes corpuses. A corpus can be specified
-by a directory containing symtypes files or by a consolidated symtypes file. In a typical use case,
-the first input will point to a reference consolidated symtypes corpus and the second input will
-point to data from a new build of the Linux kernel.
+The \fBcompare\fR command shows the differences between two symtypes corpuses. A corpus can be
+specified by a directory containing symtypes files or by a consolidated symtypes file. In a typical
+use case, the first input will point to a reference consolidated symtypes corpus and the second
+input will point to data from a new build of the Linux kernel.
 .PP
 Available options:
 .TP
@@ -61,6 +61,9 @@ Display help information for the command and exit.
 .TP
 \fB\-j\fR \fINUM\fR, \fB\-\-jobs\fR=\fINUM\fR
 Use \fINUM\fR workers to perform the operation simultaneously.
+.TP
+\fB\-\-filter\-symbol\-list\fR=\fIFILE\fR
+Consider only symbols that match the patterns in \fIFILE\fR.
 .SH EXAMPLES
 Build the Linux kernel and create a reference consolidated symtypes corpus:
 .IP
