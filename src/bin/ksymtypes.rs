@@ -38,7 +38,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
     "Options:\n",
     "  -h, --help                    display this help and exit\n",
     "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
-    "  -l FILE, --filter=FILE        consider only symbols matching patterns in FILE\n",
+    "  --filter-symbol-list=FILE     consider only symbols matching patterns in FILE\n",
 );
 
 /// Handles the `-j`/`--jobs` option which specifies the number of workers to perform a given
@@ -150,7 +150,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
-    let mut maybe_filter_path = None;
+    let mut maybe_symbol_filter_path = None;
     let mut past_dash_dash = false;
     let mut maybe_path = None;
     let mut maybe_path2 = None;
@@ -161,8 +161,9 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                 num_workers = value;
                 continue;
             }
-            if let Some(value) = handle_value_option(&arg, &mut args, "-l", "--filter")? {
-                maybe_filter_path = Some(value);
+            if let Some(value) = handle_value_option(&arg, &mut args, None, "--filter-symbol-list")?
+            {
+                maybe_symbol_filter_path = Some(value);
                 continue;
             }
             if arg == "-h" || arg == "--help" {
@@ -222,18 +223,24 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         syms2
     };
 
-    let maybe_filter = match maybe_filter_path {
-        Some(filter_path) => {
+    let maybe_symbol_filter = match maybe_symbol_filter_path {
+        Some(symbol_filter_path) => {
             let _timing = Timing::new(
                 do_timing,
-                &format!("Reading filters from '{}'", filter_path),
+                &format!("Reading symbol filters from '{}'", symbol_filter_path),
             );
 
-            let mut filter = Filter::new();
-            filter.load(&filter_path).map_err(|err| {
-                Error::new_context(format!("Failed to read filter from '{}'", filter_path), err)
+            let mut symbol_filter = Filter::new();
+            symbol_filter.load(&symbol_filter_path).map_err(|err| {
+                Error::new_context(
+                    format!(
+                        "Failed to read symbol filters from '{}'",
+                        symbol_filter_path
+                    ),
+                    err,
+                )
             })?;
-            Some(filter)
+            Some(symbol_filter)
         }
         None => None,
     };
@@ -241,13 +248,18 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        syms.compare_with(&syms2, maybe_filter.as_ref(), io::stdout(), num_workers)
-            .map_err(|err| {
-                Error::new_context(
-                    format!("Failed to compare symtypes from '{}' and '{}'", path, path2),
-                    err,
-                )
-            })?;
+        syms.compare_with(
+            &syms2,
+            maybe_symbol_filter.as_ref(),
+            io::stdout(),
+            num_workers,
+        )
+        .map_err(|err| {
+            Error::new_context(
+                format!("Failed to compare symtypes from '{}' and '{}'", path, path2),
+                err,
+            )
+        })?;
     }
 
     Ok(())
