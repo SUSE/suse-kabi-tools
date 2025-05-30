@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::{Error, MapIOErr, PathFile, debug};
+use std::cmp;
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::io;
@@ -73,7 +74,7 @@ fn myers<T: AsRef<str> + PartialEq>(a: &[T], b: &[T]) -> EditScript {
             edit_index: usize::MAX,
         };
         // Minimum of 3 diagonals to allow accessing `v[1].x` when the inputs are empty.
-        std::cmp::max(2 * max + 1, 3)
+        cmp::max(2 * max + 1, 3)
     ]);
     v[1].x = 0;
     let mut edit_chains = Vec::new();

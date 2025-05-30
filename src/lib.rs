@@ -1,10 +1,14 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+use std::error;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use std::time::Instant;
 
 pub mod cli;
@@ -17,15 +21,9 @@ pub mod text;
 /// providing custom errors.
 #[derive(Debug)]
 pub enum Error {
-    Context {
-        desc: String,
-        inner_err: Box<Error>,
-    },
+    Context { desc: String, inner_err: Box<Error> },
     CLI(String),
-    IO {
-        desc: String,
-        io_err: std::io::Error,
-    },
+    IO { desc: String, io_err: io::Error },
     Parse(String),
 }
 
@@ -44,7 +42,7 @@ impl Error {
     }
 
     /// Creates a new `Error::IO`.
-    pub fn new_io<S: Into<String>>(desc: S, io_err: std::io::Error) -> Self {
+    pub fn new_io<S: Into<String>>(desc: S, io_err: io::Error) -> Self {
         Self::IO {
             desc: desc.into(),
             io_err,
@@ -57,10 +55,10 @@ impl Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl error::Error for Error {}
 
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             Self::Context { desc, inner_err } => {
                 write!(f, "{}: ", desc)?;
@@ -109,15 +107,15 @@ impl Drop for Timing {
     }
 }
 
-/// A helper extension trait to map [`std::io::Error`] to [`crate::Error`], as
+/// A helper extension trait to map [`std::io::Error`] to [`Error`], as
 /// `write!(data).map_io_error(context)`.
 trait MapIOErr {
-    fn map_io_err(self, desc: &str) -> Result<(), crate::Error>;
+    fn map_io_err(self, desc: &str) -> Result<(), Error>;
 }
 
-impl MapIOErr for Result<(), std::io::Error> {
-    fn map_io_err(self, desc: &str) -> Result<(), crate::Error> {
-        self.map_err(|err| crate::Error::new_io(desc, err))
+impl MapIOErr for Result<(), io::Error> {
+    fn map_io_err(self, desc: &str) -> Result<(), Error> {
+        self.map_err(|err| Error::new_io(desc, err))
     }
 }
 
@@ -175,7 +173,7 @@ impl Write for PathFile {
 }
 
 /// Global debugging level.
-pub static DEBUG_LEVEL: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+pub static DEBUG_LEVEL: OnceLock<usize> = OnceLock::new();
 
 /// Initializes the global debugging level, can be called only once.
 pub fn init_debug_level(level: usize) {
@@ -232,34 +230,34 @@ macro_rules! assert_ok_eq {
     };
 }
 
-/// Asserts that `result` is an [`Err`] containing a [`crate::Error::Parse`] error with the
-/// description `expected_desc`.
+/// Asserts that `result` is an [`Err`] containing a [`Error::Parse`] error with the description
+/// `expected_desc`.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_parse_err {
     ($result:expr, $expected_desc:expr) => {
         match $result {
-            Err(crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $expected_desc),
+            Err($crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $expected_desc),
             result => panic!(
-                "assertion failed: {:?} is not of type Err(crate::Error::Parse(_))",
+                "assertion failed: {:?} is not of type Err(Error::Parse(_))",
                 result
             ),
         }
     };
 }
 
-/// Asserts that `result` is an [`Err`] containing a [`crate::Error::Parse`] error with
-/// a description matching the shell wildcard pattern `expected_desc`.
+/// Asserts that `result` is an [`Err`] containing a [`Error::Parse`] error with a description
+/// matching the shell wildcard pattern `expected_desc`.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_inexact_parse_err {
     ($result:expr, $expected_desc:expr) => {
         match $result {
-            Err(crate::Error::Parse(actual_desc)) => {
+            Err($crate::Error::Parse(actual_desc)) => {
                 $crate::assert_inexact!(actual_desc, $expected_desc)
             }
             result => panic!(
-                "assertion failed: {:?} is not of type Err(crate::Error::Parse(_))",
+                "assertion failed: {:?} is not of type Err(Error::Parse(_))",
                 result
             ),
         }

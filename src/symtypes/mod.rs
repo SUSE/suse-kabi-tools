@@ -36,12 +36,12 @@ enum Token {
 impl Token {
     /// Creates a new `Token::TypeRef`.
     fn new_typeref<S: Into<String>>(name: S) -> Self {
-        Token::TypeRef(name.into())
+        Self::TypeRef(name.into())
     }
 
     /// Creates a new `Token::Atom`.
     fn new_atom<S: Into<String>>(name: S) -> Self {
-        Token::Atom(name.into())
+        Self::Atom(name.into())
     }
 
     /// Returns the token data as a string slice.
