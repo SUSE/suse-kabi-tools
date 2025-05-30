@@ -91,7 +91,7 @@ impl Rules {
         reader: R,
     ) -> Result<(), crate::Error> {
         let path = path.as_ref();
-        debug!("Loading '{}'", path.display());
+        debug!("Loading rules data from '{}'", path.display());
 
         // Read all content from the file.
         let lines = match read_lines(reader) {

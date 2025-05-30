@@ -466,7 +466,7 @@ impl Filter {
 
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
         let path = path.as_ref();
-        debug!("Loading '{}'", path.display());
+        debug!("Loading filter data from '{}'", path.display());
 
         let file = PathFile::open(path).map_err(|err| {
             crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
