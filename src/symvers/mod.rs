@@ -146,17 +146,25 @@ impl SymversCorpus {
         };
 
         // Parse all records.
-        let mut new_exports = Vec::new();
+        let mut new_exports = Exports::new();
         for (line_idx, line) in lines.iter().enumerate() {
             let (name, info) = parse_export(path, line_idx, line)?;
-            new_exports.push((line_idx, name, info));
+
+            // Check if the record is a duplicate of another one.
+            if new_exports.contains_key(&name) || self.exports.contains_key(&name) {
+                return Err(crate::Error::new_parse(format!(
+                    "{}:{}: Duplicate record '{}'",
+                    path.display(),
+                    line_idx + 1,
+                    name,
+                )));
+            }
+
+            new_exports.insert(name, info);
         }
 
-        // Add the new rules.
-        // TODO Check for duplicate records.
-        for (_line_idx, name, info) in new_exports {
-            self.exports.insert(name, info);
-        }
+        // Add the new exports.
+        self.exports.extend(new_exports);
 
         Ok(())
     }

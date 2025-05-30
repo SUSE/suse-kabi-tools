@@ -46,6 +46,21 @@ fn read_empty_record() {
 }
 
 #[test]
+fn read_duplicate_symbol_record() {
+    // Check that symbol records with duplicate names are rejected when reading a symvers file.
+    let mut symvers = SymversCorpus::new();
+    let result = symvers.load_buffer(
+        "test.symvers",
+        concat!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x12345678 foo vmlinux EXPORT_SYMBOL_GPL\n", //
+        )
+        .as_bytes(),
+    );
+    assert_parse_err!(result, "test.symvers:2: Duplicate record 'foo'");
+}
+
+#[test]
 fn read_invalid_crc() {
     // Check that a CRC value not starting with 0x/0X is rejected.
     let mut symvers = SymversCorpus::new();
