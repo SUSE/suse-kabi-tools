@@ -103,24 +103,24 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     // Do the comparison.
     debug!("Compare '{}' and '{}'", path, path2);
 
-    let syms = {
+    let symvers = {
         let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
 
-        let mut syms = SymversCorpus::new();
-        syms.load(&path).map_err(|err| {
+        let mut symvers = SymversCorpus::new();
+        symvers.load(&path).map_err(|err| {
             Error::new_context(format!("Failed to read symvers from '{}'", path), err)
         })?;
-        syms
+        symvers
     };
 
-    let syms2 = {
+    let symvers2 = {
         let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path2));
 
-        let mut syms2 = SymversCorpus::new();
-        syms2.load(&path2).map_err(|err| {
+        let mut symvers2 = SymversCorpus::new();
+        symvers2.load(&path2).map_err(|err| {
             Error::new_context(format!("Failed to read symvers from '{}'", path2), err)
         })?;
-        syms2
+        symvers2
     };
 
     let maybe_rules = match maybe_rules_path {
@@ -145,7 +145,8 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let changed = {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        syms.compare_with(&syms2, maybe_rules.as_ref(), &mut writers)
+        symvers
+            .compare_with(&symvers2, maybe_rules.as_ref(), &mut writers)
             .map_err(|err| {
                 Error::new_context(
                     format!("Failed to compare symvers from '{}' and '{}'", path, path2),

@@ -118,12 +118,12 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
     let path = maybe_path.ok_or_else(|| Error::new_cli("The consolidate source is missing"))?;
 
     // Do the consolidation.
-    let mut syms = SymtypesCorpus::new();
+    let mut symtypes = SymtypesCorpus::new();
 
     {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
-        syms.load(&path, num_workers).map_err(|err| {
+        symtypes.load(&path, num_workers).map_err(|err| {
             Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
         })?;
     }
@@ -134,7 +134,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
             &format!("Writing consolidated symtypes to '{}'", output),
         );
 
-        syms.write_consolidated(&output).map_err(|err| {
+        symtypes.write_consolidated(&output).map_err(|err| {
             Error::new_context(
                 format!("Failed to write consolidated symtypes to '{}'", output),
                 err,
@@ -203,24 +203,24 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     // Do the comparison.
     debug!("Compare '{}' and '{}'", path, path2);
 
-    let syms = {
+    let symtypes = {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
-        let mut syms = SymtypesCorpus::new();
-        syms.load(&path, num_workers).map_err(|err| {
+        let mut symtypes = SymtypesCorpus::new();
+        symtypes.load(&path, num_workers).map_err(|err| {
             Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
         })?;
-        syms
+        symtypes
     };
 
-    let syms2 = {
+    let symtypes2 = {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path2));
 
-        let mut syms2 = SymtypesCorpus::new();
-        syms2.load(&path2, num_workers).map_err(|err| {
+        let mut symtypes2 = SymtypesCorpus::new();
+        symtypes2.load(&path2, num_workers).map_err(|err| {
             Error::new_context(format!("Failed to read symtypes from '{}'", path2), err)
         })?;
-        syms2
+        symtypes2
     };
 
     let maybe_symbol_filter = match maybe_symbol_filter_path {
@@ -248,18 +248,19 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     {
         let _timing = Timing::new(do_timing, "Comparison");
 
-        syms.compare_with(
-            &syms2,
-            maybe_symbol_filter.as_ref(),
-            io::stdout(),
-            num_workers,
-        )
-        .map_err(|err| {
-            Error::new_context(
-                format!("Failed to compare symtypes from '{}' and '{}'", path, path2),
-                err,
+        symtypes
+            .compare_with(
+                &symtypes2,
+                maybe_symbol_filter.as_ref(),
+                io::stdout(),
+                num_workers,
             )
-        })?;
+            .map_err(|err| {
+                Error::new_context(
+                    format!("Failed to compare symtypes from '{}' and '{}'", path, path2),
+                    err,
+                )
+            })?;
     }
 
     Ok(())
