@@ -13,6 +13,8 @@ use std::path::Path;
 #[cfg(test)]
 mod tests_diff;
 #[cfg(test)]
+mod tests_filter;
+#[cfg(test)]
 mod tests_wildcard;
 
 // Implementation of the Myers diff algorithm:
@@ -452,29 +454,51 @@ impl Write for Writer {
     }
 }
 
-// TODO Support wildcards.
-#[derive(Default)]
+/// A collection of shell wildcard patterns used to filter symbol or file names.
+#[derive(Debug, Default, PartialEq)]
 pub struct Filter {
-    patterns: HashSet<String>,
+    // Literal patterns.
+    literals: HashSet<String>,
+    // Wildcard patterns.
+    wildcards: Vec<String>,
 }
 
 impl Filter {
+    /// Creates a new empty `Filter` object.
     pub fn new() -> Self {
         Self {
-            patterns: HashSet::new(),
+            literals: HashSet::new(),
+            wildcards: Vec::new(),
         }
     }
 
-    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+    /// Loads filter data from a specified file.
+    ///
+    /// New patterns are appended to the already present ones.
+    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), crate::Error> {
         let path = path.as_ref();
-        debug!("Loading filter data from '{}'", path.display());
 
         let file = PathFile::open(path).map_err(|err| {
             crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
         })?;
 
+        self.load_buffer(path, file)
+    }
+
+    /// Loads filter data from a specified reader.
+    ///
+    /// The `path` should point to the filter file name, indicating the origin of the data. New
+    /// patterns are appended to the already present ones.
+    pub fn load_buffer<P: AsRef<Path>, R: Read>(
+        &mut self,
+        path: P,
+        reader: R,
+    ) -> Result<(), crate::Error> {
+        let path = path.as_ref();
+        debug!("Loading filter data from '{}'", path.display());
+
         // Read all content from the file.
-        let lines = match read_lines(file) {
+        let lines = match read_lines(reader) {
             Ok(lines) => lines,
             Err(err) => return Err(crate::Error::new_io("Failed to read filter data", err)),
         };
@@ -492,13 +516,31 @@ impl Filter {
 
         // Insert the new patterns.
         for line in lines {
-            self.patterns.insert(line);
+            if line
+                .chars()
+                .any(|x| x == '\\' || x == '?' || x == '*' || x == '[')
+            {
+                self.wildcards.push(line);
+            } else {
+                self.literals.insert(line);
+            }
         }
 
         Ok(())
     }
 
+    /// Checks whether the given text matches any of the filter patterns.
     pub fn matches(&self, name: &str) -> bool {
-        self.patterns.contains(name)
+        if self.literals.contains(name) {
+            return true;
+        }
+
+        for pattern in &self.wildcards {
+            if matches_wildcard(name, pattern) {
+                return true;
+            }
+        }
+
+        false
     }
 }
