@@ -264,6 +264,13 @@ macro_rules! assert_inexact_parse_err {
     };
 }
 
+/// Concatenates literals into a string slice and returns it as `&[u8]`.
+#[cfg(any(test, doc))]
+#[macro_export]
+macro_rules! bytes {
+      ($($x:expr),* $(,)?) => { concat!($($x),*).as_bytes() };
+}
+
 /// Creates a [`Vec`] of [`String`] from a list of string literals.
 #[cfg(any(test, doc))]
 #[macro_export]

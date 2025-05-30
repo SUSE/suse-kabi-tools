@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
-use crate::{assert_ok, assert_parse_err};
+use crate::{assert_ok, assert_parse_err, bytes};
 
 #[test]
 fn read_module_rule() {
@@ -10,11 +10,10 @@ fn read_module_rule() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "lib/test_module.ko PASS\n",
             "vmlinux PASS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -34,10 +33,9 @@ fn read_namespace_rule() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "TEST_NAMESPACE PASS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -58,13 +56,12 @@ fn read_symbol_rule() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "symbol_name PASS\n",
             "test_module.ko PASS\n",
             "vmlinux2 PASS\n",
             "test_namespace PASS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -86,11 +83,10 @@ fn read_pass_fail_rule() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "symbol_name PASS\n",
             "symbol_name2 FAIL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -110,10 +106,9 @@ fn read_no_verdict() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "symbol_name\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(
         result,
@@ -128,10 +123,9 @@ fn read_invalid_verdict() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "symbol_name OK\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(
         result,
@@ -146,10 +140,9 @@ fn read_extra_data() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "symbol_name PASS garbage\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(
         result,
@@ -164,10 +157,9 @@ fn read_empty_record() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "\n", "\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(rules, Rules { data: vec![] });
@@ -179,12 +171,11 @@ fn read_comments() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "# comment 1\n",
             "lib/test_module.ko PASS # comment 2\n",
             "lib/test_module2.ko FAIL# comment 3\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -205,12 +196,11 @@ fn tolerate_symbol() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "foo PASS\n",
             "bar FAIL\n",
             "baz* PASS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert!(rules.is_tolerated("foo", "lib/test_module.ko", None));
@@ -226,12 +216,11 @@ fn tolerate_module() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "lib/foo.ko PASS\n",
             "lib/bar.ko FAIL\n",
             "lib/baz*.ko PASS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert!(rules.is_tolerated("symbol_name", "lib/foo.ko", None));
@@ -247,12 +236,11 @@ fn tolerate_namespace() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "FOO_NS PASS\n",
             "BAR_NS FAIL\n",
             "BAZ*_NS PASS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert!(rules.is_tolerated("symbol_name", "lib/test_module.ko", Some("FOO_NS")));
@@ -268,11 +256,10 @@ fn tolerate_order() {
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "foo* PASS\n",
             "foobar FAIL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert!(rules.is_tolerated("foobar", "lib/test_module.ko", None));

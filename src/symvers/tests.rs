@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
-use crate::{assert_inexact_parse_err, assert_ok, assert_ok_eq, assert_parse_err};
+use crate::{assert_inexact_parse_err, assert_ok, assert_ok_eq, assert_parse_err, bytes};
 use std::slice;
 
 #[test]
@@ -11,10 +11,9 @@ fn read_export_basic() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678\tfoo\tvmlinux\tEXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -34,12 +33,11 @@ fn read_empty_record() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "\n",
             "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(result, "test.symvers:2: The export does not specify a CRC");
     assert_eq!(symvers, SymversCorpus::new());
@@ -51,11 +49,10 @@ fn read_duplicate_symbol_record() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x12345678 foo vmlinux EXPORT_SYMBOL_GPL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(result, "test.symvers:2: Duplicate record 'foo'");
 }
@@ -66,10 +63,9 @@ fn read_invalid_crc() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0 foo vmlinux EXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(
         result,
@@ -84,10 +80,9 @@ fn read_invalid_crc2() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0xabcdefgh foo vmlinux EXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_inexact_parse_err!(
         result,
@@ -102,10 +97,9 @@ fn read_no_name() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(result, "test.symvers:1: The export does not specify a name");
     assert_eq!(symvers, SymversCorpus::new());
@@ -117,10 +111,9 @@ fn read_no_module() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(
         result,
@@ -135,11 +128,10 @@ fn read_type() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -165,10 +157,9 @@ fn read_no_type() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(result, "test.symvers:1: The export does not specify a type");
     assert_eq!(symvers, SymversCorpus::new());
@@ -180,10 +171,9 @@ fn read_invalid_type() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_UNUSED_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(
         result,
@@ -198,10 +188,9 @@ fn read_namespace() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL_GPL FOO_NS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     assert_eq!(
@@ -221,10 +210,9 @@ fn read_extra_data() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL_GPL FOO_NS garbage\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_parse_err!(
         result,
@@ -239,19 +227,17 @@ fn compare_identical() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678\tfoo\tvmlinux\tEXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
@@ -272,17 +258,18 @@ fn compare_added_export() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
-        concat!("0x12345678 foo vmlinux EXPORT_SYMBOL\n",).as_bytes(),
+        bytes!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
+        ),
     );
     assert_ok!(result);
     let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
@@ -303,20 +290,18 @@ fn compare_removed_export() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
-        concat!(
+        bytes!(
             "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
@@ -337,19 +322,17 @@ fn compare_changed_crc() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
-        concat!(
+        bytes!(
             "0x09abcdef foo vmlinux EXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
@@ -370,25 +353,23 @@ fn compare_changed_type() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
             "0x34567890 baz vmlinux EXPORT_SYMBOL_GPL\n",
             "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL_GPL\n",
             "0x34567890 baz vmlinux EXPORT_SYMBOL\n",
             "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
@@ -410,28 +391,25 @@ fn compare_ignored_changes() {
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",
-        concat!(
+        bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut symvers2 = SymversCorpus::new();
     let result = symvers2.load_buffer(
         "b/test.symvers",
-        concat!(
+        bytes!(
             "0x90abcdef foo vmlinux EXPORT_SYMBOL\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
-        concat!(
+        bytes!(
             "vmlinux PASS\n", //
-        )
-        .as_bytes(),
+        ),
     );
     assert_ok!(result);
     let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
@@ -440,6 +418,8 @@ fn compare_ignored_changes() {
     assert_ok_eq!(result, true);
     assert_eq!(
         String::from_utf8(out).unwrap(),
-        concat!("Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated)\n",)
+        concat!(
+            "Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated)\n", //
+        )
     );
 }
