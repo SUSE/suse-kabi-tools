@@ -13,6 +13,12 @@ The project contains the following utilities:
   during the Linux kernel build. It allows you to compare symvers data, taking into account specific
   severity rules.
 
+The tools aim to provide fast and detailed kABI comparison. The most time-consuming operations can
+utilize multiple threads running in parallel.
+
+The project is implemented in Rust. The code depends only on the standard library, which avoids
+bloating the build and keeps project maintenance low.
+
 Manual pages: [ksymtypes(1)][ksymtypes_1], [ksymvers(1)][ksymvers_1],
 [suse-kabi-tools(5)][suse_kabi_tools_5].
 
