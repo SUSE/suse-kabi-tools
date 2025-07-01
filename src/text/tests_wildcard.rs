@@ -5,7 +5,7 @@ use super::*;
 
 #[test]
 fn matches_plain() {
-    // Check wildcard matching when the pattern contains only simple characters.
+    // Check wildcard matching when the pattern contains only regular characters.
     assert!(matches_wildcard("", ""));
     assert!(matches_wildcard("abc", "abc"));
     assert!(!matches_wildcard("abc", "Xbc"));

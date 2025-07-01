@@ -70,21 +70,21 @@ type Exports = HashMap<String, usize>;
 /// file.
 type FileRecords = HashMap<String, usize>;
 
-/// A representation of a single `.symtypes` file.
+/// A representation of a single symtypes file.
 #[derive(Debug, Eq, PartialEq)]
 struct SymtypesFile {
     path: PathBuf,
     records: FileRecords,
 }
 
-/// A collection of `.symtypes` files.
+/// A collection of symtypes files.
 type SymtypesFiles = Vec<SymtypesFile>;
 
-/// A representation of a kernel ABI, loaded from `.symtypes` files.
+/// A representation of a kernel ABI, loaded from symtypes files.
 ///
 /// * The `types` collection stores all types and their variants.
-/// * The `files` collection records types in individual `.symtypes` files. Each type uses an index
-///   to reference its variant in `types`.
+/// * The `files` collection records types in individual symtypes files. Each type uses an index to
+///   reference its variant in `types`.
 /// * The `exports` collection provides all exports in the corpus. Each export uses an index to
 ///   reference its origin in `files`.
 ///
@@ -194,8 +194,8 @@ impl SymtypesCorpus {
 
     /// Loads symtypes data from a given location.
     ///
-    /// The `path` can point to a single `.symtypes` file or a directory. In the latter case, the
-    /// function recursively collects all `.symtypes` in that directory and loads them.
+    /// The `path` can point to a single symtypes file or a directory. In the latter case, the
+    /// function recursively collects all symtypes in that directory and loads them.
     pub fn load<P: AsRef<Path>>(&mut self, path: P, num_workers: i32) -> Result<(), crate::Error> {
         let path = path.as_ref();
 
@@ -217,7 +217,7 @@ impl SymtypesCorpus {
         }
     }
 
-    /// Collects recursively all `.symtypes` files under the given root path and its subpath.
+    /// Collects recursively all symtypes files under the given root path and its subpath.
     fn collect_symfiles<P: AsRef<Path>, Q: AsRef<Path>>(
         root: P,
         sub_path: Q,
@@ -274,7 +274,7 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Loads all specified `.symtypes` files.
+    /// Loads all specified symtypes files.
     fn load_symfiles<P: AsRef<Path>, Q: AsRef<Path> + Sync>(
         &mut self,
         root: P,
@@ -328,7 +328,7 @@ impl SymtypesCorpus {
 
     /// Loads symtypes data from a specified reader.
     ///
-    /// The `path` should point to a `.symtypes` file name, indicating the origin of the data.
+    /// The `path` should point to a symtypes file name, indicating the origin of the data.
     pub fn load_buffer<P: AsRef<Path>, R: Read>(
         &mut self,
         path: P,
