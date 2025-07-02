@@ -27,7 +27,7 @@ mod tests_format;
 //     a nightly-only experimental API and so not used by the module.
 
 /// A token used in the description of a type.
-#[derive(Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 enum Token {
     TypeRef(String),
     Atom(String),
@@ -480,7 +480,6 @@ impl SymtypesCorpus {
         // Extrapolate all records and validate references.
         let walk_records = records.keys().map(String::clone).collect::<Vec<_>>();
         for name in walk_records {
-            let types = load_context.types.read().unwrap();
             // Note that all explicit types are known, so it is ok to pass usize::MAX as
             // from_line_idx because it is unused.
             Self::complete_file_record(
@@ -490,8 +489,8 @@ impl SymtypesCorpus {
                 true,
                 &local_override,
                 active_types,
-                *types,
                 &mut records,
+                load_context,
             )?;
         }
 
@@ -586,8 +585,8 @@ impl SymtypesCorpus {
         is_explicit: bool,
         local_override: &LoadActiveTypes,
         active_types: &LoadActiveTypes,
-        types: &Types,
         records: &mut FileRecords,
+        load_context: &LoadContext,
     ) -> Result<(), crate::Error> {
         if is_explicit {
             // All explicit symbols need to be added by the caller.
@@ -615,9 +614,13 @@ impl SymtypesCorpus {
         }
 
         // Look up the type definition.
-        // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-        let variants = types.get(type_name).unwrap();
-        let tokens = &variants[variant_idx];
+        let tokens = {
+            let types = load_context.types.read().unwrap();
+
+            // SAFETY: Each type reference is guaranteed to have a corresponding definition.
+            let variants = types.get(type_name).unwrap();
+            variants[variant_idx].clone()
+        };
 
         // Process recursively all types referenced by this symbol.
         for token in tokens {
@@ -626,12 +629,12 @@ impl SymtypesCorpus {
                     Self::complete_file_record(
                         path,
                         line_idx,
-                        ref_name,
+                        &ref_name,
                         false,
                         local_override,
                         active_types,
-                        types,
                         records,
+                        load_context,
                     )?;
                 }
                 Token::Atom(_word) => {}
