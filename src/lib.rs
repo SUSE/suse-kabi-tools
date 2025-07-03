@@ -172,6 +172,15 @@ impl Write for PathFile {
     }
 }
 
+/// A helper extension trait to obtain the size of an array from its type.
+pub trait Size {
+    const SIZE: usize;
+}
+
+impl<T, const S: usize> Size for [T; S] {
+    const SIZE: usize = S;
+}
+
 /// Global debugging level.
 pub static DEBUG_LEVEL: OnceLock<usize> = OnceLock::new();
 
