@@ -5,6 +5,8 @@ use std::error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
+use std::hash;
+use std::hash::Hasher;
 use std::io;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
@@ -179,6 +181,13 @@ pub trait Size {
 
 impl<T, const S: usize> Size for [T; S] {
     const SIZE: usize = S;
+}
+
+/// Calculates the hash of a given value.
+fn hash<T: hash::Hash + ?Sized>(t: &T) -> u64 {
+    let mut s = hash::DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
 }
 
 /// Global debugging level.
