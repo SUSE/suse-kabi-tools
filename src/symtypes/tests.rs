@@ -17,50 +17,47 @@ fn read_basic_single() {
         ),
     );
     assert_ok!(result);
-    assert_eq!(
-        symtypes,
-        SymtypesCorpus {
-            types: HashMap::from([
-                (
-                    "s#foo".to_string(),
-                    vec![vec![
-                        Token::new_atom("struct"),
-                        Token::new_atom("foo"),
-                        Token::new_atom("{"),
-                        Token::new_atom("}"),
-                    ]]
-                ),
-                (
-                    "bar".to_string(),
-                    vec![vec![
-                        Token::new_atom("void"),
-                        Token::new_atom("bar"),
-                        Token::new_atom("("),
-                        Token::new_typeref("s#foo"),
-                        Token::new_atom(")"),
-                    ]]
-                ),
-                (
-                    "baz".to_string(),
-                    vec![vec![
-                        Token::new_atom("int"),
-                        Token::new_atom("baz"),
-                        Token::new_atom("("),
-                        Token::new_atom(")"),
-                    ]]
-                ),
+    let mut exp_symtypes = SymtypesCorpus {
+        types: array::from_fn(|_| Types::new()),
+        exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 0)]),
+        files: vec![SymtypesFile {
+            path: PathBuf::from("test.symtypes"),
+            records: HashMap::from([
+                ("s#foo".to_string(), 0),
+                ("bar".to_string(), 0),
+                ("baz".to_string(), 0),
             ]),
-            exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 0)]),
-            files: vec![SymtypesFile {
-                path: PathBuf::from("test.symtypes"),
-                records: HashMap::from([
-                    ("s#foo".to_string(), 0),
-                    ("bar".to_string(), 0),
-                    ("baz".to_string(), 0),
-                ])
-            }],
-        }
+        }],
+    };
+    exp_symtypes.types[type_bucket_idx("s#foo")].insert(
+        "s#foo".to_string(),
+        vec![vec![
+            Token::new_atom("struct"),
+            Token::new_atom("foo"),
+            Token::new_atom("{"),
+            Token::new_atom("}"),
+        ]],
     );
+    exp_symtypes.types[type_bucket_idx("bar")].insert(
+        "bar".to_string(),
+        vec![vec![
+            Token::new_atom("void"),
+            Token::new_atom("bar"),
+            Token::new_atom("("),
+            Token::new_typeref("s#foo"),
+            Token::new_atom(")"),
+        ]],
+    );
+    exp_symtypes.types[type_bucket_idx("baz")].insert(
+        "baz".to_string(),
+        vec![vec![
+            Token::new_atom("int"),
+            Token::new_atom("baz"),
+            Token::new_atom("("),
+            Token::new_atom(")"),
+        ]],
+    );
+    assert_eq!(symtypes, exp_symtypes);
 }
 
 #[test]
@@ -78,52 +75,49 @@ fn read_basic_consolidated() {
         ),
     );
     assert_ok!(result);
-    assert_eq!(
-        symtypes,
-        SymtypesCorpus {
-            types: HashMap::from([
-                (
-                    "s#foo".to_string(),
-                    vec![vec![
-                        Token::new_atom("struct"),
-                        Token::new_atom("foo"),
-                        Token::new_atom("{"),
-                        Token::new_atom("}"),
-                    ]]
-                ),
-                (
-                    "bar".to_string(),
-                    vec![vec![
-                        Token::new_atom("void"),
-                        Token::new_atom("bar"),
-                        Token::new_atom("("),
-                        Token::new_typeref("s#foo"),
-                        Token::new_atom(")"),
-                    ]]
-                ),
-                (
-                    "baz".to_string(),
-                    vec![vec![
-                        Token::new_atom("int"),
-                        Token::new_atom("baz"),
-                        Token::new_atom("("),
-                        Token::new_atom(")"),
-                    ]]
-                ),
-            ]),
-            exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 1)]),
-            files: vec![
-                SymtypesFile {
-                    path: PathBuf::from("test.symtypes"),
-                    records: HashMap::from([("s#foo".to_string(), 0), ("bar".to_string(), 0)])
-                },
-                SymtypesFile {
-                    path: PathBuf::from("test2.symtypes"),
-                    records: HashMap::from([("baz".to_string(), 0)])
-                },
-            ],
-        }
+    let mut exp_symtypes = SymtypesCorpus {
+        types: array::from_fn(|_| Types::new()),
+        exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 1)]),
+        files: vec![
+            SymtypesFile {
+                path: PathBuf::from("test.symtypes"),
+                records: HashMap::from([("s#foo".to_string(), 0), ("bar".to_string(), 0)]),
+            },
+            SymtypesFile {
+                path: PathBuf::from("test2.symtypes"),
+                records: HashMap::from([("baz".to_string(), 0)]),
+            },
+        ],
+    };
+    exp_symtypes.types[type_bucket_idx("s#foo")].insert(
+        "s#foo".to_string(),
+        vec![vec![
+            Token::new_atom("struct"),
+            Token::new_atom("foo"),
+            Token::new_atom("{"),
+            Token::new_atom("}"),
+        ]],
     );
+    exp_symtypes.types[type_bucket_idx("bar")].insert(
+        "bar".to_string(),
+        vec![vec![
+            Token::new_atom("void"),
+            Token::new_atom("bar"),
+            Token::new_atom("("),
+            Token::new_typeref("s#foo"),
+            Token::new_atom(")"),
+        ]],
+    );
+    exp_symtypes.types[type_bucket_idx("baz")].insert(
+        "baz".to_string(),
+        vec![vec![
+            Token::new_atom("int"),
+            Token::new_atom("baz"),
+            Token::new_atom("("),
+            Token::new_atom(")"),
+        ]],
+    );
+    assert_eq!(symtypes, exp_symtypes);
 }
 
 #[test]

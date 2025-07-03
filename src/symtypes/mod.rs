@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::text::{Filter, read_lines, unified_diff};
-use crate::{MapIOErr, PathFile, debug};
+use crate::{MapIOErr, PathFile, Size, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::{BufWriter, prelude::*};
@@ -10,7 +10,7 @@ use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, RwLock};
-use std::{fs, io, mem, thread};
+use std::{array, fs, io, mem, thread};
 
 #[cfg(test)]
 mod tests;
@@ -62,6 +62,15 @@ type TypeVariants = Vec<Tokens>;
 /// A mapping from a type name to all its known variants.
 type Types = HashMap<String, TypeVariants>;
 
+/// An array of `Types`, indexed by `type_bucket_idx(type_name)`. This allows each bucket to be
+/// protected by a separate lock when reading symtypes data.
+type TypeBuckets = [Types; 256];
+
+/// Computes the index into `TypeBuckets` for a given type name.
+fn type_bucket_idx(type_name: &str) -> usize {
+    (hash(type_name) % TypeBuckets::SIZE as u64) as usize
+}
+
 /// A mapping from a symbol name to an index in `SymtypesFiles`, specifying in which file the symbol
 /// is defined.
 type Exports = HashMap<String, usize>;
@@ -110,19 +119,30 @@ type SymtypesFiles = Vec<SymtypesFile>;
 ///
 /// The data would be represented as follows:
 ///
+/// The example assumes `type_bucket_idx("s#foo") % TypesBuckets::SIZE]` evaluates to 1, and that
+/// `type_bucket_idx("bar") % TypesBuckets::SIZE` and `type_bucket_idx("baz") % TypesBuckets::SIZE]`
+/// both evaluate to 3.
+///
 /// ```text
 /// SymtypesCorpus {
-///     types: Types {
-///         "s#foo": TypeVariants[
-///             Tokens[Atom("struct"), Atom("foo"), Atom("{"), Atom("int"), Atom("a"), Atom(";"), Atom("}")],
-///             Tokens[Atom("struct"), Atom("foo"), Atom("{"), Atom("UNKNOWN"), Atom("}")],
-///         ],
-///         "bar": TypeVariants[
-///             Tokens[Atom("int"), Atom("bar"), Atom("("), TypeRef("s#foo"), Atom(")")],
-///         ],
-///         "baz": TypeVariants[
-///             Tokens[Atom("int"), Atom("baz"), Atom("("), TypeRef("s#foo"), Atom(")")],
-///         ],
+///     types: TypesBuckets {
+///         [0]: Types { },
+///         [1]: Types {
+///             "s#foo": TypeVariants[
+///                 Tokens[Atom("struct"), Atom("foo"), Atom("{"), Atom("int"), Atom("a"), Atom(";"), Atom("}")],
+///                 Tokens[Atom("struct"), Atom("foo"), Atom("{"), Atom("UNKNOWN"), Atom("}")],
+///             ]
+///         },
+///         [2]: Types { },
+///         [3]: Types {
+///             "bar": TypeVariants[
+///                 Tokens[Atom("int"), Atom("bar"), Atom("("), TypeRef("s#foo"), Atom(")")],
+///             ],
+///             "baz": TypeVariants[
+///                 Tokens[Atom("int"), Atom("baz"), Atom("("), TypeRef("s#foo"), Atom(")")],
+///             ]
+///         },
+///         [4..TypesBuckets::SIZE] = Types { },
 ///     },
 ///     exports: Exports {
 ///         "bar": 0,
@@ -153,18 +173,18 @@ type SymtypesFiles = Vec<SymtypesFile>;
 /// limit memory needed to store the corpus. On the other hand, when comparing two `Tokens` vectors
 /// for ABI equality, the code needs to consider whether all referenced subtypes are actually equal
 /// as well.
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct SymtypesCorpus {
-    types: Types,
+    types: TypeBuckets,
     exports: Exports,
     files: SymtypesFiles,
 }
 
 /// A helper struct to provide synchronized access to `SymtypesCorpus` data during parallel loading.
-struct LoadContext<'a> {
-    types: RwLock<&'a mut Types>,
-    exports: Mutex<&'a mut Exports>,
-    files: Mutex<&'a mut SymtypesFiles>,
+struct LoadContext {
+    types: [RwLock<Types>; TypeBuckets::SIZE],
+    exports: Mutex<Exports>,
+    files: Mutex<SymtypesFiles>,
 }
 
 /// Type names active during the loading of a specific file, providing for each type its variant and
@@ -182,11 +202,37 @@ type CompareChangedTypes<'a> = HashMap<(&'a str, &'a Tokens, &'a Tokens), Vec<&'
 /// Type names processed during the comparison for a specific file.
 type CompareFileTypes<'a> = HashSet<&'a str>;
 
+impl LoadContext {
+    /// Creates a new load context from a symtypes corpus, consuming it.
+    fn from(mut symtypes: SymtypesCorpus) -> Self {
+        Self {
+            types: array::from_fn(|i| RwLock::new(mem::take(&mut symtypes.types[i]))),
+            exports: Mutex::new(mem::take(&mut symtypes.exports)),
+            files: Mutex::new(mem::take(&mut symtypes.files)),
+        }
+    }
+
+    /// Consumes this load context, returning the underlying data.
+    fn into_inner(mut self) -> SymtypesCorpus {
+        SymtypesCorpus {
+            types: array::from_fn(|i| mem::take(&mut self.types[i]).into_inner().unwrap()),
+            exports: self.exports.into_inner().unwrap(),
+            files: self.files.into_inner().unwrap(),
+        }
+    }
+}
+
+impl Default for SymtypesCorpus {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SymtypesCorpus {
     /// Creates a new empty corpus.
     pub fn new() -> Self {
         Self {
-            types: Types::new(),
+            types: array::from_fn(|_| Types::new()),
             exports: Exports::new(),
             files: SymtypesFiles::new(),
         }
@@ -285,17 +331,12 @@ impl SymtypesCorpus {
 
         // Load data from the files.
         let next_work_idx = AtomicUsize::new(0);
+        let load_context = LoadContext::from(mem::take(self));
 
-        let load_context = LoadContext {
-            types: RwLock::new(&mut self.types),
-            exports: Mutex::new(&mut self.exports),
-            files: Mutex::new(&mut self.files),
-        };
-
-        thread::scope(|s| {
+        thread::scope(|s| -> Result<(), crate::Error> {
             let mut workers = Vec::new();
             for _ in 0..num_workers {
-                workers.push(s.spawn(|| -> Result<(), crate::Error> {
+                workers.push(s.spawn(|| {
                     loop {
                         let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
                         if work_idx >= symfiles.len() {
@@ -323,7 +364,11 @@ impl SymtypesCorpus {
             }
 
             Ok(())
-        })
+        })?;
+
+        *self = load_context.into_inner();
+
+        Ok(())
     }
 
     /// Loads symtypes data from a specified reader.
@@ -334,13 +379,11 @@ impl SymtypesCorpus {
         path: P,
         reader: R,
     ) -> Result<(), crate::Error> {
-        let load_context = LoadContext {
-            types: RwLock::new(&mut self.types),
-            exports: Mutex::new(&mut self.exports),
-            files: Mutex::new(&mut self.files),
-        };
+        let load_context = LoadContext::from(mem::take(self));
 
         Self::load_inner(path, reader, &load_context)?;
+
+        *self = load_context.into_inner();
 
         Ok(())
     }
@@ -507,7 +550,9 @@ impl SymtypesCorpus {
         // Types are often repeated in different symtypes files. Try to find an existing type only
         // under the read lock first.
         {
-            let types = load_context.types.read().unwrap();
+            let types = load_context.types[type_bucket_idx(type_name)]
+                .read()
+                .unwrap();
             if let Some(variants) = types.get(type_name) {
                 for (i, variant) in variants.iter().enumerate() {
                     if tokens == *variant {
@@ -517,7 +562,9 @@ impl SymtypesCorpus {
             }
         }
 
-        let mut types = load_context.types.write().unwrap();
+        let mut types = load_context.types[type_bucket_idx(type_name)]
+            .write()
+            .unwrap();
         match types.get_mut(type_name) {
             Some(variants) => {
                 for (i, variant) in variants.iter().enumerate() {
@@ -615,7 +662,9 @@ impl SymtypesCorpus {
 
         // Look up the type definition.
         let tokens = {
-            let types = load_context.types.read().unwrap();
+            let types = load_context.types[type_bucket_idx(type_name)]
+                .read()
+                .unwrap();
 
             // SAFETY: Each type reference is guaranteed to have a corresponding definition.
             let variants = types.get(type_name).unwrap();
@@ -663,7 +712,7 @@ impl SymtypesCorpus {
         // Look up the type definition.
         // SAFETY: Each type reference is guaranteed to have a corresponding definition.
         let variant_idx = *symfile.records.get(name).unwrap();
-        let variants = self.types.get(name).unwrap();
+        let variants = self.types[type_bucket_idx(name)].get(name).unwrap();
 
         // Record that the type is needed by the file.
         file_type_entry.insert(variant_idx);
@@ -753,7 +802,7 @@ impl SymtypesCorpus {
             for (name, variant_idx) in sorted_types {
                 // Look up the type definition.
                 // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-                let variants = self.types.get(name).unwrap();
+                let variants = self.types[type_bucket_idx(name)].get(name).unwrap();
                 let tokens = &variants[variant_idx];
 
                 // Check if this is an UNKNOWN type definition, and if so, record it as a local
@@ -799,7 +848,7 @@ impl SymtypesCorpus {
         name: &str,
     ) -> &'a Tokens {
         match file.records.get(name) {
-            Some(&variant_idx) => match symtypes.types.get(name) {
+            Some(&variant_idx) => match symtypes.types[type_bucket_idx(name)].get(name) {
                 Some(variants) => &variants[variant_idx],
                 None => {
                     panic!("Type '{}' has a missing declaration", name);
