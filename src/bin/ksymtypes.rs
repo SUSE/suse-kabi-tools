@@ -134,12 +134,14 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
             &format!("Writing consolidated symtypes to '{}'", output),
         );
 
-        symtypes.write_consolidated(&output).map_err(|err| {
-            Error::new_context(
-                format!("Failed to write consolidated symtypes to '{}'", output),
-                err,
-            )
-        })?;
+        symtypes
+            .write_consolidated(&output, num_workers)
+            .map_err(|err| {
+                Error::new_context(
+                    format!("Failed to write consolidated symtypes to '{}'", output),
+                    err,
+                )
+            })?;
     }
 
     Ok(())

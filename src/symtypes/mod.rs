@@ -727,7 +727,11 @@ impl SymtypesCorpus {
     }
 
     /// Writes the corpus in the consolidated form into a specified file.
-    pub fn write_consolidated<P: AsRef<Path>>(&self, path: P) -> Result<(), crate::Error> {
+    pub fn write_consolidated<P: AsRef<Path>>(
+        &self,
+        path: P,
+        num_workers: i32,
+    ) -> Result<(), crate::Error> {
         let path = path.as_ref();
 
         // Open the output file.
@@ -745,13 +749,64 @@ impl SymtypesCorpus {
             }
         };
 
-        self.write_consolidated_buffer(writer)
+        self.write_consolidated_buffer(writer, num_workers)
     }
 
     /// Writes the corpus in the consolidated form to the provided output stream.
-    pub fn write_consolidated_buffer<W: Write>(&self, writer: W) -> Result<(), crate::Error> {
+    pub fn write_consolidated_buffer<W: Write>(
+        &self,
+        writer: W,
+        num_workers: i32,
+    ) -> Result<(), crate::Error> {
         let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a consolidated record";
+
+        // Collect sorted types in each file, storing each type name with its variant index.
+        let next_work_idx = AtomicUsize::new(0);
+
+        let all_file_types = Mutex::new(vec![Vec::new(); self.files.len()]);
+
+        thread::scope(|s| {
+            for _ in 0..num_workers {
+                s.spawn(|| {
+                    loop {
+                        let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
+                        if work_idx >= self.files.len() {
+                            break;
+                        }
+                        let symfile = &self.files[work_idx];
+
+                        // Collect sorted exports in the file which are the roots for consolidation.
+                        let mut exports = symfile
+                            .records
+                            .keys()
+                            .map(String::as_str)
+                            .filter(|name| is_export_name(name))
+                            .collect::<Vec<_>>();
+                        if exports.is_empty() {
+                            continue;
+                        }
+                        exports.sort();
+
+                        // Collect the exported types and their needed types.
+                        let mut file_types = ConsolidateFileTypes::new();
+                        for name in exports {
+                            self.consolidate_type(symfile, name, &mut file_types);
+                        }
+
+                        // Sort all output types.
+                        let mut sorted_types = file_types.into_iter().collect::<Vec<_>>();
+                        sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
+
+                        // Add the types to the resulting data.
+                        let mut all_file_types = all_file_types.lock().unwrap();
+                        all_file_types[work_idx] = sorted_types;
+                    }
+                });
+            }
+        });
+
+        let all_file_types = all_file_types.into_inner().unwrap();
 
         // Track which records are currently active, mapping a type name to its active variant
         // index.
@@ -765,28 +820,7 @@ impl SymtypesCorpus {
         let mut add_separator = false;
         for i in file_indices {
             let symfile = &self.files[i];
-
-            // Collect sorted exports in the file which are the roots for consolidation.
-            let mut exports = symfile
-                .records
-                .keys()
-                .map(String::as_str)
-                .filter(|name| is_export_name(name))
-                .collect::<Vec<_>>();
-            if exports.is_empty() {
-                continue;
-            }
-            exports.sort();
-
-            // Collect the exported types and their needed types.
-            let mut file_types = ConsolidateFileTypes::new();
-            for name in exports {
-                self.consolidate_type(symfile, name, &mut file_types);
-            }
-
-            // Sort all output types.
-            let mut sorted_types = file_types.into_iter().collect::<Vec<_>>();
-            sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
+            let sorted_types = &all_file_types[i];
 
             // Add an empty line to separate individual files.
             if add_separator {
@@ -799,7 +833,7 @@ impl SymtypesCorpus {
             writeln!(writer, "/* {} */", symfile.path.display()).map_io_err(err_desc)?;
 
             // Write all output types.
-            for (name, variant_idx) in sorted_types {
+            for &(name, variant_idx) in sorted_types {
                 // Look up the type definition.
                 // SAFETY: Each type reference is guaranteed to have a corresponding definition.
                 let variants = self.types[type_bucket_idx(name)].get(name).unwrap();
