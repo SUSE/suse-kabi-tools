@@ -17,46 +17,43 @@ fn read_basic_single() {
         ),
     );
     assert_ok!(result);
+    let foo_tokens_rc = Arc::new(vec![
+        Token::new_atom("struct"),
+        Token::new_atom("foo"),
+        Token::new_atom("{"),
+        Token::new_atom("}"),
+    ]);
+    let bar_tokens_rc = Arc::new(vec![
+        Token::new_atom("void"),
+        Token::new_atom("bar"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let baz_tokens_rc = Arc::new(vec![
+        Token::new_atom("int"),
+        Token::new_atom("baz"),
+        Token::new_atom("("),
+        Token::new_atom(")"),
+    ]);
     let mut exp_symtypes = SymtypesCorpus {
         types: array::from_fn(|_| Types::new()),
         exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 0)]),
         files: vec![SymtypesFile {
             path: PathBuf::from("test.symtypes"),
             records: HashMap::from([
-                ("s#foo".to_string(), 0),
-                ("bar".to_string(), 0),
-                ("baz".to_string(), 0),
+                ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+                ("bar".to_string(), Arc::clone(&bar_tokens_rc)),
+                ("baz".to_string(), Arc::clone(&baz_tokens_rc)),
             ]),
         }],
     };
-    exp_symtypes.types[type_bucket_idx("s#foo")].insert(
-        "s#foo".to_string(),
-        vec![Arc::new(vec![
-            Token::new_atom("struct"),
-            Token::new_atom("foo"),
-            Token::new_atom("{"),
-            Token::new_atom("}"),
-        ])],
-    );
-    exp_symtypes.types[type_bucket_idx("bar")].insert(
-        "bar".to_string(),
-        vec![Arc::new(vec![
-            Token::new_atom("void"),
-            Token::new_atom("bar"),
-            Token::new_atom("("),
-            Token::new_typeref("s#foo"),
-            Token::new_atom(")"),
-        ])],
-    );
-    exp_symtypes.types[type_bucket_idx("baz")].insert(
-        "baz".to_string(),
-        vec![Arc::new(vec![
-            Token::new_atom("int"),
-            Token::new_atom("baz"),
-            Token::new_atom("("),
-            Token::new_atom(")"),
-        ])],
-    );
+    exp_symtypes.types[type_bucket_idx("s#foo")]
+        .insert("s#foo".to_string(), vec![Arc::clone(&foo_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("bar")]
+        .insert("bar".to_string(), vec![Arc::clone(&bar_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("baz")]
+        .insert("baz".to_string(), vec![Arc::clone(&baz_tokens_rc)]);
     assert_eq!(symtypes, exp_symtypes);
 }
 
@@ -75,48 +72,48 @@ fn read_basic_consolidated() {
         ),
     );
     assert_ok!(result);
+    let foo_tokens_rc = Arc::new(vec![
+        Token::new_atom("struct"),
+        Token::new_atom("foo"),
+        Token::new_atom("{"),
+        Token::new_atom("}"),
+    ]);
+    let bar_tokens_rc = Arc::new(vec![
+        Token::new_atom("void"),
+        Token::new_atom("bar"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let baz_tokens_rc = Arc::new(vec![
+        Token::new_atom("int"),
+        Token::new_atom("baz"),
+        Token::new_atom("("),
+        Token::new_atom(")"),
+    ]);
     let mut exp_symtypes = SymtypesCorpus {
         types: array::from_fn(|_| Types::new()),
         exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 1)]),
         files: vec![
             SymtypesFile {
                 path: PathBuf::from("test.symtypes"),
-                records: HashMap::from([("s#foo".to_string(), 0), ("bar".to_string(), 0)]),
+                records: HashMap::from([
+                    ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+                    ("bar".to_string(), Arc::clone(&bar_tokens_rc)),
+                ]),
             },
             SymtypesFile {
                 path: PathBuf::from("test2.symtypes"),
-                records: HashMap::from([("baz".to_string(), 0)]),
+                records: HashMap::from([("baz".to_string(), Arc::clone(&baz_tokens_rc))]),
             },
         ],
     };
-    exp_symtypes.types[type_bucket_idx("s#foo")].insert(
-        "s#foo".to_string(),
-        vec![Arc::new(vec![
-            Token::new_atom("struct"),
-            Token::new_atom("foo"),
-            Token::new_atom("{"),
-            Token::new_atom("}"),
-        ])],
-    );
-    exp_symtypes.types[type_bucket_idx("bar")].insert(
-        "bar".to_string(),
-        vec![Arc::new(vec![
-            Token::new_atom("void"),
-            Token::new_atom("bar"),
-            Token::new_atom("("),
-            Token::new_typeref("s#foo"),
-            Token::new_atom(")"),
-        ])],
-    );
-    exp_symtypes.types[type_bucket_idx("baz")].insert(
-        "baz".to_string(),
-        vec![Arc::new(vec![
-            Token::new_atom("int"),
-            Token::new_atom("baz"),
-            Token::new_atom("("),
-            Token::new_atom(")"),
-        ])],
-    );
+    exp_symtypes.types[type_bucket_idx("s#foo")]
+        .insert("s#foo".to_string(), vec![Arc::clone(&foo_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("bar")]
+        .insert("bar".to_string(), vec![Arc::clone(&bar_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("baz")]
+        .insert("baz".to_string(), vec![Arc::clone(&baz_tokens_rc)]);
     assert_eq!(symtypes, exp_symtypes);
 }
 

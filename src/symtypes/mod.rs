@@ -75,9 +75,8 @@ fn type_bucket_idx(type_name: &str) -> usize {
 /// is defined.
 type Exports = HashMap<String, usize>;
 
-/// A mapping from a type name to an index in `TypeVariants`, specifying its variant in a given
-/// file.
-type FileRecords = HashMap<String, usize>;
+/// A mapping from a type name to `Tokens`, specifying the type in a given file.
+type FileRecords = HashMap<String, Arc<Tokens>>;
 
 /// A representation of a single symtypes file.
 #[derive(Debug, Eq, PartialEq)]
@@ -92,8 +91,7 @@ type SymtypesFiles = Vec<SymtypesFile>;
 /// A representation of a kernel ABI, loaded from symtypes files.
 ///
 /// * The `types` collection stores all types and their variants.
-/// * The `files` collection records types in individual symtypes files. Each type uses an index to
-///   reference its variant in `types`.
+/// * The `files` collection records types in individual symtypes files.
 /// * The `exports` collection provides all exports in the corpus. Each export uses an index to
 ///   reference its origin in `files`.
 ///
@@ -124,23 +122,20 @@ type SymtypesFiles = Vec<SymtypesFile>;
 /// both evaluate to 3.
 ///
 /// ```text
-/// SymtypesCorpus {
+/// foo_tokens = Arc { Tokens[ Atom("struct"), Atom("foo"), Atom("{"), Atom("int"), Atom("a"), Atom(";"), Atom("}") ] }
+/// foo2_tokens = Arc { Tokens[ Atom("struct"), Atom("foo"), Atom("{"), Atom("UNKNOWN"), Atom("}") ] }
+/// bar_tokens = Arc { Tokens[ Atom("int"), Atom("bar"), Atom("("), TypeRef("s#foo"), Atom(")") ] }
+/// baz_tokens = Arc { Tokens[ Atom("int"), Atom("baz"), Atom("("), TypeRef("s#foo"), Atom(")") ] }
+/// corpus = SymtypesCorpus {
 ///     types: TypesBuckets {
 ///         [0]: Types { },
 ///         [1]: Types {
-///             "s#foo": TypeVariants[
-///                 Tokens[Atom("struct"), Atom("foo"), Atom("{"), Atom("int"), Atom("a"), Atom(";"), Atom("}")],
-///                 Tokens[Atom("struct"), Atom("foo"), Atom("{"), Atom("UNKNOWN"), Atom("}")],
-///             ]
+///             "s#foo": TypeVariants[ foo_tokens, foo2_tokens ]
 ///         },
 ///         [2]: Types { },
 ///         [3]: Types {
-///             "bar": TypeVariants[
-///                 Tokens[Atom("int"), Atom("bar"), Atom("("), TypeRef("s#foo"), Atom(")")],
-///             ],
-///             "baz": TypeVariants[
-///                 Tokens[Atom("int"), Atom("baz"), Atom("("), TypeRef("s#foo"), Atom(")")],
-///             ]
+///             "bar": TypeVariants[ bar_tokens ],
+///             "baz": TypeVariants[ baz_tokens ],
 ///         },
 ///         [4..TypesBuckets::SIZE] = Types { },
 ///     },
@@ -152,15 +147,15 @@ type SymtypesFiles = Vec<SymtypesFile>;
 ///         SymtypesFile {
 ///             path: PathBuf("test_a.symtypes"),
 ///             records: FileRecords {
-///                 "s#foo": 0,
-///                 "bar": 0,
+///                 "s#foo": foo_tokens,
+///                 "bar": bar_tokens,
 ///             }
 ///         },
 ///         SymtypesFile {
 ///             path: PathBuf("test_b.symtypes"),
 ///             records: FileRecords {
-///                 "s#foo": 1,
-///                 "baz": 0,
+///                 "s#foo": foo2_tokens,
+///                 "baz": baz_tokens,
 ///             }
 ///         },
 ///     ],
@@ -187,13 +182,13 @@ struct LoadContext {
     files: Mutex<SymtypesFiles>,
 }
 
-/// Type names active during the loading of a specific file, providing for each type its variant and
+/// Type names active during the loading of a specific file, providing for each type its tokens and
 /// source line index.
-type LoadActiveTypes = HashMap<String, (usize, usize)>;
+type LoadActiveTypes = HashMap<String, (Arc<Tokens>, usize)>;
 
 /// Type names processed during the consolidation for a specific file, providing for each type its
-/// variant index.
-type ConsolidateFileTypes<'a> = HashMap<&'a str, usize>;
+/// tokens.
+type ConsolidateFileTypes<'a> = HashMap<&'a str, Arc<Tokens>>;
 
 /// Changes between two corpuses, recording a tuple of each modified type's name, its old tokens and
 /// its new tokens, along with a [`Vec`] of exported symbols affected by the change.
@@ -463,17 +458,17 @@ impl SymtypesCorpus {
             }
 
             // Insert the type into the corpus and file records.
-            let variant_idx = Self::merge_type(&name, tokens, load_context);
+            let tokens_rc = Self::merge_type(&name, tokens, load_context);
             if is_export_name(&name) {
                 Self::insert_export(&name, file_idx, line_idx, load_context)?;
             }
-            records.insert(name.clone(), variant_idx);
+            records.insert(name.clone(), Arc::clone(&tokens_rc));
 
             // Record the type as currently active.
             if is_local_override {
-                local_override.insert(name, (variant_idx, line_idx));
+                local_override.insert(name, (tokens_rc, line_idx));
             } else {
-                active_types.insert(name, (variant_idx, line_idx));
+                active_types.insert(name, (tokens_rc, line_idx));
             }
         }
 
@@ -534,7 +529,6 @@ impl SymtypesCorpus {
                 &local_override,
                 active_types,
                 &mut records,
-                load_context,
             )?;
         }
 
@@ -545,9 +539,9 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Adds the given type definition to the corpus if not already present, and returns its variant
-    /// index.
-    fn merge_type(type_name: &str, tokens: Tokens, load_context: &LoadContext) -> usize {
+    /// Adds the given type definition to the corpus if it's not already present, and returns its
+    /// reference-counted pointer.
+    fn merge_type(type_name: &str, tokens: Tokens, load_context: &LoadContext) -> Arc<Tokens> {
         // Types are often repeated in different symtypes files. Try to find an existing type only
         // under the read lock first.
         {
@@ -555,9 +549,9 @@ impl SymtypesCorpus {
                 .read()
                 .unwrap();
             if let Some(variants) = types.get(type_name) {
-                for (i, variant) in variants.iter().enumerate() {
-                    if tokens == **variant {
-                        return i;
+                for variant_rc in variants {
+                    if tokens == **variant_rc {
+                        return Arc::clone(variant_rc);
                     }
                 }
             }
@@ -568,17 +562,19 @@ impl SymtypesCorpus {
             .unwrap();
         match types.get_mut(type_name) {
             Some(variants) => {
-                for (i, variant) in variants.iter().enumerate() {
-                    if tokens == **variant {
-                        return i;
+                for variant_rc in variants.iter() {
+                    if tokens == **variant_rc {
+                        return Arc::clone(variant_rc);
                     }
                 }
-                variants.push(Arc::new(tokens));
-                variants.len() - 1
+                let tokens_rc = Arc::new(tokens);
+                variants.push(Arc::clone(&tokens_rc));
+                tokens_rc
             }
             None => {
-                types.insert(type_name.to_string(), vec![Arc::new(tokens)]); // [1]
-                0
+                let tokens_rc = Arc::new(tokens);
+                types.insert(type_name.to_string(), vec![Arc::clone(&tokens_rc)]); // [1]
+                tokens_rc
             }
         }
     }
@@ -634,7 +630,6 @@ impl SymtypesCorpus {
         local_override: &LoadActiveTypes,
         active_types: &LoadActiveTypes,
         records: &mut FileRecords,
-        load_context: &LoadContext,
     ) -> Result<(), crate::Error> {
         if is_explicit {
             // All explicit symbols need to be added by the caller.
@@ -646,34 +641,26 @@ impl SymtypesCorpus {
             }
         }
 
-        let (variant_idx, line_idx) = match local_override.get(type_name) {
-            Some(&(variant_idx, line_idx)) => (variant_idx, line_idx),
-            None => *active_types.get(type_name).ok_or_else(|| {
-                crate::Error::new_parse(format!(
-                    "{}:{}: Type '{}' is not known",
-                    path.display(),
-                    from_line_idx + 1,
-                    type_name
-                ))
-            })?,
+        let (tokens_rc, line_idx) = match local_override.get(type_name) {
+            Some(&(ref tokens_rc, line_idx)) => (Arc::clone(tokens_rc), line_idx),
+            None => match active_types.get(type_name) {
+                Some(&(ref tokens_rc, line_idx)) => (Arc::clone(tokens_rc), line_idx),
+                None => {
+                    return Err(crate::Error::new_parse(format!(
+                        "{}:{}: Type '{}' is not known",
+                        path.display(),
+                        from_line_idx + 1,
+                        type_name
+                    )));
+                }
+            },
         };
         if !is_explicit {
-            records.insert(type_name.to_string(), variant_idx); // [1]
+            records.insert(type_name.to_string(), Arc::clone(&tokens_rc)); // [1]
         }
 
-        // Look up the type definition.
-        let tokens = {
-            let types = load_context.types[type_bucket_idx(type_name)]
-                .read()
-                .unwrap();
-
-            // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-            let variants = types.get(type_name).unwrap();
-            Arc::clone(&variants[variant_idx])
-        };
-
         // Process recursively all types referenced by this symbol.
-        for token in &*tokens {
+        for token in tokens_rc.iter() {
             match token {
                 Token::TypeRef(ref_name) => {
                     Self::complete_file_record(
@@ -684,7 +671,6 @@ impl SymtypesCorpus {
                         local_override,
                         active_types,
                         records,
-                        load_context,
                     )?;
                 }
                 Token::Atom(_word) => {}
@@ -696,11 +682,10 @@ impl SymtypesCorpus {
 
     /// Processes a single symbol in a given file and adds it to the consolidated output.
     ///
-    /// The specified symbol and its required variant is added to `file_types`, if it's not already
+    /// The specified symbol and its tokens are added to `file_types`, if the symbol is not already
     /// present. All of its type references are then recursively processed in the same way.
     fn consolidate_type<'a>(
-        &'a self,
-        symfile: &SymtypesFile,
+        symfile: &'a SymtypesFile,
         name: &'a str,
         file_types: &mut ConsolidateFileTypes<'a>,
     ) {
@@ -712,16 +697,15 @@ impl SymtypesCorpus {
 
         // Look up the type definition.
         // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-        let variant_idx = *symfile.records.get(name).unwrap();
-        let variants = self.types[type_bucket_idx(name)].get(name).unwrap();
+        let tokens_rc = symfile.records.get(name).unwrap();
 
         // Record that the type is needed by the file.
-        file_type_entry.insert(variant_idx);
+        file_type_entry.insert(Arc::clone(tokens_rc));
 
         // Process recursively all types that the symbol references.
-        for token in &*variants[variant_idx] {
+        for token in tokens_rc.iter() {
             match token {
-                Token::TypeRef(ref_name) => self.consolidate_type(symfile, ref_name, file_types),
+                Token::TypeRef(ref_name) => Self::consolidate_type(symfile, ref_name, file_types),
                 Token::Atom(_word) => {}
             }
         }
@@ -762,10 +746,11 @@ impl SymtypesCorpus {
         let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a consolidated record";
 
-        // Collect sorted types in each file, storing each type name with its variant index.
+        // Collect sorted types in each file, storing each type name with tokens.
         let next_work_idx = AtomicUsize::new(0);
 
-        let all_file_types = Mutex::new(vec![Vec::<(&str, usize)>::new(); self.files.len()]);
+        let all_file_types =
+            Mutex::new(vec![Vec::<(&str, Arc::<Tokens>)>::new(); self.files.len()]);
 
         thread::scope(|s| {
             for _ in 0..num_workers {
@@ -792,7 +777,7 @@ impl SymtypesCorpus {
                         // Collect the exported types and their needed types.
                         let mut file_types = ConsolidateFileTypes::new();
                         for name in exports {
-                            self.consolidate_type(symfile, name, &mut file_types);
+                            Self::consolidate_type(symfile, name, &mut file_types);
                         }
 
                         // Sort all output types.
@@ -809,9 +794,8 @@ impl SymtypesCorpus {
 
         let all_file_types = all_file_types.into_inner().unwrap();
 
-        // Track which records are currently active, mapping a type name to its active variant
-        // index.
-        let mut active_types = HashMap::<&str, usize>::new();
+        // Track which records are currently active, mapping a type name to its tokens.
+        let mut active_types = HashMap::<&str, Arc<Tokens>>::new();
 
         // Sort all files in the corpus by their path.
         let mut file_indices = (0..self.files.len()).collect::<Vec<_>>();
@@ -834,15 +818,10 @@ impl SymtypesCorpus {
             writeln!(writer, "/* {} */", symfile.path.display()).map_io_err(err_desc)?;
 
             // Write all output types.
-            for &(name, variant_idx) in sorted_types {
-                // Look up the type definition.
-                // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-                let variants = self.types[type_bucket_idx(name)].get(name).unwrap();
-                let tokens = Arc::clone(&variants[variant_idx]);
-
+            for &(name, ref tokens_rc) in sorted_types {
                 // Check if this is an UNKNOWN type definition, and if so, record it as a local
                 // override.
-                if let Some(short_name) = try_shorten_decl(name, &tokens) {
+                if let Some(short_name) = try_shorten_decl(name, tokens_rc) {
                     writeln!(writer, "{}", short_name).map_io_err(err_desc)?;
                     continue;
                 }
@@ -851,21 +830,21 @@ impl SymtypesCorpus {
                 // output.
                 let record = match active_types.entry(name) {
                     Occupied(mut active_type_entry) => {
-                        if *active_type_entry.get() != variant_idx {
-                            active_type_entry.insert(variant_idx);
+                        if *active_type_entry.get() != *tokens_rc {
+                            active_type_entry.insert(Arc::clone(tokens_rc));
                             true
                         } else {
                             false
                         }
                     }
                     Vacant(active_type_entry) => {
-                        active_type_entry.insert(variant_idx);
+                        active_type_entry.insert(Arc::clone(tokens_rc));
                         true
                     }
                 };
                 if record {
                     write!(writer, "{}", name).map_io_err(err_desc)?;
-                    for token in &*tokens {
+                    for token in tokens_rc.iter() {
                         write!(writer, " {}", token.as_str()).map_io_err(err_desc)?;
                     }
                     writeln!(writer).map_io_err(err_desc)?;
@@ -876,41 +855,17 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Obtains tokens which describe a specified type name, in a given corpus and file.
-    fn get_type_tokens<'a>(
-        symtypes: &'a SymtypesCorpus,
-        file: &SymtypesFile,
-        name: &str,
-    ) -> &'a Tokens {
-        match file.records.get(name) {
-            Some(&variant_idx) => match symtypes.types[type_bucket_idx(name)].get(name) {
-                Some(variants) => &variants[variant_idx],
-                None => {
-                    panic!("Type '{}' has a missing declaration", name);
-                }
-            },
-            None => {
-                panic!(
-                    "Type '{}' is not known in file '{}'",
-                    name,
-                    file.path.display()
-                )
-            }
-        }
-    }
-
-    /// Compares the definition of the symbol `name` in (`corpus`, `file`) with its definition in
-    /// (`other_corpus`, `other_file`).
+    /// Compares the definitions of the given symbol in two files.
     ///
-    /// If the immediate definition of the symbol differs between the two corpuses then it gets
-    /// added in `changes`. The `export` parameter identifies the top-level exported symbol affected
-    /// by the change.
+    /// If the immediate definition of the symbol differs between the two files then it gets added
+    /// in `changes`. The `export` parameter identifies the top-level exported symbol affected by
+    /// the change.
     ///
-    /// The specified symbol is added to `processed_types`, if not already present, and all its type
-    /// references get recursively processed in the same way.
+    /// The specified symbol is added to `processed_types`, if it's not already present, and all its
+    /// type references get recursively processed in the same way.
     fn compare_types<'a>(
-        (corpus, file): (&'a SymtypesCorpus, &'a SymtypesFile),
-        (other_corpus, other_file): (&'a SymtypesCorpus, &'a SymtypesFile),
+        file: &'a SymtypesFile,
+        other_file: &'a SymtypesFile,
         name: &'a str,
         export: &'a str,
         changes: &Mutex<CompareChangedTypes<'a>>,
@@ -922,9 +877,10 @@ impl SymtypesCorpus {
         }
         processed.insert(name); // [2]
 
-        // Look up how the symbol is defined in each corpus.
-        let tokens = Self::get_type_tokens(corpus, file, name);
-        let other_tokens = Self::get_type_tokens(other_corpus, other_file, name);
+        // Look up how the symbol is defined in each file.
+        // SAFETY: Each type reference is guaranteed to have a corresponding definition.
+        let tokens = &**file.records.get(name).unwrap();
+        let other_tokens = &**other_file.records.get(name).unwrap();
 
         // Compare the immediate tokens.
         let is_equal = tokens.len() == other_tokens.len()
@@ -944,8 +900,8 @@ impl SymtypesCorpus {
             for token in tokens {
                 if let Token::TypeRef(ref_name) = token {
                     Self::compare_types(
-                        (corpus, file),
-                        (other_corpus, other_file),
+                        file,
+                        other_file,
                         ref_name.as_str(),
                         export,
                         changes,
@@ -960,8 +916,8 @@ impl SymtypesCorpus {
                         if let Token::TypeRef(other_ref_name) = other_token {
                             if ref_name == other_ref_name {
                                 Self::compare_types(
-                                    (corpus, file),
-                                    (other_corpus, other_file),
+                                    file,
+                                    other_file,
                                     ref_name.as_str(),
                                     export,
                                     changes,
@@ -1034,8 +990,8 @@ impl SymtypesCorpus {
                             let other_file = &other_corpus.files[*other_file_idx];
                             let mut processed = CompareFileTypes::new();
                             Self::compare_types(
-                                (self, file),
-                                (other_corpus, other_file),
+                                file,
+                                other_file,
                                 name,
                                 name,
                                 &changes,
