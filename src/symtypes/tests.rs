@@ -31,31 +31,31 @@ fn read_basic_single() {
     };
     exp_symtypes.types[type_bucket_idx("s#foo")].insert(
         "s#foo".to_string(),
-        vec![vec![
+        vec![Arc::new(vec![
             Token::new_atom("struct"),
             Token::new_atom("foo"),
             Token::new_atom("{"),
             Token::new_atom("}"),
-        ]],
+        ])],
     );
     exp_symtypes.types[type_bucket_idx("bar")].insert(
         "bar".to_string(),
-        vec![vec![
+        vec![Arc::new(vec![
             Token::new_atom("void"),
             Token::new_atom("bar"),
             Token::new_atom("("),
             Token::new_typeref("s#foo"),
             Token::new_atom(")"),
-        ]],
+        ])],
     );
     exp_symtypes.types[type_bucket_idx("baz")].insert(
         "baz".to_string(),
-        vec![vec![
+        vec![Arc::new(vec![
             Token::new_atom("int"),
             Token::new_atom("baz"),
             Token::new_atom("("),
             Token::new_atom(")"),
-        ]],
+        ])],
     );
     assert_eq!(symtypes, exp_symtypes);
 }
@@ -91,31 +91,31 @@ fn read_basic_consolidated() {
     };
     exp_symtypes.types[type_bucket_idx("s#foo")].insert(
         "s#foo".to_string(),
-        vec![vec![
+        vec![Arc::new(vec![
             Token::new_atom("struct"),
             Token::new_atom("foo"),
             Token::new_atom("{"),
             Token::new_atom("}"),
-        ]],
+        ])],
     );
     exp_symtypes.types[type_bucket_idx("bar")].insert(
         "bar".to_string(),
-        vec![vec![
+        vec![Arc::new(vec![
             Token::new_atom("void"),
             Token::new_atom("bar"),
             Token::new_atom("("),
             Token::new_typeref("s#foo"),
             Token::new_atom(")"),
-        ]],
+        ])],
     );
     exp_symtypes.types[type_bucket_idx("baz")].insert(
         "baz".to_string(),
-        vec![vec![
+        vec![Arc::new(vec![
             Token::new_atom("int"),
             Token::new_atom("baz"),
             Token::new_atom("("),
             Token::new_atom(")"),
-        ]],
+        ])],
     );
     assert_eq!(symtypes, exp_symtypes);
 }

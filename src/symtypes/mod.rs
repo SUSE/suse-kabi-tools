@@ -9,7 +9,7 @@ use std::io::{BufWriter, prelude::*};
 use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use std::{array, fs, io, mem, thread};
 
 #[cfg(test)]
@@ -57,7 +57,7 @@ impl Token {
 type Tokens = Vec<Token>;
 
 /// A collection of all variants of the same type name in a given corpus.
-type TypeVariants = Vec<Tokens>;
+type TypeVariants = Vec<Arc<Tokens>>;
 
 /// A mapping from a type name to all its known variants.
 type Types = HashMap<String, TypeVariants>;
@@ -556,7 +556,7 @@ impl SymtypesCorpus {
                 .unwrap();
             if let Some(variants) = types.get(type_name) {
                 for (i, variant) in variants.iter().enumerate() {
-                    if tokens == *variant {
+                    if tokens == **variant {
                         return i;
                     }
                 }
@@ -569,15 +569,15 @@ impl SymtypesCorpus {
         match types.get_mut(type_name) {
             Some(variants) => {
                 for (i, variant) in variants.iter().enumerate() {
-                    if tokens == *variant {
+                    if tokens == **variant {
                         return i;
                     }
                 }
-                variants.push(tokens);
+                variants.push(Arc::new(tokens));
                 variants.len() - 1
             }
             None => {
-                types.insert(type_name.to_string(), vec![tokens]); // [1]
+                types.insert(type_name.to_string(), vec![Arc::new(tokens)]); // [1]
                 0
             }
         }
@@ -669,17 +669,17 @@ impl SymtypesCorpus {
 
             // SAFETY: Each type reference is guaranteed to have a corresponding definition.
             let variants = types.get(type_name).unwrap();
-            variants[variant_idx].clone()
+            Arc::clone(&variants[variant_idx])
         };
 
         // Process recursively all types referenced by this symbol.
-        for token in tokens {
+        for token in &*tokens {
             match token {
                 Token::TypeRef(ref_name) => {
                     Self::complete_file_record(
                         path,
                         line_idx,
-                        &ref_name,
+                        ref_name,
                         false,
                         local_override,
                         active_types,
@@ -719,7 +719,7 @@ impl SymtypesCorpus {
         file_type_entry.insert(variant_idx);
 
         // Process recursively all types that the symbol references.
-        for token in &variants[variant_idx] {
+        for token in &*variants[variant_idx] {
             match token {
                 Token::TypeRef(ref_name) => self.consolidate_type(symfile, ref_name, file_types),
                 Token::Atom(_word) => {}
@@ -838,11 +838,11 @@ impl SymtypesCorpus {
                 // Look up the type definition.
                 // SAFETY: Each type reference is guaranteed to have a corresponding definition.
                 let variants = self.types[type_bucket_idx(name)].get(name).unwrap();
-                let tokens = &variants[variant_idx];
+                let tokens = Arc::clone(&variants[variant_idx]);
 
                 // Check if this is an UNKNOWN type definition, and if so, record it as a local
                 // override.
-                if let Some(short_name) = try_shorten_decl(name, tokens) {
+                if let Some(short_name) = try_shorten_decl(name, &tokens) {
                     writeln!(writer, "{}", short_name).map_io_err(err_desc)?;
                     continue;
                 }
@@ -865,7 +865,7 @@ impl SymtypesCorpus {
                 };
                 if record {
                     write!(writer, "{}", name).map_io_err(err_desc)?;
-                    for token in tokens {
+                    for token in &*tokens {
                         write!(writer, " {}", token.as_str()).map_io_err(err_desc)?;
                     }
                     writeln!(writer).map_io_err(err_desc)?;
