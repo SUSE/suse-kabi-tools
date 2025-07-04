@@ -119,8 +119,8 @@ type SymtypesFiles = Vec<SymtypesFile>;
 ///
 /// The data would be represented as follows:
 ///
-/// The example assumes `type_bucket_idx("s#foo") % TypesBuckets::SIZE]` evaluates to 1, and that
-/// `type_bucket_idx("bar") % TypesBuckets::SIZE` and `type_bucket_idx("baz") % TypesBuckets::SIZE]`
+/// The example assumes `type_bucket_idx("s#foo") % TypesBuckets::SIZE` evaluates to 1, and that
+/// `type_bucket_idx("bar") % TypesBuckets::SIZE` and `type_bucket_idx("baz") % TypesBuckets::SIZE`
 /// both evaluate to 3.
 ///
 /// ```text
@@ -317,6 +317,7 @@ impl SymtypesCorpus {
                 symfiles.push(entry_sub_path);
             }
         }
+
         Ok(())
     }
 
@@ -764,7 +765,7 @@ impl SymtypesCorpus {
         // Collect sorted types in each file, storing each type name with its variant index.
         let next_work_idx = AtomicUsize::new(0);
 
-        let all_file_types = Mutex::new(vec![Vec::new(); self.files.len()]);
+        let all_file_types = Mutex::new(vec![Vec::<(&str, usize)>::new(); self.files.len()]);
 
         thread::scope(|s| {
             for _ in 0..num_workers {
@@ -810,7 +811,7 @@ impl SymtypesCorpus {
 
         // Track which records are currently active, mapping a type name to its active variant
         // index.
-        let mut active_types: HashMap<&str, usize> = HashMap::new();
+        let mut active_types = HashMap::<&str, usize>::new();
 
         // Sort all files in the corpus by their path.
         let mut file_indices = (0..self.files.len()).collect::<Vec<_>>();
