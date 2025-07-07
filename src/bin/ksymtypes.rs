@@ -118,15 +118,17 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
     let path = maybe_path.ok_or_else(|| Error::new_cli("The consolidate source is missing"))?;
 
     // Do the consolidation.
-    let mut symtypes = SymtypesCorpus::new();
-
-    {
+    let symtypes = {
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
-        symtypes.load(&path, num_workers).map_err(|err| {
-            Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
-        })?;
-    }
+        let mut symtypes = SymtypesCorpus::new();
+        symtypes
+            .load(&path, io::stderr(), num_workers)
+            .map_err(|err| {
+                Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
+            })?;
+        symtypes
+    };
 
     {
         let _timing = Timing::new(
@@ -209,9 +211,11 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
         let mut symtypes = SymtypesCorpus::new();
-        symtypes.load(&path, num_workers).map_err(|err| {
-            Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
-        })?;
+        symtypes
+            .load(&path, io::stderr(), num_workers)
+            .map_err(|err| {
+                Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
+            })?;
         symtypes
     };
 
@@ -219,9 +223,11 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path2));
 
         let mut symtypes2 = SymtypesCorpus::new();
-        symtypes2.load(&path2, num_workers).map_err(|err| {
-            Error::new_context(format!("Failed to read symtypes from '{}'", path2), err)
-        })?;
+        symtypes2
+            .load(&path2, io::stderr(), num_workers)
+            .map_err(|err| {
+                Error::new_context(format!("Failed to read symtypes from '{}'", path2), err)
+            })?;
         symtypes2
     };
 

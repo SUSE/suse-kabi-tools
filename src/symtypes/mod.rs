@@ -175,11 +175,13 @@ pub struct SymtypesCorpus {
     files: SymtypesFiles,
 }
 
-/// A helper struct to provide synchronized access to `SymtypesCorpus` data during parallel loading.
-struct LoadContext {
+/// A helper struct to provide synchronized access to all corpus data and a warnings stream during
+/// parallel loading.
+struct LoadContext<'a> {
     types: [RwLock<Types>; TypeBuckets::SIZE],
     exports: Mutex<Exports>,
     files: Mutex<SymtypesFiles>,
+    warnings: Mutex<Box<dyn Write + Send + 'a>>,
 }
 
 /// Type names active during the loading of a specific file, providing for each type its tokens and
@@ -197,13 +199,14 @@ type CompareChangedTypes<'a> = HashMap<(&'a str, &'a Tokens, &'a Tokens), Vec<&'
 /// Type names processed during the comparison for a specific file.
 type CompareFileTypes<'a> = HashSet<&'a str>;
 
-impl LoadContext {
-    /// Creates a new load context from a symtypes corpus, consuming it.
-    fn from(mut symtypes: SymtypesCorpus) -> Self {
+impl<'a> LoadContext<'a> {
+    /// Creates a new load context from a symtypes corpus and a warnings stream.
+    fn from<W: Write + Send + 'a>(mut symtypes: SymtypesCorpus, warnings: W) -> Self {
         Self {
             types: array::from_fn(|i| RwLock::new(mem::take(&mut symtypes.types[i]))),
             exports: Mutex::new(mem::take(&mut symtypes.exports)),
             files: Mutex::new(mem::take(&mut symtypes.files)),
+            warnings: Mutex::new(Box::new(warnings)),
         }
     }
 
@@ -237,7 +240,12 @@ impl SymtypesCorpus {
     ///
     /// The `path` can point to a single symtypes file or a directory. In the latter case, the
     /// function recursively collects all symtypes in that directory and loads them.
-    pub fn load<P: AsRef<Path>>(&mut self, path: P, num_workers: i32) -> Result<(), crate::Error> {
+    pub fn load<P: AsRef<Path>, W: Write + Send>(
+        &mut self,
+        path: P,
+        warnings: W,
+        num_workers: i32,
+    ) -> Result<(), crate::Error> {
         let path = path.as_ref();
 
         // Determine if the input is a directory tree or a single symtypes file.
@@ -251,10 +259,10 @@ impl SymtypesCorpus {
             Self::collect_symfiles(path, "", &mut symfiles)?;
 
             // Load all found files.
-            self.load_symfiles(path, &symfiles, num_workers)
+            self.load_symfiles(path, &symfiles, warnings, num_workers)
         } else {
             // Load the single file.
-            self.load_symfiles("", &[path], num_workers)
+            self.load_symfiles("", &[path], warnings, num_workers)
         }
     }
 
@@ -317,17 +325,18 @@ impl SymtypesCorpus {
     }
 
     /// Loads all specified symtypes files.
-    fn load_symfiles<P: AsRef<Path>, Q: AsRef<Path> + Sync>(
+    fn load_symfiles<P: AsRef<Path>, Q: AsRef<Path> + Sync, W: Write + Send>(
         &mut self,
         root: P,
         symfiles: &[Q],
+        warnings: W,
         num_workers: i32,
     ) -> Result<(), crate::Error> {
         let root = root.as_ref();
 
         // Load data from the files.
         let next_work_idx = AtomicUsize::new(0);
-        let load_context = LoadContext::from(mem::take(self));
+        let load_context = LoadContext::from(mem::take(self), warnings);
 
         thread::scope(|s| -> Result<(), crate::Error> {
             let mut workers = Vec::new();
@@ -370,12 +379,13 @@ impl SymtypesCorpus {
     /// Loads symtypes data from a specified reader.
     ///
     /// The `path` should point to a symtypes file name, indicating the origin of the data.
-    pub fn load_buffer<P: AsRef<Path>, R: Read>(
+    pub fn load_buffer<P: AsRef<Path>, R: Read, W: Write + Send>(
         &mut self,
         path: P,
         reader: R,
+        warnings: W,
     ) -> Result<(), crate::Error> {
-        let load_context = LoadContext::from(mem::take(self));
+        let load_context = LoadContext::from(mem::take(self), warnings);
 
         Self::load_inner(path, reader, &load_context)?;
 
@@ -586,7 +596,7 @@ impl SymtypesCorpus {
         line_idx: usize,
         load_context: &LoadContext,
     ) -> Result<(), crate::Error> {
-        // Try to add the export, return an error if it is a duplicate.
+        // Add the export, if it is unique.
         let other_file_idx = {
             let mut exports = load_context.exports.lock().unwrap();
             match exports.entry(type_name.to_string()) // [1]
@@ -599,16 +609,29 @@ impl SymtypesCorpus {
             }
         };
 
-        let files = load_context.files.lock().unwrap();
-        let path = &files[file_idx].path;
-        let other_path = &files[other_file_idx].path;
-        Err(crate::Error::new_parse(format!(
-            "{}:{}: Export '{}' is duplicate, previous occurrence found in '{}'",
-            path.display(),
-            line_idx + 1,
-            type_name,
-            other_path.display()
-        )))
+        // Report the duplicate export as a warning. Although technically an error, some auxiliary
+        // kernel components that are not part of vmlinux/modules may reuse logic from the rest of
+        // the kernel by including its C/assembly files, which may contain export directives. If
+        // these components aren't correctly configured to disable exports, collecting all symtypes
+        // from the build will result in duplicate symbols. This should be fixed in the kernel.
+        // However, we want to proceed, especially if this is the compare command, where we want to
+        // report actual kABI differences.
+        let message = {
+            let files = load_context.files.lock().unwrap();
+            let path = &files[file_idx].path;
+            let other_path = &files[other_file_idx].path;
+            format!(
+                "{}:{}: WARNING: Export '{}' is duplicate, previous occurrence found in '{}'",
+                path.display(),
+                line_idx + 1,
+                type_name,
+                other_path.display()
+            )
+        };
+        let mut warnings = load_context.warnings.lock().unwrap();
+        writeln!(warnings, "{}", message)
+            .map_io_err("Failed to write a duplicate-export warning")?;
+        Ok(())
     }
 
     /// Completes a type record by validating all its references and, in the case of a consolidated
