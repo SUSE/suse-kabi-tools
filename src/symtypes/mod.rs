@@ -188,10 +188,6 @@ struct LoadContext<'a> {
 /// source line index.
 type LoadActiveTypes = HashMap<String, (Arc<Tokens>, usize)>;
 
-/// Type names processed during the consolidation for a specific file, providing for each type its
-/// tokens.
-type ConsolidateFileTypes<'a> = HashMap<&'a str, Arc<Tokens>>;
-
 /// Changes between two corpuses, recording a tuple of each modified type's name, its old tokens and
 /// its new tokens, along with a [`Vec`] of exported symbols affected by the change.
 type CompareChangedTypes<'a> = HashMap<(&'a str, &'a Tokens, &'a Tokens), Vec<&'a str>>;
@@ -703,43 +699,8 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Processes a single symbol in a given file and adds it to the consolidated output.
-    ///
-    /// The specified symbol and its tokens are added to `file_types`, if the symbol is not already
-    /// present. All of its type references are then recursively processed in the same way.
-    fn consolidate_type<'a>(
-        symfile: &'a SymtypesFile,
-        name: &'a str,
-        file_types: &mut ConsolidateFileTypes<'a>,
-    ) {
-        // See if the symbol was already processed.
-        let file_type_entry = match file_types.entry(name) {
-            Occupied(_) => return,
-            Vacant(file_type_entry) => file_type_entry,
-        };
-
-        // Look up the type definition.
-        // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-        let tokens_rc = symfile.records.get(name).unwrap();
-
-        // Record that the type is needed by the file.
-        file_type_entry.insert(Arc::clone(tokens_rc));
-
-        // Process recursively all types that the symbol references.
-        for token in tokens_rc.iter() {
-            match token {
-                Token::TypeRef(ref_name) => Self::consolidate_type(symfile, ref_name, file_types),
-                Token::Atom(_word) => {}
-            }
-        }
-    }
-
     /// Writes the corpus in the consolidated form into a specified file.
-    pub fn write_consolidated<P: AsRef<Path>>(
-        &self,
-        path: P,
-        num_workers: i32,
-    ) -> Result<(), crate::Error> {
+    pub fn write_consolidated<P: AsRef<Path>>(&self, path: P) -> Result<(), crate::Error> {
         let path = path.as_ref();
 
         // Open the output file.
@@ -757,78 +718,27 @@ impl SymtypesCorpus {
             }
         };
 
-        self.write_consolidated_buffer(writer, num_workers)
+        self.write_consolidated_buffer(writer)
     }
 
     /// Writes the corpus in the consolidated form to the provided output stream.
-    pub fn write_consolidated_buffer<W: Write>(
-        &self,
-        writer: W,
-        num_workers: i32,
-    ) -> Result<(), crate::Error> {
+    pub fn write_consolidated_buffer<W: Write>(&self, writer: W) -> Result<(), crate::Error> {
         let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a consolidated record";
 
-        // Collect sorted types in each file, storing each type name with tokens.
-        let next_work_idx = AtomicUsize::new(0);
-
-        let all_file_types =
-            Mutex::new(vec![Vec::<(&str, Arc::<Tokens>)>::new(); self.files.len()]);
-
-        thread::scope(|s| {
-            for _ in 0..num_workers {
-                s.spawn(|| {
-                    loop {
-                        let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
-                        if work_idx >= self.files.len() {
-                            break;
-                        }
-                        let symfile = &self.files[work_idx];
-
-                        // Collect sorted exports in the file which are the roots for consolidation.
-                        let mut exports = symfile
-                            .records
-                            .keys()
-                            .map(String::as_str)
-                            .filter(|name| is_export_name(name))
-                            .collect::<Vec<_>>();
-                        if exports.is_empty() {
-                            continue;
-                        }
-                        exports.sort();
-
-                        // Collect the exported types and their needed types.
-                        let mut file_types = ConsolidateFileTypes::new();
-                        for name in exports {
-                            Self::consolidate_type(symfile, name, &mut file_types);
-                        }
-
-                        // Sort all output types.
-                        let mut sorted_types = file_types.into_iter().collect::<Vec<_>>();
-                        sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
-
-                        // Add the types to the resulting data.
-                        let mut all_file_types = all_file_types.lock().unwrap();
-                        all_file_types[work_idx] = sorted_types;
-                    }
-                });
-            }
-        });
-
-        let all_file_types = all_file_types.into_inner().unwrap();
-
         // Track which records are currently active, mapping a type name to its tokens.
-        let mut active_types = HashMap::<&str, Arc<Tokens>>::new();
+        let mut active_types = HashMap::<&String, &Arc<Tokens>>::new();
 
         // Sort all files in the corpus by their path.
         let mut file_indices = (0..self.files.len()).collect::<Vec<_>>();
         file_indices.sort_by_key(|&i| &self.files[i].path);
 
-        // Process the sorted files and add their needed types to the output.
+        // Process the sorted files and add their types to the output.
         let mut add_separator = false;
         for i in file_indices {
             let symfile = &self.files[i];
-            let sorted_types = &all_file_types[i];
+            let mut sorted_types = self.files[i].records.iter().collect::<Vec<_>>();
+            sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
 
             // Add an empty line to separate individual files.
             if add_separator {
@@ -841,7 +751,7 @@ impl SymtypesCorpus {
             writeln!(writer, "/* {} */", symfile.path.display()).map_io_err(err_desc)?;
 
             // Write all output types.
-            for &(name, ref tokens_rc) in sorted_types {
+            for (name, tokens_rc) in sorted_types {
                 // Check if this is an UNKNOWN type definition, and if so, record it as a local
                 // override.
                 if let Some(short_name) = try_shorten_decl(name, tokens_rc) {
@@ -853,15 +763,15 @@ impl SymtypesCorpus {
                 // output.
                 let record = match active_types.entry(name) {
                     Occupied(mut active_type_entry) => {
-                        if *active_type_entry.get() != *tokens_rc {
-                            active_type_entry.insert(Arc::clone(tokens_rc));
+                        if *active_type_entry.get() != tokens_rc {
+                            active_type_entry.insert(tokens_rc);
                             true
                         } else {
                             false
                         }
                     }
                     Vacant(active_type_entry) => {
-                        active_type_entry.insert(Arc::clone(tokens_rc));
+                        active_type_entry.insert(tokens_rc);
                         true
                     }
                 };

@@ -267,7 +267,7 @@ fn read_write_basic() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.write_consolidated_buffer(&mut out, 1);
+    let result = symtypes.write_consolidated_buffer(&mut out);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -306,7 +306,7 @@ fn read_write_shared_struct() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.write_consolidated_buffer(&mut out, 1);
+    let result = symtypes.write_consolidated_buffer(&mut out);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
@@ -348,7 +348,7 @@ fn read_write_differing_struct() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.write_consolidated_buffer(&mut out, 1);
+    let result = symtypes.write_consolidated_buffer(&mut out);
     assert_ok!(result);
     assert_eq!(
         String::from_utf8(out).unwrap(),
