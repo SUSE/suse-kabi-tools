@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::text::{matches_wildcard, read_lines};
-use crate::{PathFile, debug};
+use crate::{Error, PathFile, debug};
 use std::io::prelude::*;
 use std::iter::Peekable;
 use std::path::Path;
@@ -71,11 +71,11 @@ impl Rules {
     /// Loads rules data from a specified file.
     ///
     /// New rules are appended to the already present ones.
-    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), crate::Error> {
+    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
         let path = path.as_ref();
 
         let file = PathFile::open(path).map_err(|err| {
-            crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
+            Error::new_io(format!("Failed to open file '{}'", path.display()), err)
         })?;
 
         self.load_buffer(path, file)
@@ -89,14 +89,14 @@ impl Rules {
         &mut self,
         path: P,
         reader: R,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let path = path.as_ref();
         debug!("Loading rules data from '{}'", path.display());
 
         // Read all content from the file.
         let lines = match read_lines(reader) {
             Ok(lines) => lines,
-            Err(err) => return Err(crate::Error::new_io("Failed to read rules data", err)),
+            Err(err) => return Err(Error::new_io("Failed to read rules data", err)),
         };
 
         // Parse all rules.
@@ -175,11 +175,7 @@ fn get_next_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<St
 }
 
 /// Parses a single severity rule.
-fn parse_rule<P: AsRef<Path>>(
-    path: P,
-    line_idx: usize,
-    line: &str,
-) -> Result<Option<Rule>, crate::Error> {
+fn parse_rule<P: AsRef<Path>>(path: P, line_idx: usize, line: &str) -> Result<Option<Rule>, Error> {
     let path = path.as_ref();
     let mut chars = line.chars().peekable();
 
@@ -206,7 +202,7 @@ fn parse_rule<P: AsRef<Path>>(
             "PASS" => Verdict::Pass,
             "FAIL" => Verdict::Fail,
             _ => {
-                return Err(crate::Error::new_parse(format!(
+                return Err(Error::new_parse(format!(
                     "{}:{}: Invalid verdict '{}', must be either PASS or FAIL",
                     path.display(),
                     line_idx + 1,
@@ -215,7 +211,7 @@ fn parse_rule<P: AsRef<Path>>(
             }
         },
         None => {
-            return Err(crate::Error::new_parse(format!(
+            return Err(Error::new_parse(format!(
                 "{}:{}: The rule does not specify a verdict",
                 path.display(),
                 line_idx + 1
@@ -225,7 +221,7 @@ fn parse_rule<P: AsRef<Path>>(
 
     // Check that nothing else is left on the line.
     if let Some(word) = get_next_word(&mut chars) {
-        return Err(crate::Error::new_parse(format!(
+        return Err(Error::new_parse(format!(
             "{}:{}: Unexpected string '{}' found after the verdict",
             path.display(),
             line_idx + 1,

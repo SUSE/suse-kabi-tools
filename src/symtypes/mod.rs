@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::text::{DirectoryWriter, Filter, WriteGenerator, read_lines, unified_diff};
-use crate::{MapIOErr, PathFile, Size, debug, hash};
+use crate::{Error, MapIOErr, PathFile, Size, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::{BufWriter, prelude::*};
@@ -241,12 +241,12 @@ impl SymtypesCorpus {
         path: P,
         warnings: W,
         num_workers: i32,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let path = path.as_ref();
 
         // Determine if the input is a directory tree or a single symtypes file.
         let md = fs::metadata(path).map_err(|err| {
-            crate::Error::new_io(format!("Failed to query path '{}'", path.display()), err)
+            Error::new_io(format!("Failed to query path '{}'", path.display()), err)
         })?;
 
         if md.is_dir() {
@@ -267,14 +267,14 @@ impl SymtypesCorpus {
         root: P,
         sub_path: Q,
         symfiles: &mut Vec<PathBuf>,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let root = root.as_ref();
         let sub_path = sub_path.as_ref();
 
         let path = root.join(sub_path);
 
         let dir_iter = fs::read_dir(&path).map_err(|err| {
-            crate::Error::new_io(
+            Error::new_io(
                 format!("Failed to read directory '{}'", path.display()),
                 err,
             )
@@ -282,7 +282,7 @@ impl SymtypesCorpus {
 
         for maybe_entry in dir_iter {
             let entry = maybe_entry.map_err(|err| {
-                crate::Error::new_io(
+                Error::new_io(
                     format!("Failed to read directory '{}'", path.display()),
                     err,
                 )
@@ -291,7 +291,7 @@ impl SymtypesCorpus {
             let entry_path = entry.path();
 
             let md = fs::symlink_metadata(&entry_path).map_err(|err| {
-                crate::Error::new_io(
+                Error::new_io(
                     format!("Failed to query path '{}'", entry_path.display()),
                     err,
                 )
@@ -327,14 +327,14 @@ impl SymtypesCorpus {
         symfiles: &[Q],
         warnings: W,
         num_workers: i32,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let root = root.as_ref();
 
         // Load data from the files.
         let next_work_idx = AtomicUsize::new(0);
         let load_context = LoadContext::from(mem::take(self), warnings);
 
-        thread::scope(|s| -> Result<(), crate::Error> {
+        thread::scope(|s| -> Result<(), Error> {
             let mut workers = Vec::new();
             for _ in 0..num_workers {
                 workers.push(s.spawn(|| {
@@ -347,10 +347,7 @@ impl SymtypesCorpus {
 
                         let path = root.join(sub_path);
                         let file = PathFile::open(&path).map_err(|err| {
-                            crate::Error::new_io(
-                                format!("Failed to open file '{}'", path.display()),
-                                err,
-                            )
+                            Error::new_io(format!("Failed to open file '{}'", path.display()), err)
                         })?;
 
                         Self::load_inner(sub_path, file, &load_context)?;
@@ -380,7 +377,7 @@ impl SymtypesCorpus {
         path: P,
         reader: R,
         warnings: W,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let load_context = LoadContext::from(mem::take(self), warnings);
 
         Self::load_inner(path, reader, &load_context)?;
@@ -395,14 +392,14 @@ impl SymtypesCorpus {
         path: P,
         reader: R,
         load_context: &LoadContext,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let path = path.as_ref();
         debug!("Loading symtypes data from '{}'", path.display());
 
         // Read all content from the file.
         let lines = match read_lines(reader) {
             Ok(lines) => lines,
-            Err(err) => return Err(crate::Error::new_io("Failed to read symtypes data", err)),
+            Err(err) => return Err(Error::new_io("Failed to read symtypes data", err)),
         };
 
         // Detect whether the input is a single or consolidated symtypes file.
@@ -455,7 +452,7 @@ impl SymtypesCorpus {
 
             // Check if the record is a duplicate of another one.
             if records.contains_key(&name) {
-                return Err(crate::Error::new_parse(format!(
+                return Err(Error::new_parse(format!(
                     "{}:{}: Duplicate record '{}'",
                     path.display(),
                     line_idx + 1,
@@ -519,7 +516,7 @@ impl SymtypesCorpus {
         local_override: LoadActiveTypes,
         active_types: &LoadActiveTypes,
         load_context: &LoadContext,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let path = path.as_ref();
 
         // Extrapolate all records and validate references.
@@ -591,7 +588,7 @@ impl SymtypesCorpus {
         file_idx: usize,
         line_idx: usize,
         load_context: &LoadContext,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         // Add the export, if it is unique.
         let other_file_idx = {
             let mut exports = load_context.exports.lock().unwrap();
@@ -649,7 +646,7 @@ impl SymtypesCorpus {
         local_override: &LoadActiveTypes,
         active_types: &LoadActiveTypes,
         records: &mut FileRecords,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         if is_explicit {
             // All explicit symbols need to be added by the caller.
             assert!(records.get(type_name).is_some());
@@ -665,7 +662,7 @@ impl SymtypesCorpus {
             None => match active_types.get(type_name) {
                 Some(&(ref tokens_rc, line_idx)) => (Arc::clone(tokens_rc), line_idx),
                 None => {
-                    return Err(crate::Error::new_parse(format!(
+                    return Err(Error::new_parse(format!(
                         "{}:{}: Type '{}' is not known",
                         path.display(),
                         from_line_idx + 1,
@@ -700,7 +697,7 @@ impl SymtypesCorpus {
     }
 
     /// Writes the corpus in the consolidated form into a specified file.
-    pub fn write_consolidated<P: AsRef<Path>>(&self, path: P) -> Result<(), crate::Error> {
+    pub fn write_consolidated<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
         let path = path.as_ref();
 
         // Open the output file.
@@ -710,7 +707,7 @@ impl SymtypesCorpus {
             match PathFile::create(path) {
                 Ok(file) => Box::new(file),
                 Err(err) => {
-                    return Err(crate::Error::new_io(
+                    return Err(Error::new_io(
                         format!("Failed to create file '{}'", path.display()),
                         err,
                     ));
@@ -722,7 +719,7 @@ impl SymtypesCorpus {
     }
 
     /// Writes the corpus in the consolidated form to the provided output stream.
-    pub fn write_consolidated_buffer<W: Write>(&self, writer: W) -> Result<(), crate::Error> {
+    pub fn write_consolidated_buffer<W: Write>(&self, writer: W) -> Result<(), Error> {
         let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a consolidated record";
 
@@ -789,11 +786,7 @@ impl SymtypesCorpus {
     }
 
     /// Writes the corpus in the split form into a specified directory.
-    pub fn write_split<P: AsRef<Path>>(
-        &self,
-        path: P,
-        num_workers: i32,
-    ) -> Result<(), crate::Error> {
+    pub fn write_split<P: AsRef<Path>>(&self, path: P, num_workers: i32) -> Result<(), Error> {
         self.write_split_buffer(&mut DirectoryWriter::new_file(path), num_workers)
     }
 
@@ -802,13 +795,13 @@ impl SymtypesCorpus {
         &self,
         dir_writer: WG,
         num_workers: i32,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let err_desc = "Failed to write a split record";
 
         let next_work_idx = AtomicUsize::new(0);
         let dir_writer = Mutex::new(dir_writer);
 
-        thread::scope(|s| -> Result<(), crate::Error> {
+        thread::scope(|s| -> Result<(), Error> {
             let mut workers = Vec::new();
             for _ in 0..num_workers {
                 workers.push(s.spawn(|| {
@@ -946,7 +939,7 @@ impl SymtypesCorpus {
         maybe_filter: Option<&Filter>,
         writer: W,
         num_workers: i32,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         fn matches(maybe_filter: Option<&Filter>, name: &str) -> bool {
             match maybe_filter {
                 Some(filter) => filter.matches(name),
@@ -1140,12 +1133,12 @@ fn parse_type_record<P: AsRef<Path>>(
     line_idx: usize,
     line: &str,
     is_consolidated: bool,
-) -> Result<(String, Tokens, bool), crate::Error> {
+) -> Result<(String, Tokens, bool), Error> {
     let path = path.as_ref();
     let mut words = line.split_ascii_whitespace();
 
     let raw_name = words.next().ok_or_else(|| {
-        crate::Error::new_parse(format!(
+        Error::new_parse(format!(
             "{}:{}: Expected a record name",
             path.display(),
             line_idx + 1
@@ -1243,7 +1236,7 @@ fn write_type_diff<W: Write>(
     tokens: &Tokens,
     other_tokens: &Tokens,
     writer: W,
-) -> Result<(), crate::Error> {
+) -> Result<(), Error> {
     let pretty = pretty_format_type(tokens);
     let other_pretty = pretty_format_type(other_tokens);
     unified_diff(&pretty, &other_pretty, writer)

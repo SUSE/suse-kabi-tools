@@ -143,7 +143,7 @@ fn write_hunk<W: Write>(
     hunk_len_b: usize,
     hunk_data: &[String],
     writer: &mut BufWriter<W>,
-) -> Result<(), crate::Error> {
+) -> Result<(), Error> {
     let err_desc = "Failed to write a diff hunk";
 
     writeln!(
@@ -163,7 +163,7 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
     a: &[T],
     b: &[T],
     writer: W,
-) -> Result<(), crate::Error> {
+) -> Result<(), Error> {
     let mut writer = BufWriter::new(writer);
 
     // Diff the two inputs and calculate the edit script.
@@ -555,11 +555,11 @@ impl Filter {
     /// Loads filter data from a specified file.
     ///
     /// New patterns are appended to the already present ones.
-    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), crate::Error> {
+    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
         let path = path.as_ref();
 
         let file = PathFile::open(path).map_err(|err| {
-            crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
+            Error::new_io(format!("Failed to open file '{}'", path.display()), err)
         })?;
 
         self.load_buffer(path, file)
@@ -573,14 +573,14 @@ impl Filter {
         &mut self,
         path: P,
         reader: R,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let path = path.as_ref();
         debug!("Loading filter data from '{}'", path.display());
 
         // Read all content from the file.
         let lines = match read_lines(reader) {
             Ok(lines) => lines,
-            Err(err) => return Err(crate::Error::new_io("Failed to read filter data", err)),
+            Err(err) => return Err(Error::new_io("Failed to read filter data", err)),
         };
 
         // Validate the patterns, reject empty ones.

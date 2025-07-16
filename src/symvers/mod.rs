@@ -117,11 +117,11 @@ impl SymversCorpus {
     /// Loads symvers data from a specified file.
     ///
     /// New symvers records are appended to the already present ones.
-    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), crate::Error> {
+    pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
         let path = path.as_ref();
 
         let file = PathFile::open(path).map_err(|err| {
-            crate::Error::new_io(format!("Failed to open file '{}'", path.display()), err)
+            Error::new_io(format!("Failed to open file '{}'", path.display()), err)
         })?;
 
         self.load_buffer(path, file)
@@ -135,14 +135,14 @@ impl SymversCorpus {
         &mut self,
         path: P,
         reader: R,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let path = path.as_ref();
         debug!("Loading symvers data from '{}'", path.display());
 
         // Read all content from the file.
         let lines = match read_lines(reader) {
             Ok(lines) => lines,
-            Err(err) => return Err(crate::Error::new_io("Failed to read symvers data", err)),
+            Err(err) => return Err(Error::new_io("Failed to read symvers data", err)),
         };
 
         // Parse all records.
@@ -152,7 +152,7 @@ impl SymversCorpus {
 
             // Check if the record is a duplicate of another one.
             if new_exports.contains_key(&name) || self.exports.contains_key(&name) {
-                return Err(crate::Error::new_parse(format!(
+                return Err(Error::new_parse(format!(
                     "{}:{}: Duplicate record '{}'",
                     path.display(),
                     line_idx + 1,
@@ -179,7 +179,7 @@ impl SymversCorpus {
         other_symvers: &SymversCorpus,
         maybe_rules: Option<&Rules>,
         writers: &mut [CompareWriter],
-    ) -> Result<bool, crate::Error> {
+    ) -> Result<bool, Error> {
         // A helper function to handle common logic related to reporting a change. It determines if
         // the change should be tolerated and updates the is_equal result.
         fn process_change(
@@ -332,20 +332,20 @@ fn parse_export<P: AsRef<Path>>(
     path: P,
     line_idx: usize,
     line: &str,
-) -> Result<(String, ExportInfo), crate::Error> {
+) -> Result<(String, ExportInfo), Error> {
     let path = path.as_ref();
     let mut words = line.split_ascii_whitespace();
 
     // Parse the CRC value.
     let crc = words.next().ok_or_else(|| {
-        crate::Error::new_parse(format!(
+        Error::new_parse(format!(
             "{}:{}: The export does not specify a CRC",
             path.display(),
             line_idx + 1
         ))
     })?;
     if !crc.starts_with("0x") && !crc.starts_with("0X") {
-        return Err(crate::Error::new_parse(format!(
+        return Err(Error::new_parse(format!(
             "{}:{}: Failed to parse the CRC value '{}': string does not start with 0x or 0X",
             path.display(),
             line_idx + 1,
@@ -353,7 +353,7 @@ fn parse_export<P: AsRef<Path>>(
         )));
     }
     let crc = u32::from_str_radix(&crc[2..], 16).map_err(|err| {
-        crate::Error::new_parse(format!(
+        Error::new_parse(format!(
             "{}:{}: Failed to parse the CRC value '{}': {}",
             path.display(),
             line_idx + 1,
@@ -364,7 +364,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Parse the export name.
     let name = words.next().ok_or_else(|| {
-        crate::Error::new_parse(format!(
+        Error::new_parse(format!(
             "{}:{}: The export does not specify a name",
             path.display(),
             line_idx + 1
@@ -373,7 +373,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Parse the module name.
     let module = words.next().ok_or_else(|| {
-        crate::Error::new_parse(format!(
+        Error::new_parse(format!(
             "{}:{}: The export does not specify a module",
             path.display(),
             line_idx + 1
@@ -382,7 +382,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Parse the export type.
     let export_type = words.next().ok_or_else(|| {
-        crate::Error::new_parse(format!(
+        Error::new_parse(format!(
             "{}:{}: The export does not specify a type",
             path.display(),
             line_idx + 1
@@ -392,7 +392,7 @@ fn parse_export<P: AsRef<Path>>(
         "EXPORT_SYMBOL" => false,
         "EXPORT_SYMBOL_GPL" => true,
         _ => {
-            return Err(crate::Error::new_parse(format!(
+            return Err(Error::new_parse(format!(
                 "{}:{}: Invalid export type '{}', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL",
                 path.display(),
                 line_idx + 1,
@@ -406,7 +406,7 @@ fn parse_export<P: AsRef<Path>>(
 
     // Check that nothing else is left on the line.
     if let Some(word) = words.next() {
-        return Err(crate::Error::new_parse(format!(
+        return Err(Error::new_parse(format!(
             "{}:{}: Unexpected string '{}' found at the end of the export record",
             path.display(),
             line_idx + 1,
