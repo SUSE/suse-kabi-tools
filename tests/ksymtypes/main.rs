@@ -76,6 +76,36 @@ fn consolidate_cmd_invalid_input() {
 }
 
 #[test]
+fn split_cmd() {
+    // Check that the split command trivially works.
+    let output_path = Path::new(env!("CARGO_TARGET_TMPDIR")).join("split_cmd_output");
+    fs::remove_dir_all(&output_path).ok();
+    let result = ksymtypes_run([
+        AsRef::<OsStr>::as_ref("split"),
+        "--output".as_ref(),
+        &output_path.as_ref(),
+        "tests/ksymtypes/split_cmd/consolidated.symtypes".as_ref(),
+    ]);
+    assert!(result.status.success());
+    assert_eq!(result.stdout, "");
+    assert_eq!(result.stderr, "");
+    assert_eq!(
+        fs::read_to_string(output_path.join("a.symtypes")).unwrap(),
+        concat!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n", //
+        )
+    );
+    assert_eq!(
+        fs::read_to_string(output_path.join("b.symtypes")).unwrap(),
+        concat!(
+            "s#foo struct foo { int a ; }\n",
+            "baz int baz ( s#foo )\n", //
+        )
+    );
+}
+
+#[test]
 fn compare_cmd() {
     // Check that the compare command trivially works.
     let result = ksymtypes_run([
