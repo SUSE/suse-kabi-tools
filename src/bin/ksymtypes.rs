@@ -18,6 +18,8 @@ const USAGE_MSG: &str = concat!(
     "\n",
     "Commands:\n",
     "  consolidate                   consolidate symtypes into a single file\n",
+    "  split                         split a consolidated symtypes file into\n",
+    "                                individual files\n",
     "  compare                       show differences between two symtypes corpuses\n"
 );
 

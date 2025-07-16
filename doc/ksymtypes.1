@@ -4,7 +4,7 @@
 .SH NAME
 ksymtypes \- a tool to work with Linux\-kernel symtypes files
 .SH SYNOPSIS
-\fBksymtypes\fR [\fIGENERAL\-OPTION\fR...] {\fBconsolidate\fR | \fBcompare\fR } [\fICOMMAND\-OPTION\fR...] ...
+\fBksymtypes\fR [\fIGENERAL\-OPTION\fR...] {\fBconsolidate\fR | \fBsplit\fR | \fBcompare\fR } [\fICOMMAND\-OPTION\fR...] ...
 .SH DESCRIPTION
 \fBksymtypes\fR is a tool that provides functionality to work with symtypes files. These files
 describe the Application Binary Interface (ABI) of the kernel and its modules. The data is produced
@@ -15,9 +15,11 @@ of the Linux kernel. Each such set describes the ABI of a specific kernel and it
 refers to this set as a "symtypes corpus".
 .PP
 The provided functionality is divided into integrated commands. The currently available commands are
-\fBconsolidate\fR and \fBcompare\fR. The \fBconsolidate\fR command takes a symtypes corpus composed
-of a set of symtypes files and produces its consolidated variant by merging duplicated types. The
-\fBcompare\fR command shows the differences between two symtypes corpuses.
+\fBconsolidate\fR, \fBsplit\fR and \fBcompare\fR. The \fBconsolidate\fR command takes a symtypes
+corpus composed of a set of symtypes files and produces its consolidated variant by merging
+duplicated types. The \fBsplit\fR takes a consolidated symtypes file and divides it into individual
+files. The \fBcompare\fR command shows the differences between two symtypes corpuses, which can be
+either in split or consolidated form.
 .SH GENERAL OPTIONS
 .TP
 \fB\-d\fR, \fB\-\-debug\fR
@@ -31,10 +33,10 @@ Output version information and exit.
 .SH CONSOLIDATE COMMAND
 \fBksymtypes\fR \fBconsolidate\fR [\fICONSOLIDATE\-OPTION\fR...] \fIPATH\fR
 .PP
-The \fBconsolidate\fR command reads symtypes files from the path specified on the command line,
-consolidates their contents by merging duplicate types and writes the output to the specified file.
-The input path should point to a directory that the command recursively searches for all symtypes
-files. In a typical use case, this will be a build directory of the Linux kernel.
+The \fBconsolidate\fR command reads symtypes files from the specified path, consolidates their
+contents by merging duplicate types and writes the output to the specified file. The input path
+should point to a directory that the command recursively searches for all symtypes files. In a
+typical use case, this will be a build directory of the Linux kernel.
 .PP
 Available options:
 .TP
@@ -46,6 +48,26 @@ Use \fINUM\fR workers to perform the operation simultaneously.
 .TP
 \fB\-o\fR \fIFILE\fR, \fB\-\-output\fR=\fIFILE\fR
 Write the result in \fIFILE\fR, instead of the standard output.
+.SH SPLIT COMMAND
+\fBksymtypes\fR \fBsplit\fR [\fISPLIT\-OPTION\fR...] \fIPATH\fR
+.PP
+The \fBsplit\fR command reads a consolidated symtypes files from the specified path and divides the
+data into individual symtypes files. This operation is the opposite of the \fBconsolidate\fR
+command.
+.PP
+Note that consolidating and then splitting symtypes data might not produce output that is exactly
+the same as the original due to potential differences in the ordering of records.
+.PP
+Available options:
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help information for the command and exit.
+.TP
+\fB\-j\fR \fINUM\fR, \fB\-\-jobs\fR=\fINUM\fR
+Use \fINUM\fR workers to perform the operation simultaneously.
+.TP
+\fB\-o\fR \fIDIR\fR, \fB\-\-output\fR=\fIDIR\fR
+Write the result in \fIDIR\fR, instead of the current working directory.
 .SH COMPARE COMMAND
 \fBksymtypes\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR...] \fIPATH\fR \fIPATH2\fR
 .PP
