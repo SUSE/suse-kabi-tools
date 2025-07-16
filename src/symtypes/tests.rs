@@ -246,7 +246,7 @@ fn read_duplicate_type_export() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(warnings).unwrap(),
+        str::from_utf8(&warnings).unwrap(),
         "test2.symtypes:1: WARNING: Export 'foo' is duplicate, previous occurrence found in 'test.symtypes'\n"
     );
 }
@@ -270,7 +270,7 @@ fn read_write_basic() {
     let result = symtypes.write_consolidated_buffer(&mut out);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "/* test.symtypes */\n",
             "s#foo struct foo { int a ; }\n",
@@ -309,7 +309,7 @@ fn read_write_shared_struct() {
     let result = symtypes.write_consolidated_buffer(&mut out);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "/* test.symtypes */\n",
             "s#foo struct foo { int a ; }\n",
@@ -351,7 +351,7 @@ fn read_write_differing_struct() {
     let result = symtypes.write_consolidated_buffer(&mut out);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "/* test.symtypes */\n",
             "s#foo struct foo { int a ; }\n",
@@ -433,7 +433,7 @@ fn compare_identical() {
     let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "", //
         )
@@ -469,7 +469,7 @@ fn compare_added_export() {
     let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'baz' has been added\n", //
         )
@@ -505,7 +505,7 @@ fn compare_removed_export() {
     let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'bar' has been removed\n", //
         )
@@ -542,7 +542,7 @@ fn compare_changed_type() {
     let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "The following '1' exports are different:\n",
             " bar\n",
@@ -589,7 +589,7 @@ fn compare_changed_nested_type() {
     let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "The following '1' exports are different:\n",
             " bar\n",

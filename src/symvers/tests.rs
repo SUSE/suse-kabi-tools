@@ -245,7 +245,7 @@ fn compare_identical() {
     let out = writer.into_inner();
     assert_ok_eq!(result, true);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "", //
         )
@@ -277,7 +277,7 @@ fn compare_added_export() {
     let out = writer.into_inner();
     assert_ok_eq!(result, true);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'bar' has been added (tolerated)\n", //
         )
@@ -309,7 +309,7 @@ fn compare_removed_export() {
     let out = writer.into_inner();
     assert_ok_eq!(result, false);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'foo' has been removed\n", //
         )
@@ -340,7 +340,7 @@ fn compare_changed_crc() {
     let out = writer.into_inner();
     assert_ok_eq!(result, false);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'foo' changed CRC from '0x12345678' to '0x09abcdef'\n", //
         )
@@ -377,7 +377,7 @@ fn compare_changed_type() {
     let out = writer.into_inner();
     assert_ok_eq!(result, false);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'bar' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'\n",
             "Export 'baz' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (tolerated)\n", //
@@ -417,7 +417,7 @@ fn compare_ignored_changes() {
     let out = writer.into_inner();
     assert_ok_eq!(result, true);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated)\n", //
         )

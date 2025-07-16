@@ -254,7 +254,7 @@ fn format_removal() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "@@ -1,4 +1,3 @@\n",
             " struct test {\n",
@@ -305,7 +305,7 @@ fn format_removal_top() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "@@ -1,4 +1,3 @@\n",
             "-int ivalue1;\n",
@@ -356,7 +356,7 @@ fn format_removal_end() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "@@ -2,4 +2,3 @@\n",
             " int ivalue2;\n",
@@ -422,7 +422,7 @@ fn format_max_context() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "@@ -1,8 +1,6 @@\n",
             "-int ivalue1;\n",
@@ -498,7 +498,7 @@ fn format_max_context2() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "@@ -1,4 +1,3 @@\n",
             "-int ivalue1;\n",
@@ -544,7 +544,7 @@ fn format_addition() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "@@ -1,3 +1,4 @@\n",
             " struct test {\n",
@@ -582,7 +582,7 @@ fn format_modification() {
     );
     assert_ok!(result);
     assert_eq!(
-        String::from_utf8(out).unwrap(),
+        str::from_utf8(&out).unwrap(),
         concat!(
             "@@ -1,3 +1,3 @@\n",
             " struct test {\n",
