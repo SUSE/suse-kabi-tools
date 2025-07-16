@@ -3,8 +3,9 @@
 
 use crate::{Error, MapIOErr, PathFile, debug};
 use std::cmp;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use std::fs;
 use std::io;
 use std::io::{BufReader, BufWriter, prelude::*};
 use std::ops::{Index, IndexMut};
@@ -466,6 +467,69 @@ impl Write for Writer {
             Self::File(file) => file.flush(),
             Self::Buffer(vec) => vec.flush(),
             Self::NamedBuffer(_, vec) => vec.flush(),
+        }
+    }
+}
+
+/// A factory trait for [`Write`] objects, allowing writing to multiple files/streams.
+pub trait WriteGenerator<W: Write> {
+    /// Opens a new writer to the specified path.
+    fn create<P: AsRef<Path>>(&mut self, sub_path: P) -> Result<W, Error>;
+
+    /// Closes a writer previously provided by the `create()` method.
+    fn close(&mut self, writer: W);
+}
+
+/// A factory for writing multiple files in a specific directory. The output can be written directly
+/// to on-disk files, or stored in a set of internal buffers.
+pub enum DirectoryWriter {
+    File(PathBuf),
+    Buffer(PathBuf, HashMap<PathBuf, Vec<u8>>),
+}
+
+impl DirectoryWriter {
+    /// Creates a new [`DirectoryWriter`] that writes to on-disk files in a specified directory.
+    pub fn new_file<P: AsRef<Path>>(root: P) -> Self {
+        Self::File(root.as_ref().to_path_buf())
+    }
+
+    /// Creates a new [`DirectoryWriter`] that writes to a set of internal buffers.
+    pub fn new_buffer<P: AsRef<Path>>(root: P) -> Self {
+        Self::Buffer(root.as_ref().to_path_buf(), HashMap::new())
+    }
+
+    /// Obtains the internal buffers if the writer is of the [`DirectoryWriter::Buffer`] type.
+    pub fn into_inner_map(self) -> HashMap<PathBuf, Vec<u8>> {
+        match self {
+            Self::Buffer(_, files) => files,
+            _ => panic!("The writer is not of type DirectoryWriter::Buffer"),
+        }
+    }
+}
+
+impl WriteGenerator<Writer> for &mut DirectoryWriter {
+    fn create<P: AsRef<Path>>(&mut self, sub_path: P) -> Result<Writer, Error> {
+        match self {
+            DirectoryWriter::File(root) => {
+                let path = root.join(sub_path);
+                if let Some(parent) = path.parent() {
+                    fs::create_dir_all(parent).map_err(|err| {
+                        Error::new_io(
+                            format!("Failed to create directory '{}'", parent.display()),
+                            err,
+                        )
+                    })?;
+                }
+                Writer::new_file(path)
+            }
+            DirectoryWriter::Buffer(root, _) => Ok(Writer::new_named_buffer(root.join(sub_path))),
+        }
+    }
+
+    fn close(&mut self, writer: Writer) {
+        if let DirectoryWriter::Buffer(_, files) = self {
+            let (path, vec) = writer.into_inner_path_vec();
+            files.insert(path, vec);
         }
     }
 }
