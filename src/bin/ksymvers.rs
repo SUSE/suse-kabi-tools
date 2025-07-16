@@ -5,7 +5,8 @@ use std::env;
 use std::process::ExitCode;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
-use suse_kabi_tools::symvers::{CompareFormat, CompareWriter, SymversCorpus};
+use suse_kabi_tools::symvers::{CompareFormat, SymversCorpus};
+use suse_kabi_tools::text::Writer;
 use suse_kabi_tools::{Error, Timing, debug};
 
 const USAGE_MSG: &str = concat!(
@@ -94,10 +95,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     // Materialize all writers.
     let mut writers = Vec::new();
     for (format, path) in writers_conf {
-        match format {
-            CompareFormat::Null => {}
-            _ => writers.push(CompareWriter::new_file(format, path)?),
-        }
+        writers.push((format, Writer::new_file(path)?));
     }
 
     // Do the comparison.

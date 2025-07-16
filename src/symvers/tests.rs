@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
+use crate::text::Writer;
 use crate::{assert_inexact_parse_err, assert_ok, assert_ok_eq, assert_parse_err, bytes};
-use std::slice;
 
 #[test]
 fn read_export_basic() {
@@ -240,9 +240,9 @@ fn compare_identical() {
         ),
     );
     assert_ok!(result);
-    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
-    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
-    let out = writer.into_inner();
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, true);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -272,9 +272,9 @@ fn compare_added_export() {
         ),
     );
     assert_ok!(result);
-    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
-    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
-    let out = writer.into_inner();
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, true);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -304,9 +304,9 @@ fn compare_removed_export() {
         ),
     );
     assert_ok!(result);
-    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
-    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
-    let out = writer.into_inner();
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -335,9 +335,9 @@ fn compare_changed_crc() {
         ),
     );
     assert_ok!(result);
-    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
-    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
-    let out = writer.into_inner();
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -372,9 +372,9 @@ fn compare_changed_type() {
         ),
     );
     assert_ok!(result);
-    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
-    let result = symvers.compare_with(&symvers2, None, slice::from_mut(&mut writer));
-    let out = writer.into_inner();
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -412,9 +412,13 @@ fn compare_ignored_changes() {
         ),
     );
     assert_ok!(result);
-    let mut writer = CompareWriter::new_buffer(CompareFormat::Pretty);
-    let result = symvers.compare_with(&symvers2, Some(&rules), slice::from_mut(&mut writer));
-    let out = writer.into_inner();
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with(
+        &symvers2,
+        Some(&rules),
+        &mut [(CompareFormat::Pretty, &mut writer)],
+    );
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, true);
     assert_eq!(
         str::from_utf8(&out).unwrap(),

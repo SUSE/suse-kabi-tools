@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::rules::Rules;
-use crate::text::{Writer, read_lines};
+use crate::text::read_lines;
 use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::HashMap;
 use std::io::prelude::*;
@@ -68,35 +68,6 @@ impl CompareFormat {
                 format
             ))),
         }
-    }
-}
-
-/// A sink for writing the output of [`SymversCorpus::compare_with()`].
-pub struct CompareWriter {
-    format: CompareFormat,
-    write: Writer,
-}
-
-impl CompareWriter {
-    /// Creates a new [`CompareWriter`] that writes to the specified file.
-    pub fn new_file<P: AsRef<Path>>(format: CompareFormat, path: P) -> Result<Self, Error> {
-        Ok(Self {
-            format,
-            write: Writer::new_file(path)?,
-        })
-    }
-
-    /// Creates a new [`CompareWriter`] that writes to an internal buffer.
-    pub fn new_buffer(format: CompareFormat) -> Self {
-        Self {
-            format,
-            write: Writer::new_buffer(),
-        }
-    }
-
-    /// Obtains the internal buffer when the writer is of the appropriate type.
-    pub fn into_inner(self) -> Vec<u8> {
-        self.write.into_inner_vec()
     }
 }
 
@@ -174,11 +145,11 @@ impl SymversCorpus {
     /// Reports any found changes to the provided output streams, formatted as requested. Returns
     /// [`Ok`] containing a `bool` indicating whether the corpuses are the same, or [`Err`] on
     /// error.
-    pub fn compare_with(
+    pub fn compare_with<W: Write>(
         &self,
         other_symvers: &SymversCorpus,
         maybe_rules: Option<&Rules>,
-        writers: &mut [CompareWriter],
+        writers: &mut [(CompareFormat, W)],
     ) -> Result<bool, Error> {
         // A helper function to handle common logic related to reporting a change. It determines if
         // the change should be tolerated and updates the is_equal result.
@@ -242,11 +213,11 @@ impl SymversCorpus {
                     let info = exports_a.get(name).unwrap();
                     let tolerated =
                         process_change(maybe_rules, name, info, always_tolerated, &mut is_equal);
-                    for writer in &mut *writers {
-                        match writer.format {
+                    for (format, writer) in &mut *writers {
+                        match format {
                             CompareFormat::Null => {}
                             CompareFormat::Pretty => writeln!(
-                                writer.write,
+                                writer,
                                 "Export '{}' has been {}{}",
                                 name,
                                 change,
@@ -255,7 +226,7 @@ impl SymversCorpus {
                             .map_io_err(err_desc)?,
                             CompareFormat::Symbols => {
                                 if !tolerated {
-                                    writeln!(writer.write, "{}", name).map_io_err(err_desc)?
+                                    writeln!(writer, "{}", name).map_io_err(err_desc)?
                                 }
                             }
                         }
@@ -270,11 +241,11 @@ impl SymversCorpus {
                 let info = self.exports.get(name).unwrap();
                 if info.crc != other_info.crc {
                     let tolerated = process_change(maybe_rules, name, info, false, &mut is_equal);
-                    for writer in &mut *writers {
-                        match writer.format {
+                    for (format, writer) in &mut *writers {
+                        match format {
                             CompareFormat::Null => {}
                             CompareFormat::Pretty => writeln!(
-                                writer.write,
+                                writer,
                                 "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'{}",
                                 name,
                                 info.crc,
@@ -284,7 +255,7 @@ impl SymversCorpus {
                             .map_io_err(err_desc)?,
                             CompareFormat::Symbols => {
                                 if !tolerated {
-                                    writeln!(writer.write, "{}", name).map_io_err(err_desc)?
+                                    writeln!(writer, "{}", name).map_io_err(err_desc)?
                                 }
                             }
                         }
@@ -298,11 +269,11 @@ impl SymversCorpus {
                         info.is_gpl_only && !other_info.is_gpl_only,
                         &mut is_equal,
                     );
-                    for writer in &mut *writers {
-                        match writer.format {
+                    for (format, writer) in &mut *writers {
+                        match format {
                             CompareFormat::Null => {}
                             CompareFormat::Pretty => writeln!(
-                                writer.write,
+                                writer,
                                 "Export '{}' changed type from '{}' to '{}'{}",
                                 name,
                                 info.type_as_str(),
@@ -312,7 +283,7 @@ impl SymversCorpus {
                             .map_io_err(err_desc)?,
                             CompareFormat::Symbols => {
                                 if !tolerated {
-                                    writeln!(writer.write, "{}", name).map_io_err(err_desc)?
+                                    writeln!(writer, "{}", name).map_io_err(err_desc)?
                                 }
                             }
                         }
