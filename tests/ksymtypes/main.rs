@@ -17,27 +17,7 @@ fn ksymtypes_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResu
 #[test]
 fn consolidate_cmd() {
     // Check that the consolidate command trivially works.
-    let result = ksymtypes_run(["consolidate", "tests/ksymtypes/consolidate_cmd"]);
-    assert!(result.status.success());
-    assert_eq!(
-        result.stdout,
-        concat!(
-            "/* a.symtypes */\n",
-            "s#foo struct foo { int a ; }\n",
-            "bar int bar ( s#foo )\n",
-            "\n",
-            "/* b.symtypes */\n",
-            "baz int baz ( s#foo )\n", //
-        )
-    );
-    assert_eq!(result.stderr, "");
-}
-
-#[test]
-fn consolidate_cmd_output() {
-    // Check that the consolidate command writes its result to the file specified by --output.
-    let output_path =
-        Path::new(env!("CARGO_TARGET_TMPDIR")).join("consolidate_cmd_output.symtypes");
+    let output_path = Path::new(env!("CARGO_TARGET_TMPDIR")).join("consolidate_cmd.symtypes");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("consolidate"),
@@ -63,10 +43,27 @@ fn consolidate_cmd_output() {
 }
 
 #[test]
+fn consolidate_cmd_missing_output() {
+    // Check that the consolidate command fails if no --output is specified.
+    let result = ksymtypes_run(["consolidate", "tests/ksymtypes/consolidate_cmd"]);
+    assert!(!result.status.success());
+    assert_eq!(result.stdout, "");
+    assert_eq!(result.stderr, "The consolidate output is missing\n");
+}
+
+#[test]
 fn consolidate_cmd_invalid_input() {
     // Check that the consolidate command correctly propagates inner errors and writes them on the
     // standard error output.
-    let result = ksymtypes_run(["consolidate", "tests/missing"]);
+    let output_path =
+        Path::new(env!("CARGO_TARGET_TMPDIR")).join("consolidate_cmd_invalid_input.symtypes");
+    fs::remove_file(&output_path).ok();
+    let result = ksymtypes_run([
+        AsRef::<OsStr>::as_ref("consolidate"),
+        "--output".as_ref(),
+        &output_path.as_ref(),
+        "tests/missing".as_ref(),
+    ]);
     assert!(!result.status.success());
     assert_eq!(result.stdout, "");
     assert_inexact!(
@@ -103,6 +100,15 @@ fn split_cmd() {
             "baz int baz ( s#foo )\n", //
         )
     );
+}
+
+#[test]
+fn split_cmd_missing_output() {
+    // Check that the split command fails if no --output is specified.
+    let result = ksymtypes_run(["split", "tests/ksymtypes/split_cmd/consolidated.symtypes"]);
+    assert!(!result.status.success());
+    assert_eq!(result.stdout, "");
+    assert_eq!(result.stderr, "The split output is missing\n");
 }
 
 #[test]

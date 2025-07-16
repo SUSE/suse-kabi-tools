@@ -87,7 +87,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
-    let mut output = "-".to_string();
+    let mut maybe_output = None;
     let mut past_dash_dash = false;
     let mut maybe_path = None;
 
@@ -98,7 +98,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
                 continue;
             }
             if let Some(value) = handle_value_option(&arg, &mut args, "-o", "--output")? {
-                output = value;
+                maybe_output = Some(value);
                 continue;
             }
             if arg == "-h" || arg == "--help" {
@@ -127,6 +127,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
         )));
     }
 
+    let output = maybe_output.ok_or_else(|| Error::new_cli("The consolidate output is missing"))?;
     let path = maybe_path.ok_or_else(|| Error::new_cli("The consolidate source is missing"))?;
 
     // Do the consolidation.
@@ -164,7 +165,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
-    let mut output = ".".to_string();
+    let mut maybe_output = None;
     let mut past_dash_dash = false;
     let mut maybe_path = None;
 
@@ -175,7 +176,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
                 continue;
             }
             if let Some(value) = handle_value_option(&arg, &mut args, "-o", "--output")? {
-                output = value;
+                maybe_output = Some(value);
                 continue;
             }
             if arg == "-h" || arg == "--help" {
@@ -204,6 +205,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
         )));
     }
 
+    let output = maybe_output.ok_or_else(|| Error::new_cli("The split output is missing"))?;
     let path = maybe_path.ok_or_else(|| Error::new_cli("The split source is missing"))?;
 
     // Do the split.
