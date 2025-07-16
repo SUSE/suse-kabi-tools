@@ -8,7 +8,7 @@ use std::fmt::Display;
 use std::io;
 use std::io::{BufReader, BufWriter, prelude::*};
 use std::ops::{Index, IndexMut};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 mod tests_diff;
@@ -401,6 +401,7 @@ pub enum Writer {
     Stdout(BufWriter<io::Stdout>),
     File(BufWriter<PathFile>),
     Buffer(Vec<u8>),
+    NamedBuffer(PathBuf, Vec<u8>),
 }
 
 impl Writer {
@@ -427,11 +428,24 @@ impl Writer {
         Self::Buffer(Vec::new())
     }
 
-    /// Obtains the internal buffer when the writer is of the appropriate type.
-    pub fn into_inner(self) -> Vec<u8> {
+    /// Creates a new [`Writer`] that writes to a named internal buffer.
+    pub fn new_named_buffer<P: AsRef<Path>>(path: P) -> Self {
+        Self::NamedBuffer(path.as_ref().to_path_buf(), Vec::new())
+    }
+
+    /// Obtains the internal buffer if the writer is of the [`Writer::Buffer`] type.
+    pub fn into_inner_vec(self) -> Vec<u8> {
         match self {
-            Self::Stdout(_) | Self::File(_) => panic!("The writer is not of type Writer::Buffer"),
             Self::Buffer(vec) => vec,
+            _ => panic!("The writer is not of type Writer::Buffer"),
+        }
+    }
+
+    /// Obtains the path and internal buffer if the writer is of the [`Writer::NamedBuffer`] type.
+    pub fn into_inner_path_vec(self) -> (PathBuf, Vec<u8>) {
+        match self {
+            Self::NamedBuffer(path, vec) => (path, vec),
+            _ => panic!("The writer is not of type Writer::NamedBuffer"),
         }
     }
 }
@@ -442,6 +456,7 @@ impl Write for Writer {
             Self::Stdout(stdout) => stdout.write(buf),
             Self::File(file) => file.write(buf),
             Self::Buffer(vec) => vec.write(buf),
+            Self::NamedBuffer(_, vec) => vec.write(buf),
         }
     }
 
@@ -450,6 +465,7 @@ impl Write for Writer {
             Self::Stdout(stdout) => stdout.flush(),
             Self::File(file) => file.flush(),
             Self::Buffer(vec) => vec.flush(),
+            Self::NamedBuffer(_, vec) => vec.flush(),
         }
     }
 }

@@ -96,7 +96,7 @@ impl CompareWriter {
 
     /// Obtains the internal buffer when the writer is of the appropriate type.
     pub fn into_inner(self) -> Vec<u8> {
-        self.write.into_inner()
+        self.write.into_inner_vec()
     }
 }
 
