@@ -15,59 +15,6 @@ fn ksymtypes_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResu
 }
 
 #[test]
-fn compare_cmd() {
-    // Check that the compare command trivially works.
-    let result = ksymtypes_run([
-        "compare",
-        "tests/ksymtypes/compare_cmd/a.symtypes",
-        "tests/ksymtypes/compare_cmd/b.symtypes",
-    ]);
-    assert!(result.status.success());
-    assert_eq!(
-        result.stdout,
-        concat!(
-            "The following '1' exports are different:\n",
-            " foo\n",
-            "\n",
-            "because of a changed 'foo':\n",
-            "@@ -1,3 +1,3 @@\n",
-            " void foo (\n",
-            "-\tint a\n",
-            "+\tlong a\n",
-            " )\n", //
-        )
-    );
-    assert_eq!(result.stderr, "");
-}
-
-#[test]
-fn compare_cmd_dash_dash() {
-    // Check that operands of the compare command can be specified after '--'.
-    let result = ksymtypes_run([
-        "compare",
-        "--",
-        "tests/ksymtypes/compare_cmd/a.symtypes",
-        "tests/ksymtypes/compare_cmd/b.symtypes",
-    ]);
-    assert!(result.status.success());
-    assert_eq!(
-        result.stdout,
-        concat!(
-            "The following '1' exports are different:\n",
-            " foo\n",
-            "\n",
-            "because of a changed 'foo':\n",
-            "@@ -1,3 +1,3 @@\n",
-            " void foo (\n",
-            "-\tint a\n",
-            "+\tlong a\n",
-            " )\n", //
-        )
-    );
-    assert_eq!(result.stderr, "");
-}
-
-#[test]
 fn consolidate_cmd() {
     // Check that the consolidate command trivially works.
     let result = ksymtypes_run(["consolidate", "tests/ksymtypes/consolidate_cmd"]);
@@ -126,4 +73,57 @@ fn consolidate_cmd_invalid_input() {
         result.stderr,
         "Failed to read symtypes from 'tests/missing': Failed to query path 'tests/missing': *"
     );
+}
+
+#[test]
+fn compare_cmd() {
+    // Check that the compare command trivially works.
+    let result = ksymtypes_run([
+        "compare",
+        "tests/ksymtypes/compare_cmd/a.symtypes",
+        "tests/ksymtypes/compare_cmd/b.symtypes",
+    ]);
+    assert!(result.status.success());
+    assert_eq!(
+        result.stdout,
+        concat!(
+            "The following '1' exports are different:\n",
+            " foo\n",
+            "\n",
+            "because of a changed 'foo':\n",
+            "@@ -1,3 +1,3 @@\n",
+            " void foo (\n",
+            "-\tint a\n",
+            "+\tlong a\n",
+            " )\n", //
+        )
+    );
+    assert_eq!(result.stderr, "");
+}
+
+#[test]
+fn compare_cmd_dash_dash() {
+    // Check that operands of the compare command can be specified after '--'.
+    let result = ksymtypes_run([
+        "compare",
+        "--",
+        "tests/ksymtypes/compare_cmd/a.symtypes",
+        "tests/ksymtypes/compare_cmd/b.symtypes",
+    ]);
+    assert!(result.status.success());
+    assert_eq!(
+        result.stdout,
+        concat!(
+            "The following '1' exports are different:\n",
+            " foo\n",
+            "\n",
+            "because of a changed 'foo':\n",
+            "@@ -1,3 +1,3 @@\n",
+            " void foo (\n",
+            "-\tint a\n",
+            "+\tlong a\n",
+            " )\n", //
+        )
+    );
+    assert_eq!(result.stderr, "");
 }
