@@ -28,7 +28,17 @@ const CONSOLIDATE_USAGE_MSG: &str = concat!(
     "Options:\n",
     "  -h, --help                    display this help and exit\n",
     "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
-    "  -o FILE, --output=FILE        write the result in FILE, instead of stdout\n",
+    "  -o FILE, --output=FILE        write the result in FILE\n",
+);
+
+const SPLIT_USAGE_MSG: &str = concat!(
+    "Usage: ksymtypes split [OPTION...] PATH\n",
+    "Split a consolidated symtypes file into individual files.\n",
+    "\n",
+    "Options:\n",
+    "  -h, --help                    display this help and exit\n",
+    "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
+    "  -o DIR, --output=DIR          write the result to DIR\n",
 );
 
 const COMPARE_USAGE_MSG: &str = concat!(
@@ -139,6 +149,83 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
         symtypes.write_consolidated(&output).map_err(|err| {
             Error::new_context(
                 format!("Failed to write consolidated symtypes to '{}'", output),
+                err,
+            )
+        })?;
+    }
+
+    Ok(())
+}
+
+/// Handles the `split` command which splits a consolidated symtypes file into individual files.
+fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
+    // Parse specific command options.
+    let mut args = args.into_iter();
+    let mut num_workers = 1;
+    let mut output = ".".to_string();
+    let mut past_dash_dash = false;
+    let mut maybe_path = None;
+
+    while let Some(arg) = args.next() {
+        if !past_dash_dash {
+            if let Some(value) = handle_jobs_option(&arg, &mut args)? {
+                num_workers = value;
+                continue;
+            }
+            if let Some(value) = handle_value_option(&arg, &mut args, "-o", "--output")? {
+                output = value;
+                continue;
+            }
+            if arg == "-h" || arg == "--help" {
+                print!("{}", SPLIT_USAGE_MSG);
+                return Ok(());
+            }
+            if arg == "--" {
+                past_dash_dash = true;
+                continue;
+            }
+            if arg.starts_with('-') || arg.starts_with("--") {
+                return Err(Error::new_cli(format!(
+                    "Unrecognized split option '{}'",
+                    arg
+                )));
+            }
+        }
+
+        if maybe_path.is_none() {
+            maybe_path = Some(arg);
+            continue;
+        }
+        return Err(Error::new_cli(format!(
+            "Excess split argument '{}' specified",
+            arg
+        )));
+    }
+
+    let path = maybe_path.ok_or_else(|| Error::new_cli("The split source is missing"))?;
+
+    // Do the split.
+    let symtypes = {
+        let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
+
+        let mut symtypes = SymtypesCorpus::new();
+        symtypes
+            .load(&path, io::stderr(), num_workers)
+            .map_err(|err| {
+                Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
+            })?;
+        symtypes
+    };
+
+    {
+        let _timing = Timing::new(
+            do_timing,
+            &format!("Writing split symtypes to '{}'", output),
+        );
+
+        symtypes.write_split(&output, num_workers).map_err(|err| {
+            Error::new_context(
+                format!("Failed to write split symtypes to '{}'", output),
                 err,
             )
         })?;
@@ -295,6 +382,7 @@ fn main() -> ExitCode {
     // Process the specified command.
     let result = match command.as_str() {
         "consolidate" => do_consolidate(do_timing, args),
+        "split" => do_split(do_timing, args),
         "compare" => do_compare(do_timing, args),
         _ => Err(Error::new_cli(format!(
             "Unrecognized command '{}'",

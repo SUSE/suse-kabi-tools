@@ -1,7 +1,7 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::text::{Filter, read_lines, unified_diff};
+use crate::text::{DirectoryWriter, Filter, WriteGenerator, read_lines, unified_diff};
 use crate::{MapIOErr, PathFile, Size, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
@@ -784,6 +784,78 @@ impl SymtypesCorpus {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    /// Writes the corpus in the split form into a specified directory.
+    pub fn write_split<P: AsRef<Path>>(
+        &self,
+        path: P,
+        num_workers: i32,
+    ) -> Result<(), crate::Error> {
+        self.write_split_buffer(&mut DirectoryWriter::new_file(path), num_workers)
+    }
+
+    /// Writes the corpus in the split form to the provided output stream factory.
+    pub fn write_split_buffer<W: Write, WG: WriteGenerator<W> + Send>(
+        &self,
+        dir_writer: WG,
+        num_workers: i32,
+    ) -> Result<(), crate::Error> {
+        let err_desc = "Failed to write a split record";
+
+        let next_work_idx = AtomicUsize::new(0);
+        let dir_writer = Mutex::new(dir_writer);
+
+        thread::scope(|s| -> Result<(), crate::Error> {
+            let mut workers = Vec::new();
+            for _ in 0..num_workers {
+                workers.push(s.spawn(|| {
+                    loop {
+                        let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
+                        if work_idx >= self.files.len() {
+                            break;
+                        }
+                        let symfile = &self.files[work_idx];
+
+                        // Sort all types in the file.
+                        let mut sorted_types = symfile.records.iter().collect::<Vec<_>>();
+                        sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
+
+                        // Create an output file.
+                        let mut writer = {
+                            let mut dir_writer = dir_writer.lock().unwrap();
+                            dir_writer.create(&symfile.path)?
+                        };
+
+                        // Write all types into the output file.
+                        for (name, tokens_rc) in sorted_types {
+                            write!(writer, "{}", name).map_io_err(err_desc)?;
+                            for token in tokens_rc.iter() {
+                                write!(writer, " {}", token.as_str()).map_io_err(err_desc)?;
+                            }
+                            writeln!(writer).map_io_err(err_desc)?;
+                        }
+
+                        // Close the file.
+                        writer.flush().map_io_err(err_desc)?;
+                        let mut dir_writer = dir_writer.lock().unwrap();
+                        dir_writer.close(writer)
+                    }
+
+                    Ok(())
+                }));
+            }
+
+            // Join all worker threads. Return the first error if any is found, others are silently
+            // swallowed which is ok.
+            for worker in workers {
+                worker.join().unwrap()?
+            }
+
+            Ok(())
+        })?;
 
         Ok(())
     }

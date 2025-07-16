@@ -365,6 +365,47 @@ fn read_write_differing_struct() {
 }
 
 #[test]
+fn write_split_basic() {
+    // Check basic writing of split files.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "consolidated.symtypes",
+        bytes!(
+            "/* test.symtypes */\n",
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n",
+            "\n",
+            "/* test2.symtypes */\n",
+            "s#foo struct foo { long a ; }\n",
+            "baz int baz ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut out = DirectoryWriter::new_buffer("split");
+    let result = symtypes.write_split_buffer(&mut out, 1);
+    assert_ok!(result);
+    let files = out.into_inner_map();
+    assert_eq!(files.len(), 2);
+    assert_eq!(
+        str::from_utf8(&files[Path::new("split/test.symtypes")]).unwrap(),
+        concat!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n", //
+        )
+    );
+    assert_eq!(
+        str::from_utf8(&files[Path::new("split/test2.symtypes")]).unwrap(),
+        concat!(
+            "s#foo struct foo { long a ; }\n",
+            "baz int baz ( s#foo )\n", //
+        )
+    );
+}
+
+#[test]
 fn compare_identical() {
     // Check that the comparison of two identical corpuses shows no differences.
     let mut symtypes = SymtypesCorpus::new();
