@@ -252,25 +252,27 @@ impl SymtypesCorpus {
         if md.is_dir() {
             // Recursively collect symtypes files within the directory.
             let mut symfiles = Vec::new();
-            Self::collect_symfiles(path, "", &mut symfiles)?;
+            Self::collect_symfiles(path, Path::new(""), &mut symfiles)?;
 
             // Load all found files.
-            self.load_symfiles(path, &symfiles, warnings, num_workers)
+            self.load_symfiles(
+                path,
+                &symfiles.iter().map(Path::new).collect::<Vec<&Path>>(),
+                warnings,
+                num_workers,
+            )
         } else {
             // Load the single file.
-            self.load_symfiles("", &[path], warnings, num_workers)
+            self.load_symfiles(Path::new(""), &[path], warnings, num_workers)
         }
     }
 
     /// Collects recursively all symtypes files under the given root path and its subpath.
-    fn collect_symfiles<P: AsRef<Path>, Q: AsRef<Path>>(
-        root: P,
-        sub_path: Q,
+    fn collect_symfiles(
+        root: &Path,
+        sub_path: &Path,
         symfiles: &mut Vec<PathBuf>,
     ) -> Result<(), Error> {
-        let root = root.as_ref();
-        let sub_path = sub_path.as_ref();
-
         let path = root.join(sub_path);
 
         let dir_iter = fs::read_dir(&path).map_err(|err| {
@@ -321,15 +323,13 @@ impl SymtypesCorpus {
     }
 
     /// Loads all specified symtypes files.
-    fn load_symfiles<P: AsRef<Path>, Q: AsRef<Path> + Sync, W: Write + Send>(
+    fn load_symfiles<W: Write + Send>(
         &mut self,
-        root: P,
-        symfiles: &[Q],
+        root: &Path,
+        symfiles: &[&Path],
         warnings: W,
         num_workers: i32,
     ) -> Result<(), Error> {
-        let root = root.as_ref();
-
         // Load data from the files.
         let next_work_idx = AtomicUsize::new(0);
         let load_context = LoadContext::from(mem::take(self), warnings);
@@ -343,7 +343,7 @@ impl SymtypesCorpus {
                         if work_idx >= symfiles.len() {
                             return Ok(());
                         }
-                        let sub_path = &symfiles[work_idx].as_ref();
+                        let sub_path = symfiles[work_idx];
 
                         let path = root.join(sub_path);
                         let file = PathFile::open(&path).map_err(|err| {
@@ -378,6 +378,7 @@ impl SymtypesCorpus {
         reader: R,
         warnings: W,
     ) -> Result<(), Error> {
+        let path = path.as_ref();
         let load_context = LoadContext::from(mem::take(self), warnings);
 
         Self::load_inner(path, reader, &load_context)?;
@@ -388,12 +389,11 @@ impl SymtypesCorpus {
     }
 
     /// Loads symtypes data from a specified reader.
-    fn load_inner<P: AsRef<Path>, R: Read>(
-        path: P,
+    fn load_inner<R: Read>(
+        path: &Path,
         reader: R,
         load_context: &LoadContext,
     ) -> Result<(), Error> {
-        let path = path.as_ref();
         debug!("Loading symtypes data from '{}'", path.display());
 
         // Read all content from the file.
@@ -441,7 +441,7 @@ impl SymtypesCorpus {
                 }
 
                 // Open the new file.
-                file_idx = Self::add_file(&line[3..line.len() - 3], load_context);
+                file_idx = Self::add_file(Path::new(&line[3..line.len() - 3]), load_context);
 
                 continue;
             }
@@ -494,9 +494,7 @@ impl SymtypesCorpus {
     ///
     /// Note that in the case of a consolidated file, unlike most load functions, the `path` should
     /// point to the name of the specific symtypes file.
-    fn add_file<P: AsRef<Path>>(path: P, load_context: &LoadContext) -> usize {
-        let path = path.as_ref();
-
+    fn add_file(path: &Path, load_context: &LoadContext) -> usize {
         let symfile = SymtypesFile {
             path: path.to_path_buf(),
             records: FileRecords::new(),
@@ -509,16 +507,14 @@ impl SymtypesCorpus {
 
     /// Completes loading of the symtypes file specified by `file_idx` by extrapolating its records,
     /// validating all references, and finally adding the file records to the corpus.
-    fn close_file<P: AsRef<Path>>(
-        path: P,
+    fn close_file(
+        path: &Path,
         file_idx: usize,
         mut records: FileRecords,
         local_override: LoadActiveTypes,
         active_types: &LoadActiveTypes,
         load_context: &LoadContext,
     ) -> Result<(), Error> {
-        let path = path.as_ref();
-
         // Extrapolate all records and validate references.
         let walk_records = records.keys().map(String::clone).collect::<Vec<_>>();
         for name in walk_records {
@@ -1128,13 +1124,12 @@ fn split_type_name<'a>(type_name: &'a str, delimiter: &str) -> Option<(&'a str, 
 }
 
 /// Parses a single symtypes record.
-fn parse_type_record<P: AsRef<Path>>(
-    path: P,
+fn parse_type_record(
+    path: &Path,
     line_idx: usize,
     line: &str,
     is_consolidated: bool,
 ) -> Result<(String, Tokens, bool), Error> {
-    let path = path.as_ref();
     let mut words = line.split_ascii_whitespace();
 
     let raw_name = words.next().ok_or_else(|| {

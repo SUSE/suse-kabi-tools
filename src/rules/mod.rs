@@ -175,8 +175,7 @@ fn get_next_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<St
 }
 
 /// Parses a single severity rule.
-fn parse_rule<P: AsRef<Path>>(path: P, line_idx: usize, line: &str) -> Result<Option<Rule>, Error> {
-    let path = path.as_ref();
+fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, Error> {
     let mut chars = line.chars().peekable();
 
     // Parse the pattern.

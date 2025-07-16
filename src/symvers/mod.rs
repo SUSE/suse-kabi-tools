@@ -299,12 +299,7 @@ impl SymversCorpus {
 }
 
 /// Parses a single symvers record.
-fn parse_export<P: AsRef<Path>>(
-    path: P,
-    line_idx: usize,
-    line: &str,
-) -> Result<(String, ExportInfo), Error> {
-    let path = path.as_ref();
+fn parse_export(path: &Path, line_idx: usize, line: &str) -> Result<(String, ExportInfo), Error> {
     let mut words = line.split_ascii_whitespace();
 
     // Parse the CRC value.
