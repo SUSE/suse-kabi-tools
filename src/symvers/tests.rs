@@ -241,7 +241,8 @@ fn compare_identical() {
     );
     assert_ok!(result);
     let mut writer = Writer::new_buffer();
-    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let result =
+        symvers.compare_with_buffer(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, true);
     assert_eq!(
@@ -273,7 +274,8 @@ fn compare_added_export() {
     );
     assert_ok!(result);
     let mut writer = Writer::new_buffer();
-    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let result =
+        symvers.compare_with_buffer(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, true);
     assert_eq!(
@@ -305,7 +307,8 @@ fn compare_removed_export() {
     );
     assert_ok!(result);
     let mut writer = Writer::new_buffer();
-    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let result =
+        symvers.compare_with_buffer(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
@@ -336,7 +339,8 @@ fn compare_changed_crc() {
     );
     assert_ok!(result);
     let mut writer = Writer::new_buffer();
-    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let result =
+        symvers.compare_with_buffer(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
@@ -373,7 +377,8 @@ fn compare_changed_type() {
     );
     assert_ok!(result);
     let mut writer = Writer::new_buffer();
-    let result = symvers.compare_with(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
+    let result =
+        symvers.compare_with_buffer(&symvers2, None, &mut [(CompareFormat::Pretty, &mut writer)]);
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
@@ -413,7 +418,7 @@ fn compare_ignored_changes() {
     );
     assert_ok!(result);
     let mut writer = Writer::new_buffer();
-    let result = symvers.compare_with(
+    let result = symvers.compare_with_buffer(
         &symvers2,
         Some(&rules),
         &mut [(CompareFormat::Pretty, &mut writer)],

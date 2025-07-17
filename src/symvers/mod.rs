@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::rules::Rules;
-use crate::text::read_lines;
+use crate::text::{Writer, read_lines};
 use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::HashMap;
 use std::io::prelude::*;
@@ -50,6 +50,7 @@ impl ExportInfo {
 type Exports = HashMap<String, ExportInfo>;
 
 /// The format of the output from [`SymversCorpus::compare_with()`].
+#[derive(Clone, Copy)]
 pub enum CompareFormat {
     Null,
     Pretty,
@@ -140,12 +141,32 @@ impl SymversCorpus {
         Ok(())
     }
 
-    /// Compares symbols in `self` and `other_symvers`.
+    /// Compares the symbols in `self` and `other_symvers`.
     ///
-    /// Reports any found changes to the provided output streams, formatted as requested. Returns
-    /// [`Ok`] containing a `bool` indicating whether the corpuses are the same, or [`Err`] on
-    /// error.
-    pub fn compare_with<W: Write>(
+    /// Writes reports about any found changes to the specified files, formatted as requested.
+    /// Returns [`Ok`] containing a `bool` indicating whether the corpuses are the same, or [`Err`]
+    /// on error.
+    pub fn compare_with<P: AsRef<Path>>(
+        &self,
+        other_symvers: &SymversCorpus,
+        maybe_rules: Option<&Rules>,
+        writers_conf: &[(CompareFormat, P)],
+    ) -> Result<bool, Error> {
+        // Materialize all writers.
+        let mut writers = Vec::new();
+        for (format, path) in writers_conf {
+            writers.push((*format, Writer::new_file(path)?));
+        }
+
+        self.compare_with_buffer(other_symvers, maybe_rules, &mut writers[..])
+    }
+
+    /// Compares the symbols in `self` and `other_symvers`.
+    ///
+    /// Writes reports about any found changes to the provided output streams, formatted as
+    /// requested. Returns [`Ok`] containing a `bool` indicating whether the corpuses are the same,
+    /// or [`Err`] on error.
+    pub fn compare_with_buffer<W: Write>(
         &self,
         other_symvers: &SymversCorpus,
         maybe_rules: Option<&Rules>,

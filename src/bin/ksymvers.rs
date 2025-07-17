@@ -6,7 +6,6 @@ use std::process::ExitCode;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
 use suse_kabi_tools::symvers::{CompareFormat, SymversCorpus};
-use suse_kabi_tools::text::Writer;
 use suse_kabi_tools::{Error, Timing, debug};
 
 const USAGE_MSG: &str = concat!(
@@ -92,12 +91,6 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let path2 =
         maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
 
-    // Materialize all writers.
-    let mut writers = Vec::new();
-    for (format, path) in writers_conf {
-        writers.push((format, Writer::new_file(path)?));
-    }
-
     // Do the comparison.
     debug!("Compare '{}' and '{}'", path, path2);
 
@@ -144,7 +137,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, "Comparison");
 
         symvers
-            .compare_with(&symvers2, maybe_rules.as_ref(), &mut writers)
+            .compare_with(&symvers2, maybe_rules.as_ref(), &writers_conf[..])
             .map_err(|err| {
                 Error::new_context(
                     format!("Failed to compare symvers from '{}' and '{}'", path, path2),
