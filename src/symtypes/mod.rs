@@ -912,28 +912,28 @@ impl SymtypesCorpus {
         }
     }
 
-    /// Compares the symbols in `self` and `other_corpus` and writes a human-readable report about
+    /// Compares the symbols in `self` and `other_symtypes` and writes a human-readable report about
     /// all found changes to the specified file.
     pub fn compare_with<P: AsRef<Path>>(
         &self,
-        other_corpus: &SymtypesCorpus,
+        other_symtypes: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
         path: P,
         num_workers: i32,
     ) -> Result<(), Error> {
         self.compare_with_buffer(
-            other_corpus,
+            other_symtypes,
             maybe_filter,
             Writer::new_file(path)?,
             num_workers,
         )
     }
 
-    /// Compares the symbols in `self` and `other_corpus` and writes a human-readable report about
+    /// Compares the symbols in `self` and `other_symtypes` and writes a human-readable report about
     /// all found changes to the provided output stream.
     pub fn compare_with_buffer<W: Write>(
         &self,
-        other_corpus: &SymtypesCorpus,
+        other_symtypes: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
         mut writer: W,
         num_workers: i32,
@@ -947,10 +947,10 @@ impl SymtypesCorpus {
 
         let err_desc = "Failed to write a comparison result";
 
-        // Check for symbols in self but not in other_corpus, and vice versa.
+        // Check for symbols in self but not in other_symtypes, and vice versa.
         for (exports_a, exports_b, change) in [
-            (&self.exports, &other_corpus.exports, "removed"),
-            (&other_corpus.exports, &self.exports, "added"),
+            (&self.exports, &other_symtypes.exports, "removed"),
+            (&other_symtypes.exports, &self.exports, "added"),
         ] {
             for name in exports_a.keys() {
                 if matches(maybe_filter, name) && !exports_b.contains_key(name) {
@@ -981,8 +981,8 @@ impl SymtypesCorpus {
                         let (name, file_idx) = works[work_idx];
 
                         let file = &self.files[*file_idx];
-                        if let Some(other_file_idx) = other_corpus.exports.get(name) {
-                            let other_file = &other_corpus.files[*other_file_idx];
+                        if let Some(other_file_idx) = other_symtypes.exports.get(name) {
+                            let other_file = &other_symtypes.files[*other_file_idx];
                             let mut processed = CompareFileTypes::new();
                             Self::compare_types(
                                 file,
