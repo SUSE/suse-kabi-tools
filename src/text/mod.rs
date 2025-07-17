@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::{Error, MapIOErr, PathFile, debug};
-use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
-use std::fs;
-use std::io;
 use std::io::{BufReader, BufWriter, prelude::*};
 use std::ops::{Index, IndexMut};
 use std::path::{Path, PathBuf};
+use std::{cmp, fs, io};
 
 #[cfg(test)]
 mod tests_diff;

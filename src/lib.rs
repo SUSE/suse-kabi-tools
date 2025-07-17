@@ -1,17 +1,14 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::error;
-use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
-use std::hash;
-use std::hash::Hasher;
-use std::io;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::time::Instant;
+use std::{error, fmt, hash, io};
 
 pub mod cli;
 pub mod rules;
@@ -184,8 +181,8 @@ impl<T, const S: usize> Size for [T; S] {
 }
 
 /// Calculates the hash of a given value.
-fn hash<T: hash::Hash + ?Sized>(t: &T) -> u64 {
-    let mut s = hash::DefaultHasher::new();
+fn hash<T: Hash + ?Sized>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
     t.hash(&mut s);
     s.finish()
 }
