@@ -87,20 +87,23 @@ Use \fINUM\fR workers to perform the operation simultaneously.
 \fB\-\-filter\-symbol\-list\fR=\fIFILE\fR
 Consider only symbols that match the patterns in \fIFILE\fR.
 .SH EXAMPLES
-Build the Linux kernel and create a reference consolidated symtypes corpus:
+Build the Linux kernel and obtain a reference symvers and consolidated symtypes corpus:
 .IP
 .EX
 $ cd <linux\-kernel\-directory>
 $ make O=build ...
-$ ksymtypes consolidate \-\-output=reference.kabi build/
+$ cp build/Module.symvers base.symvers
+$ ksymtypes consolidate \-\-output=base.symtypes build/
 .EE
 .PP
 Build a new version of the Linux kernel and compare its ABI with the previous reference:
 .IP
 .EX
-$ cd <linux\-kernel\-directory> && git pull
+$ cd <linux\-kernel\-directory>
+$ vim ...  # edit the code
 $ make O=build ...
-$ ksymtypes compare reference.kabi build/
+$ ksymvers compare --format=symbols:changed-exports base.symvers build/Module.symvers
+$ ksymtypes compare --filter-symbol-list=changed-exports base.symtypes build/
 .EE
 .SH SEE ALSO
 \fBksymvers\fR(1), \fBsuse-kabi-tools\fR(5)
