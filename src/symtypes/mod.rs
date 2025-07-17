@@ -712,6 +712,8 @@ impl SymtypesCorpus {
         let mut add_separator = false;
         for i in file_indices {
             let symfile = &self.files[i];
+
+            // Sort all types in the file.
             let mut sorted_types = self.files[i].records.iter().collect::<Vec<_>>();
             sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
 
@@ -765,7 +767,7 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Writes the corpus in the split form into a specified directory.
+    /// Writes the corpus in the split form to the specified directory.
     pub fn write_split<P: AsRef<Path>>(&self, path: P, num_workers: i32) -> Result<(), Error> {
         self.write_split_buffer(&mut DirectoryWriter::new_file(path), num_workers)
     }

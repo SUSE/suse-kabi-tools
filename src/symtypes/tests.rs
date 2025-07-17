@@ -225,7 +225,7 @@ fn read_invalid_reference() {
 
 #[test]
 fn read_duplicate_type_export() {
-    // Check that two exports with the same name in different files get rejected.
+    // Check that two exports with the same name in different files produce a warning.
     let mut symtypes = SymtypesCorpus::new();
     let mut warnings = Vec::new();
     let result = symtypes.load_buffer(
