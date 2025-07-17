@@ -399,7 +399,7 @@ pub fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
 
 /// A writer to the standard output, a file or an internal buffer.
 pub enum Writer {
-    Stdout(BufWriter<io::Stdout>),
+    Stdout(io::Stdout),
     File(BufWriter<PathFile>),
     Buffer(Vec<u8>),
     NamedBuffer(PathBuf, Vec<u8>),
@@ -412,7 +412,7 @@ impl Writer {
         let path = path.as_ref();
 
         if path == Path::new("-") {
-            Ok(Self::Stdout(BufWriter::new(io::stdout())))
+            Ok(Self::Stdout(io::stdout()))
         } else {
             match PathFile::create(path) {
                 Ok(file) => Ok(Self::File(BufWriter::new(file))),
