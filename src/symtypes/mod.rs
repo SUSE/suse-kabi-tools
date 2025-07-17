@@ -1,7 +1,7 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use crate::text::{DirectoryWriter, Filter, WriteGenerator, read_lines, unified_diff};
+use crate::text::{DirectoryWriter, Filter, WriteGenerator, Writer, read_lines, unified_diff};
 use crate::{Error, MapIOErr, PathFile, Size, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
@@ -926,14 +926,30 @@ impl SymtypesCorpus {
         }
     }
 
-    /// Compares symbols in the `self` and `other_corpus`.
-    ///
-    /// A human-readable report about all found changes is written to the provided output stream.
-    pub fn compare_with<W: Write>(
+    /// Compares the symbols in `self` and `other_corpus` and writes a human-readable report about
+    /// all found changes to the specified file.
+    pub fn compare_with<P: AsRef<Path>>(
         &self,
         other_corpus: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
-        writer: W,
+        path: P,
+        num_workers: i32,
+    ) -> Result<(), Error> {
+        self.compare_with_buffer(
+            other_corpus,
+            maybe_filter,
+            Writer::new_file(path)?,
+            num_workers,
+        )
+    }
+
+    /// Compares the symbols in `self` and `other_corpus` and writes a human-readable report about
+    /// all found changes to the provided output stream.
+    pub fn compare_with_buffer<W: Write>(
+        &self,
+        other_corpus: &SymtypesCorpus,
+        maybe_filter: Option<&Filter>,
+        mut writer: W,
         num_workers: i32,
     ) -> Result<(), Error> {
         fn matches(maybe_filter: Option<&Filter>, name: &str) -> bool {

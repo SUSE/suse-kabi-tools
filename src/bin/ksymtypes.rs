@@ -346,12 +346,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, "Comparison");
 
         symtypes
-            .compare_with(
-                &symtypes2,
-                maybe_symbol_filter.as_ref(),
-                io::stdout(),
-                num_workers,
-            )
+            .compare_with(&symtypes2, maybe_symbol_filter.as_ref(), "-", num_workers)
             .map_err(|err| {
                 Error::new_context(
                     format!("Failed to compare symtypes from '{}' and '{}'", path, path2),

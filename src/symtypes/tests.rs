@@ -430,7 +430,7 @@ fn compare_identical() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
+    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -466,7 +466,7 @@ fn compare_added_export() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
+    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -502,7 +502,7 @@ fn compare_removed_export() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
+    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -539,7 +539,7 @@ fn compare_changed_type() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
+    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -586,7 +586,7 @@ fn compare_changed_nested_type() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = Vec::new();
-    let result = symtypes.compare_with(&symtypes2, None, &mut out, 1);
+    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
     assert_ok!(result);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
