@@ -268,6 +268,8 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
         )?;
     }
 
+    writer.flush().map_io_err("Failed to write a diff hunk")?;
+
     Ok(())
 }
 

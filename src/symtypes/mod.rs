@@ -760,6 +760,8 @@ impl SymtypesCorpus {
             }
         }
 
+        writer.flush().map_io_err(err_desc)?;
+
         Ok(())
     }
 
@@ -1023,6 +1025,8 @@ impl SymtypesCorpus {
             writeln!(writer, "because of a changed '{}':", name).map_io_err(err_desc)?;
             write_type_diff(tokens, other_tokens, writer.by_ref())?;
         }
+
+        writer.flush().map_io_err(err_desc)?;
 
         Ok(())
     }

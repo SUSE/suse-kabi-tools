@@ -313,7 +313,9 @@ impl SymversCorpus {
             }
         }
 
-        // TODO Flush all buffers.
+        for (_, writer) in &mut *writers {
+            writer.flush().map_io_err(err_desc)?;
+        }
 
         Ok(is_equal)
     }
