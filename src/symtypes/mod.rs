@@ -961,11 +961,11 @@ impl SymtypesCorpus {
         }
 
         // Compare symbols that are in both corpuses.
-        let works: Vec<_> = self
+        let works = self
             .exports
             .iter()
-            .filter(|(name, _)| matches(maybe_filter, name))
-            .collect();
+            .filter(|&(name, _)| matches(maybe_filter, name))
+            .collect::<Vec<_>>();
         let next_work_idx = AtomicUsize::new(0);
 
         let changes = Mutex::new(CompareChangedTypes::new());
