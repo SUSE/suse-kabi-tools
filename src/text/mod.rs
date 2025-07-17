@@ -412,13 +412,20 @@ impl Writer {
         if path == Path::new("-") {
             Ok(Self::Stdout(io::stdout()))
         } else {
-            match PathFile::create(path) {
-                Ok(file) => Ok(Self::File(BufWriter::new(file))),
-                Err(err) => Err(Error::new_io(
-                    format!("Failed to create file '{}'", path.display()),
-                    err,
-                )),
-            }
+            Self::new_exact_file(path)
+        }
+    }
+
+    /// Creates a new [`Writer`] that writes to the specified file.
+    pub fn new_exact_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        let path = path.as_ref();
+
+        match PathFile::create(path) {
+            Ok(file) => Ok(Self::File(BufWriter::new(file))),
+            Err(err) => Err(Error::new_io(
+                format!("Failed to create file '{}'", path.display()),
+                err,
+            )),
         }
     }
 
@@ -518,7 +525,7 @@ impl WriteGenerator<Writer> for &mut DirectoryWriter {
                         )
                     })?;
                 }
-                Writer::new_file(path)
+                Writer::new_exact_file(path)
             }
             DirectoryWriter::Buffer(root, _) => Ok(Writer::new_named_buffer(root.join(sub_path))),
         }
