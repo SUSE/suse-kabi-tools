@@ -5,7 +5,7 @@ use crate::text::{DirectoryWriter, Filter, WriteGenerator, Writer, read_lines, u
 use crate::{Error, MapIOErr, PathFile, Size, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
-use std::io::{BufWriter, prelude::*};
+use std::io::prelude::*;
 use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -698,8 +698,7 @@ impl SymtypesCorpus {
     }
 
     /// Writes the corpus in the consolidated form to the provided output stream.
-    pub fn write_consolidated_buffer<W: Write>(&self, writer: W) -> Result<(), Error> {
-        let mut writer = BufWriter::new(writer);
+    pub fn write_consolidated_buffer<W: Write>(&self, mut writer: W) -> Result<(), Error> {
         let err_desc = "Failed to write a consolidated record";
 
         // Track which records are currently active, mapping a type name to its tokens.
@@ -942,7 +941,6 @@ impl SymtypesCorpus {
             }
         }
 
-        let mut writer = BufWriter::new(writer);
         let err_desc = "Failed to write a comparison result";
 
         // Check for symbols in self but not in other_corpus, and vice versa.

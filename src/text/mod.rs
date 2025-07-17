@@ -142,7 +142,7 @@ fn write_hunk<W: Write>(
     hunk_pos_b: usize,
     hunk_len_b: usize,
     hunk_data: &[String],
-    writer: &mut BufWriter<W>,
+    mut writer: W,
 ) -> Result<(), Error> {
     let err_desc = "Failed to write a diff hunk";
 
@@ -162,10 +162,8 @@ fn write_hunk<W: Write>(
 pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
     a: &[T],
     b: &[T],
-    writer: W,
+    mut writer: W,
 ) -> Result<(), Error> {
-    let mut writer = BufWriter::new(writer);
-
     // Diff the two inputs and calculate the edit script.
     let edit_script = myers(a, b);
 
@@ -205,7 +203,7 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
                         hunk_pos_b,
                         hunk_len_b,
                         &hunk_data,
-                        &mut writer,
+                        writer.by_ref(),
                     )?;
                     hunk_data.clear();
                 }
@@ -266,7 +264,7 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
             hunk_pos_b,
             hunk_len_b,
             &hunk_data,
-            &mut writer,
+            writer.by_ref(),
         )?;
     }
 
