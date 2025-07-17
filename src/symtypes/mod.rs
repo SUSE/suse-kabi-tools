@@ -10,7 +10,7 @@ use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
-use std::{array, fs, io, mem, thread};
+use std::{array, fs, mem, thread};
 
 #[cfg(test)]
 mod tests;
@@ -692,26 +692,9 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Writes the corpus in the consolidated form into a specified file.
+    /// Writes the corpus in the consolidated form to the specified file.
     pub fn write_consolidated<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
-        let path = path.as_ref();
-
-        // Open the output file.
-        let writer: Box<dyn Write> = if path == Path::new("-") {
-            Box::new(io::stdout())
-        } else {
-            match PathFile::create(path) {
-                Ok(file) => Box::new(file),
-                Err(err) => {
-                    return Err(Error::new_io(
-                        format!("Failed to create file '{}'", path.display()),
-                        err,
-                    ));
-                }
-            }
-        };
-
-        self.write_consolidated_buffer(writer)
+        self.write_consolidated_buffer(Writer::new_file(path)?)
     }
 
     /// Writes the corpus in the consolidated form to the provided output stream.
