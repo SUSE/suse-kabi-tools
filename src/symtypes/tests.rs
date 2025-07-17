@@ -448,7 +448,7 @@ fn compare_added_export() {
     let result = symtypes.load_buffer(
         "a/test.symtypes",
         bytes!(
-            "bar int bar ( )\n", //
+            "foo int foo ( )\n", //
         ),
         &mut warnings,
     );
@@ -458,6 +458,7 @@ fn compare_added_export() {
     let result = symtypes2.load_buffer(
         "b/test.symtypes",
         bytes!(
+            "foo int foo ( )\n",
             "bar int bar ( )\n",
             "baz int baz ( )\n", //
         ),
@@ -471,6 +472,7 @@ fn compare_added_export() {
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
+            "Export 'bar' has been added\n",
             "Export 'baz' has been added\n", //
         )
     );
@@ -484,6 +486,7 @@ fn compare_removed_export() {
     let result = symtypes.load_buffer(
         "a/test.symtypes",
         bytes!(
+            "foo int foo ( )\n",
             "bar int bar ( )\n",
             "baz int baz ( )\n", //
         ),
@@ -507,7 +510,8 @@ fn compare_removed_export() {
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
-            "Export 'bar' has been removed\n", //
+            "Export 'bar' has been removed\n",
+            "Export 'foo' has been removed\n", //
         )
     );
 }

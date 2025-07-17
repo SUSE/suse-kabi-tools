@@ -952,11 +952,13 @@ impl SymtypesCorpus {
             (&self.exports, &other_symtypes.exports, "removed"),
             (&other_symtypes.exports, &self.exports, "added"),
         ] {
-            for name in exports_a.keys() {
-                if matches(maybe_filter, name) && !exports_b.contains_key(name) {
-                    writeln!(writer, "Export '{}' has been {}", name, change)
-                        .map_io_err(err_desc)?;
-                }
+            let mut changed = exports_a
+                .keys()
+                .filter(|&name| matches(maybe_filter, name) && !exports_b.contains_key(name))
+                .collect::<Vec<_>>();
+            changed.sort();
+            for name in changed {
+                writeln!(writer, "Export '{}' has been {}", name, change).map_io_err(err_desc)?;
             }
         }
 
