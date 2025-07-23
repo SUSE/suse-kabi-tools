@@ -1,0 +1,338 @@
+#!/usr/bin/python3
+"""A benchmark utility for measuring the runtime of the suse-kabi-tools."""
+
+import argparse
+import numpy
+import os
+import scipy.stats
+import shutil
+import tempfile
+import time
+
+CONFIDENCE_LEVEL = 0.95
+
+
+class ConfidenceInterval:
+    """A confidence interval for an individual runtime."""
+
+    def __init__(self, mean, margin):
+        self.mean = mean
+        self.margin = margin
+
+    @classmethod
+    def from_data(cls, data):
+        n = len(data)
+        m = numpy.mean(data)
+        se = scipy.stats.sem(data)
+        h = se * scipy.stats.t.ppf((1 + CONFIDENCE_LEVEL) / 2, n - 1)
+        return cls(m, h)
+
+
+class TestResult:
+    """A test result consisting of the real, user and system runtimes."""
+
+    def __init__(self, real_time, user_time, system_time):
+        self.real_time = real_time
+        self.user_time = user_time
+        self.system_time = system_time
+
+
+def run_command(args, dot=True):
+    """
+    Run the specified command and return its runtime.
+
+    Invoke the given command and return a tuple containing its real, user and
+    system runtimes.
+    """
+    start_time = time.time()
+    pid = os.spawnv(os.P_NOWAIT, args[0], args)
+    (_, status, rusage) = os.wait4(pid, 0)
+    end_time = time.time()
+    if status != 0:
+        raise ValueError(f"running '{args[0]}' failed")
+    if dot:
+        print(".", end="", flush=True)
+
+    return (end_time - start_time, rusage.ru_utime, rusage.ru_stime)
+
+
+def run_command_n(args, iterations):
+    """
+    Run the specified command multiple times and return its average runtime.
+
+    Invoke the given command for the specified number of times and return
+    a tuple containing its real, user and system runtimes as confidence
+    intervals.
+    """
+    real_times = []
+    user_times = []
+    system_times = []
+
+    for _ in range(iterations):
+        real_time, user_time, system_time = run_command(args)
+        real_times.append(real_time)
+        user_times.append(user_time)
+        system_times.append(system_time)
+
+    return TestResult(ConfidenceInterval.from_data(real_times),
+                      ConfidenceInterval.from_data(user_times),
+                      ConfidenceInterval.from_data(system_times))
+
+
+def print_results(title, results):
+    """
+    Print the results of a specific test to standard output.
+
+    The results should be a list containing data for invocations ranging from
+    1 to len(results) jobs/threads. Each record is a tuple consisting of the
+    real, user and system runtimes as confidence intervals.
+    """
+    print(f"{title} results " +
+          f"(with {100*CONFIDENCE_LEVEL:.0f}% confidence interval):")
+    print("    Jobs    Real [s]        User [s]       System [s]")
+    for i, result in enumerate(results):
+        print(
+            f"{i+1:8}" +
+            f"{result.real_time.mean:8.3f}±{result.real_time.margin:<7.3f}" +
+            f"{result.user_time.mean:8.3f}±{result.user_time.margin:<7.3f}" +
+            f"{result.system_time.mean:8.3f}±{result.system_time.margin:<7.3f}"
+        )
+
+
+def write_file(data, test_dir, filename):
+    """Save the provided data to a file in the specified test directory."""
+    path = os.path.join(test_dir, filename)
+    with open(path, 'w') as fo:
+        print(data, file=fo)
+    return path
+
+
+def make_plots(test_name, results, test_dir):
+    """Plot the results of a specific test."""
+    data = '\n'.join(
+        (f'{i+1} ' +
+         f'{result.real_time.mean:.3f} {result.real_time.margin:.3f} ' +
+         f'{result.user_time.mean:.3f} {result.user_time.margin:.3f} ' +
+         f'{result.system_time.mean:.3f} {result.system_time.margin:.3f}')
+        for i, result in enumerate(results))
+    data_file = write_file(data, test_dir, 'test.dat')
+
+    plot_id = f'bench-{test_name.lower()}-all'
+    plot_output = os.path.join(os.getcwd(), f'{plot_id}.svg')
+    plot = f'''
+set encoding utf8
+set terminal svg size 800,600 name "{test_name}" fontscale 1.2 linewidth 2
+set output "{plot_output}"
+
+set label "{test_name} (with {100*CONFIDENCE_LEVEL:.0f}% CI error bars)" \\
+  at screen 0.1,1 offset 0,-1
+set key outside top right horizontal
+set style data yerrorlines
+
+set xrange [0.9:{len(results)+0.1}]
+set xtics 1 nomirror
+set xlabel "Number of threads"
+
+set ytics 1
+set ylabel "Time [s]"
+
+set grid
+
+plot '{data_file}' using 1:2:3 title "Real", \\
+  '' using 1:4:5 title "User", \\
+  '' using 1:6:7 title "System"
+'''
+    plot_file = write_file(plot, test_dir, f'{plot_id}.plot')
+    run_command(['/usr/bin/gnuplot', plot_file], dot=False)
+    print(f"{test_name} (all) plot saved to '{plot_output}'")
+
+    plot_id = f'bench-{test_name.lower()}-real'
+    plot_output = os.path.join(os.getcwd(), f'{plot_id}.svg')
+    plot = f'''
+set encoding utf8
+set terminal svg size 800,600 name "{test_name}" fontscale 1.2 linewidth 2
+set output "{plot_output}"
+
+set title "{test_name}"
+unset key
+set style data lines
+
+set xrange [0.9:{len(results)+0.1}]
+set xtics 1 nomirror
+set xlabel "Number of threads"
+
+set yrange [0:*]
+set ytics 1
+set ylabel "Time [s]"
+
+set grid
+
+plot '{data_file}' using 1:2 title "Real"
+'''
+    plot_file = write_file(plot, test_dir, f'{plot_id}.plot')
+    run_command(['/usr/bin/gnuplot', plot_file], dot=False)
+    print(f"{test_name} (real) plot saved to '{plot_output}'")
+
+
+def test_consolidate(ksymtypes_bin, symtypes, tmp_dir, iterations, max_jobs):
+    """Measure the runtime of the consolidate command."""
+    test_dir = os.path.join(tmp_dir, 'consolidate')
+    os.mkdir(test_dir)
+
+    # Unpack the consolidated data.
+    split_tree = os.path.join(test_dir, 'tree')
+    run_command([ksymtypes_bin, 'split', f'--output={split_tree}', symtypes],
+                dot=False)
+
+    # Perform the test.
+    output = os.path.join(test_dir, 'test.symtypes')
+
+    results = [
+        run_command_n([
+            ksymtypes_bin, 'consolidate', f'--jobs={jobs}',
+            f'--output={output}', split_tree
+        ], iterations) for jobs in range(1, max_jobs + 1)
+    ]
+    print()
+
+    # Output the results.
+    print_results("Consolidate", results)
+    make_plots("Consolidate", results, test_dir)
+
+
+def test_split(ksymtypes_bin, symtypes, tmp_dir, iterations, max_jobs):
+    """Measure the runtime of the split command."""
+    test_dir = os.path.join(tmp_dir, 'split')
+    os.mkdir(test_dir)
+
+    # Copy the test symtypes data to the work directory.
+    base_symtypes = os.path.join(test_dir, 'base.symtypes')
+    shutil.copyfile(symtypes, base_symtypes)
+
+    # Perform the test.
+    output = os.path.join(test_dir, 'tree')
+
+    results = [
+        run_command_n([
+            ksymtypes_bin, 'split', f'--jobs={jobs}', f'--output={output}',
+            base_symtypes
+        ], iterations) for jobs in range(1, max_jobs + 1)
+    ]
+    print()
+
+    # Output the results.
+    print_results("Split", results)
+    make_plots("Split", results, test_dir)
+
+
+def test_compare(ksymtypes_bin, symtypes, tmp_dir, iterations, max_jobs):
+    """Measure the runtime of the compare command."""
+    test_dir = os.path.join(tmp_dir, 'compare')
+    os.mkdir(test_dir)
+
+    # Copy the test symtypes data to the work directory.
+    base_symtypes = os.path.join(test_dir, 'base.symtypes')
+    shutil.copyfile(symtypes, base_symtypes)
+
+    # Unpack the consolidated data.
+    split_tree = os.path.join(test_dir, 'tree')
+    run_command(
+        [ksymtypes_bin, 'split', f'--output={split_tree}', base_symtypes],
+        dot=False)
+
+    # Perform the test.
+    results = [
+        run_command_n([
+            ksymtypes_bin, 'compare', f'--jobs={jobs}', base_symtypes,
+            split_tree
+        ], iterations) for jobs in range(1, max_jobs + 1)
+    ]
+    print()
+
+    # Output the results.
+    print_results("Compare", results)
+    make_plots("Compare", results, test_dir)
+
+
+def check_positive(value):
+    """
+    Check if the value is a positive integer.
+
+    Check if the value is a positive integer. If it isn't, raise an
+    argparse.ArgumentTypeError exception.
+    """
+    try:
+        value = int(value)
+        if value <= 0:
+            raise ValueError
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"invalid positive int value: '{value}'")
+    return value
+
+
+def main():
+    """Parse the command line arguments and run the selected test(s)."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--test',
+                        default='all',
+                        choices=['all', 'consolidate', 'split', 'compare'],
+                        help="select the test to run")
+    parser.add_argument('--ksymtypes-bin',
+                        metavar='PATH',
+                        required=True,
+                        help="use the given ksymtypes binary for testing")
+    parser.add_argument(
+        '--symtypes',
+        metavar='PATH',
+        required=True,
+        help="use the given consolidated symtypes file for testing")
+    parser.add_argument(
+        '--workdir',
+        metavar='DIR',
+        required=True,
+        help="use the given directory to store intermediate test data")
+    parser.add_argument(
+        '--keep-workdir',
+        action='store_true',
+        help="keep the working directory after test completion")
+    parser.add_argument(
+        '--iterations',
+        metavar='COUNT',
+        type=check_positive,
+        default=5,
+        help=("perform COUNT iterations for each test configuration " +
+              "(default: %(default)s)"))
+    parser.add_argument(
+        '--jobs',
+        metavar='COUNT',
+        type=check_positive,
+        default=min(os.process_cpu_count(), 16),
+        help="measure runtime using from 1 to COUNT threads (default: the " +
+        "lesser of the number of CPUs available to the process or 16)")
+    args = parser.parse_args()
+
+    print(f"Performing test '{args.test}', using from 1 to '{args.jobs}' " +
+          f"jobs/threads, with '{args.iterations}' measurements for each test")
+
+    # Create a temporary directory to store test data and invoke the selected
+    # test(s).
+    with tempfile.TemporaryDirectory(dir=args.workdir,
+                                     delete=not args.keep_workdir) as tmp_dir:
+        print(f"Using temporary directory '{tmp_dir}'")
+
+        if args.test in ('all', 'consolidate'):
+            test_consolidate(args.ksymtypes_bin, args.symtypes, tmp_dir,
+                             args.iterations, args.jobs)
+
+        if args.test in ('all', 'split'):
+            test_split(args.ksymtypes_bin, args.symtypes, tmp_dir,
+                       args.iterations, args.jobs)
+
+        if args.test in ('all', 'compare'):
+            test_compare(args.ksymtypes_bin, args.symtypes, tmp_dir,
+                         args.iterations, args.jobs)
+
+
+if __name__ == '__main__':
+    main()
