@@ -157,7 +157,7 @@ fn main() -> ExitCode {
     let result = process_global_args(
         &mut args,
         USAGE_MSG,
-        &format!("ksymvers {}\n", env!("CARGO_PKG_VERSION")),
+        &format!("ksymvers {}\n", env!("SUSE_KABI_TOOLS_VERSION")),
         &mut do_timing,
     );
     let command = match result {

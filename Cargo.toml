@@ -3,6 +3,5 @@
 
 [package]
 name = "suse-kabi-tools"
-version = "0.1.0"
 authors = ["Petr Pavlu <petr.pavlu@suse.com>"]
 edition = "2024"

@@ -366,7 +366,7 @@ fn main() -> ExitCode {
     let result = process_global_args(
         &mut args,
         USAGE_MSG,
-        &format!("ksymtypes {}\n", env!("CARGO_PKG_VERSION")),
+        &format!("ksymtypes {}\n", env!("SUSE_KABI_TOOLS_VERSION")),
         &mut do_timing,
     );
     let command = match result {
