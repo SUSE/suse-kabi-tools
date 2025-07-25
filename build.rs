@@ -1,7 +1,6 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::env;
 use std::fs;
 use std::process::Command;
 
@@ -18,11 +17,12 @@ fn run(name: &str, args: &[&str]) -> String {
 }
 
 fn main() {
-    // Check if the version is explictly set, for instance, by a distribution package recipe.
-    if env::var("SUSE_KABI_TOOLS_VERSION").is_ok() {
+    // Check if the version is explicitly set, for instance, by a distribution package recipe.
+    if let Ok(raw_version) = fs::read_to_string("VERSION") {
+        println!("cargo:rustc-env=SUSE_KABI_TOOLS_VERSION={}", raw_version.trim());
+        println!("cargo:rerun-if-changed=VERSION");
         return;
     }
-    println!("cargo:rerun-if-changed-env=SUSE_KABI_TOOLS_VERSION");
 
     // Execute git-describe to retrieve version information.
     let raw_version = run("git", &["describe", "--dirty"]);
