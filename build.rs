@@ -1,6 +1,7 @@
 // Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+use std::env;
 use std::fs;
 use std::process::Command;
 
@@ -18,15 +19,10 @@ fn run(name: &str, args: &[&str]) -> String {
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=SUSE_KABI_TOOLS_VERSION");
 
     // Check if the version is explicitly set, for instance, by a distribution package recipe.
-    if let Ok(raw_version) = fs::read_to_string("VERSION") {
-        let version = raw_version.trim();
-        println!("cargo:rustc-env=SUSE_KABI_TOOLS_VERSION={}", version);
-        // Note that the following statement would ideally be moved outside of the if block to allow
-        // detecting when the VERSION file is added. Unfortunately, this is not possible because if
-        // the file is missing, it would always trigger a rerun of build.rs.
-        println!("cargo:rerun-if-changed=VERSION");
+    if env::var("SUSE_KABI_TOOLS_VERSION").is_ok() {
         return;
     }
 
