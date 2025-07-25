@@ -17,6 +17,8 @@ fn run(name: &str, args: &[&str]) -> String {
 }
 
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+
     // Check if the version is explicitly set, for instance, by a distribution package recipe.
     if let Ok(raw_version) = fs::read_to_string("VERSION") {
         let version = raw_version.trim();
