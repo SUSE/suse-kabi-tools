@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
       - name: Install the ${{ matrix.toolchain }} Rust toolchain
         shell: bash
         run: |
