@@ -19,7 +19,11 @@ fn run(name: &str, args: &[&str]) -> String {
 fn main() {
     // Check if the version is explicitly set, for instance, by a distribution package recipe.
     if let Ok(raw_version) = fs::read_to_string("VERSION") {
-        println!("cargo:rustc-env=SUSE_KABI_TOOLS_VERSION={}", raw_version.trim());
+        let version = raw_version.trim();
+        println!("cargo:rustc-env=SUSE_KABI_TOOLS_VERSION={}", version);
+        // Note that the following statement would ideally be moved outside of the if block to allow
+        // detecting when the VERSION file is added. Unfortunately, this is not possible because if
+        // the file is missing, it would always trigger a rerun of build.rs.
         println!("cargo:rerun-if-changed=VERSION");
         return;
     }
