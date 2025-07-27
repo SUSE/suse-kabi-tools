@@ -19,11 +19,15 @@ jobs:
           - beta
           - nightly
     steps:
+      - name: Install Git
+        run: zypper --non-interactive install git
       - name: Check out the repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
+      - name: Mark the repository as safe
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Install the ${{ matrix.toolchain }} Rust toolchain
         shell: bash
         run: |
@@ -34,8 +38,6 @@ jobs:
             rustup update ${{ matrix.toolchain }}
             rustup default ${{ matrix.toolchain }}
           fi
-      - name: Install project dependencies
-        run: zypper --non-interactive install git
       - name: Build the project
         run: cargo build
       - name: Run tests
