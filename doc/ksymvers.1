@@ -52,5 +52,8 @@ The \fITYPE\fR can be one of the following:
 .IP \[bu] 2
 \fIsymbols\fR \(en shows only the names of symbols that have changed.
 .RE
+.SH EXIT STATUS
+The exit status is 0 on success and 2 if an error occurs. The compare command returns 0 if there are
+no differences and 1 if there are any (non-tolerated) changes.
 .SH SEE ALSO
 \fBksymtypes\fR(1), \fBsuse-kabi-tools\fR(5)
