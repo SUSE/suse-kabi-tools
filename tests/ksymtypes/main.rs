@@ -119,7 +119,7 @@ fn compare_cmd() {
         "tests/ksymtypes/compare_cmd/a.symtypes",
         "tests/ksymtypes/compare_cmd/b.symtypes",
     ]);
-    assert!(result.status.success());
+    assert!(!result.status.success());
     assert_eq!(
         result.stdout,
         concat!(
@@ -146,7 +146,7 @@ fn compare_cmd_dash_dash() {
         "tests/ksymtypes/compare_cmd/a.symtypes",
         "tests/ksymtypes/compare_cmd/b.symtypes",
     ]);
-    assert!(result.status.success());
+    assert!(!result.status.success());
     assert_eq!(
         result.stdout,
         concat!(

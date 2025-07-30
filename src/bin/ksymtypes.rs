@@ -83,7 +83,10 @@ fn handle_jobs_option<I: Iterator<Item = String>>(
 }
 
 /// Handles the `consolidate` command which consolidates symtypes into a single file.
-fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
+fn do_consolidate<I: IntoIterator<Item = String>>(
+    do_timing: bool,
+    args: I,
+) -> Result<ExitCode, Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
@@ -103,7 +106,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", CONSOLIDATE_USAGE_MSG);
-                return Ok(());
+                return Ok(ExitCode::SUCCESS);
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -157,11 +160,11 @@ fn do_consolidate<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> R
         })?;
     }
 
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }
 
 /// Handles the `split` command which splits a consolidated symtypes file into individual files.
-fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
+fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<ExitCode, Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
@@ -181,7 +184,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", SPLIT_USAGE_MSG);
-                return Ok(());
+                return Ok(ExitCode::SUCCESS);
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -235,11 +238,11 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
         })?;
     }
 
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }
 
 /// Handles the `compare` command which shows differences between two symtypes corpuses.
-fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<(), Error> {
+fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<ExitCode, Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut num_workers = 1;
@@ -261,7 +264,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", COMPARE_USAGE_MSG);
-                return Ok(());
+                return Ok(ExitCode::SUCCESS);
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -342,7 +345,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         None => None,
     };
 
-    {
+    let is_equal = {
         let _timing = Timing::new(do_timing, "Comparison");
 
         symtypes
@@ -352,10 +355,14 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                     format!("Failed to compare symtypes from '{}' and '{}'", path, path2),
                     err,
                 )
-            })?;
-    }
+            })?
+    };
 
-    Ok(())
+    if is_equal {
+        Ok(ExitCode::SUCCESS)
+    } else {
+        Ok(ExitCode::FAILURE)
+    }
 }
 
 fn main() -> ExitCode {
@@ -390,7 +397,7 @@ fn main() -> ExitCode {
     };
 
     match result {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(code) => code,
         Err(err) => {
             eprintln!("{}", err);
             ExitCode::FAILURE

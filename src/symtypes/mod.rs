@@ -920,7 +920,7 @@ impl SymtypesCorpus {
         maybe_filter: Option<&Filter>,
         path: P,
         num_workers: i32,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         self.compare_with_buffer(
             other_symtypes,
             maybe_filter,
@@ -937,7 +937,7 @@ impl SymtypesCorpus {
         maybe_filter: Option<&Filter>,
         mut writer: W,
         num_workers: i32,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         fn matches(maybe_filter: Option<&Filter>, name: &str) -> bool {
             match maybe_filter {
                 Some(filter) => filter.matches(name),
@@ -946,6 +946,7 @@ impl SymtypesCorpus {
         }
 
         let err_desc = "Failed to write a comparison result";
+        let mut is_equal = true;
 
         // Check for symbols in self but not in other_symtypes, and vice versa.
         for (exports_a, exports_b, change) in [
@@ -957,6 +958,7 @@ impl SymtypesCorpus {
                 .filter(|&name| matches(maybe_filter, name) && !exports_b.contains_key(name))
                 .collect::<Vec<_>>();
             changed.sort();
+            is_equal &= changed.is_empty();
             for name in changed {
                 writeln!(writer, "Export '{}' has been {}", name, change).map_io_err(err_desc)?;
             }
@@ -1005,6 +1007,7 @@ impl SymtypesCorpus {
         let mut changes = changes.into_iter().collect::<Vec<_>>();
         changes.iter_mut().for_each(|(_, exports)| exports.sort());
         changes.sort();
+        is_equal &= changes.is_empty();
 
         let mut add_separator = false;
         for ((name, tokens, other_tokens), exports) in changes {
@@ -1032,7 +1035,7 @@ impl SymtypesCorpus {
 
         writer.flush().map_io_err(err_desc)?;
 
-        Ok(())
+        Ok(is_equal)
     }
 }
 

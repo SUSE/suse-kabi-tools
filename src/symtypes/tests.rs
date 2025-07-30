@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
-use crate::{assert_ok, assert_parse_err, bytes};
+use crate::{assert_ok, assert_ok_eq, assert_parse_err, bytes};
 
 #[test]
 fn read_basic_single() {
@@ -431,7 +431,7 @@ fn compare_identical() {
     assert!(warnings.is_empty());
     let mut out = Vec::new();
     let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
-    assert_ok!(result);
+    assert_ok_eq!(result, true);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
@@ -468,7 +468,7 @@ fn compare_added_export() {
     assert!(warnings.is_empty());
     let mut out = Vec::new();
     let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
-    assert_ok!(result);
+    assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
@@ -506,7 +506,7 @@ fn compare_removed_export() {
     assert!(warnings.is_empty());
     let mut out = Vec::new();
     let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
-    assert_ok!(result);
+    assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
@@ -544,7 +544,7 @@ fn compare_changed_type() {
     assert!(warnings.is_empty());
     let mut out = Vec::new();
     let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
-    assert_ok!(result);
+    assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
@@ -591,7 +591,7 @@ fn compare_changed_nested_type() {
     assert!(warnings.is_empty());
     let mut out = Vec::new();
     let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
-    assert_ok!(result);
+    assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
