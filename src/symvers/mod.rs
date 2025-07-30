@@ -188,9 +188,7 @@ impl SymversCorpus {
                     }
                     None => false,
                 };
-            if !tolerated {
-                *is_equal = false;
-            }
+            *is_equal &= tolerated;
             tolerated
         }
 

@@ -33,7 +33,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
 );
 
 /// Handles the `compare` command which shows differences between two symvers files.
-fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<bool, Error> {
+fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<ExitCode, Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
     let mut maybe_rules_path = None;
@@ -59,7 +59,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", COMPARE_USAGE_MSG);
-                return Ok(true);
+                return Ok(ExitCode::SUCCESS);
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -133,7 +133,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         None => None,
     };
 
-    let changed = {
+    let is_equal = {
         let _timing = Timing::new(do_timing, "Comparison");
 
         symvers
@@ -146,7 +146,11 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             })?
     };
 
-    Ok(changed)
+    if is_equal {
+        Ok(ExitCode::SUCCESS)
+    } else {
+        Ok(ExitCode::FAILURE)
+    }
 }
 
 fn main() -> ExitCode {
@@ -171,13 +175,7 @@ fn main() -> ExitCode {
 
     // Process the specified command.
     let result = match command.as_str() {
-        "compare" => do_compare(do_timing, args).map(|is_equal| {
-            if is_equal {
-                ExitCode::SUCCESS
-            } else {
-                ExitCode::FAILURE
-            }
-        }),
+        "compare" => do_compare(do_timing, args),
         _ => Err(Error::new_cli(format!(
             "Unrecognized command '{}'",
             command
