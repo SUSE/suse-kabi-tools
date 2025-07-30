@@ -19,7 +19,7 @@ fn compare_cmd_identical() {
         "tests/ksymvers/compare_cmd/a.symvers",
         "tests/ksymvers/compare_cmd/a.symvers",
     ]);
-    assert!(result.status.success());
+    assert_eq!(result.status.code().unwrap(), 0);
     assert_eq!(result.stdout, "");
     assert_eq!(result.stderr, "");
 }
@@ -27,13 +27,13 @@ fn compare_cmd_identical() {
 #[test]
 fn compare_cmd_changed() {
     // Check that the comparison of two different symvers files shows relevant differences and
-    // results in the command exiting with a non-zero status.
+    // results in the command exiting with a status of 1.
     let result = ksymvers_run([
         "compare",
         "tests/ksymvers/compare_cmd/a.symvers",
         "tests/ksymvers/compare_cmd/b.symvers",
     ]);
-    assert!(!result.status.success());
+    assert_eq!(result.status.code().unwrap(), 1);
     assert_eq!(
         result.stdout,
         concat!(

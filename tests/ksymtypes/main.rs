@@ -25,7 +25,7 @@ fn consolidate_cmd() {
         &output_path.as_ref(),
         "tests/ksymtypes/consolidate_cmd".as_ref(),
     ]);
-    assert!(result.status.success());
+    assert_eq!(result.status.code().unwrap(), 0);
     assert_eq!(result.stdout, "");
     assert_eq!(result.stderr, "");
     let output_data = fs::read_to_string(output_path).expect("Unable to read the output file");
@@ -46,7 +46,7 @@ fn consolidate_cmd() {
 fn consolidate_cmd_missing_output() {
     // Check that the consolidate command fails if no --output is specified.
     let result = ksymtypes_run(["consolidate", "tests/ksymtypes/consolidate_cmd"]);
-    assert!(!result.status.success());
+    assert_eq!(result.status.code().unwrap(), 2);
     assert_eq!(result.stdout, "");
     assert_eq!(result.stderr, "The consolidate output is missing\n");
 }
@@ -64,7 +64,7 @@ fn consolidate_cmd_invalid_input() {
         &output_path.as_ref(),
         "tests/missing".as_ref(),
     ]);
-    assert!(!result.status.success());
+    assert_eq!(result.status.code().unwrap(), 2);
     assert_eq!(result.stdout, "");
     assert_inexact!(
         result.stderr,
@@ -83,7 +83,7 @@ fn split_cmd() {
         &output_path.as_ref(),
         "tests/ksymtypes/split_cmd/consolidated.symtypes".as_ref(),
     ]);
-    assert!(result.status.success());
+    assert_eq!(result.status.code().unwrap(), 0);
     assert_eq!(result.stdout, "");
     assert_eq!(result.stderr, "");
     assert_eq!(
@@ -106,20 +106,21 @@ fn split_cmd() {
 fn split_cmd_missing_output() {
     // Check that the split command fails if no --output is specified.
     let result = ksymtypes_run(["split", "tests/ksymtypes/split_cmd/consolidated.symtypes"]);
-    assert!(!result.status.success());
+    assert_eq!(result.status.code().unwrap(), 2);
     assert_eq!(result.stdout, "");
     assert_eq!(result.stderr, "The split output is missing\n");
 }
 
 #[test]
 fn compare_cmd() {
-    // Check that the compare command trivially works.
+    // Check that the comparison of two different symtypes files shows relevant differences and
+    // results in the command exiting with a status of 1.
     let result = ksymtypes_run([
         "compare",
         "tests/ksymtypes/compare_cmd/a.symtypes",
         "tests/ksymtypes/compare_cmd/b.symtypes",
     ]);
-    assert!(!result.status.success());
+    assert_eq!(result.status.code().unwrap(), 1);
     assert_eq!(
         result.stdout,
         concat!(
@@ -146,7 +147,7 @@ fn compare_cmd_dash_dash() {
         "tests/ksymtypes/compare_cmd/a.symtypes",
         "tests/ksymtypes/compare_cmd/b.symtypes",
     ]);
-    assert!(!result.status.success());
+    assert_eq!(result.status.code().unwrap(), 1);
     assert_eq!(
         result.stdout,
         concat!(

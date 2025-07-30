@@ -106,7 +106,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", CONSOLIDATE_USAGE_MSG);
-                return Ok(ExitCode::SUCCESS);
+                return Ok(ExitCode::from(0));
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -160,7 +160,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(
         })?;
     }
 
-    Ok(ExitCode::SUCCESS)
+    Ok(ExitCode::from(0))
 }
 
 /// Handles the `split` command which splits a consolidated symtypes file into individual files.
@@ -184,7 +184,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", SPLIT_USAGE_MSG);
-                return Ok(ExitCode::SUCCESS);
+                return Ok(ExitCode::from(0));
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -238,7 +238,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
         })?;
     }
 
-    Ok(ExitCode::SUCCESS)
+    Ok(ExitCode::from(0))
 }
 
 /// Handles the `compare` command which shows differences between two symtypes corpuses.
@@ -264,7 +264,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", COMPARE_USAGE_MSG);
-                return Ok(ExitCode::SUCCESS);
+                return Ok(ExitCode::from(0));
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -358,11 +358,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             })?
     };
 
-    if is_equal {
-        Ok(ExitCode::SUCCESS)
-    } else {
-        Ok(ExitCode::FAILURE)
-    }
+    Ok(ExitCode::from(if is_equal { 0 } else { 1 }))
 }
 
 fn main() -> ExitCode {
@@ -378,10 +374,10 @@ fn main() -> ExitCode {
     );
     let command = match result {
         Ok(Some(command)) => command,
-        Ok(None) => return ExitCode::SUCCESS,
+        Ok(None) => return ExitCode::from(0),
         Err(err) => {
             eprintln!("{}", err);
-            return ExitCode::FAILURE;
+            return ExitCode::from(2);
         }
     };
 
@@ -400,7 +396,7 @@ fn main() -> ExitCode {
         Ok(code) => code,
         Err(err) => {
             eprintln!("{}", err);
-            ExitCode::FAILURE
+            ExitCode::from(2)
         }
     }
 }

@@ -59,7 +59,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             }
             if arg == "-h" || arg == "--help" {
                 print!("{}", COMPARE_USAGE_MSG);
-                return Ok(ExitCode::SUCCESS);
+                return Ok(ExitCode::from(0));
             }
             if arg == "--" {
                 past_dash_dash = true;
@@ -146,11 +146,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             })?
     };
 
-    if is_equal {
-        Ok(ExitCode::SUCCESS)
-    } else {
-        Ok(ExitCode::FAILURE)
-    }
+    Ok(ExitCode::from(if is_equal { 0 } else { 1 }))
 }
 
 fn main() -> ExitCode {
@@ -166,10 +162,10 @@ fn main() -> ExitCode {
     );
     let command = match result {
         Ok(Some(command)) => command,
-        Ok(None) => return ExitCode::SUCCESS,
+        Ok(None) => return ExitCode::from(0),
         Err(err) => {
             eprintln!("{}", err);
-            return ExitCode::FAILURE;
+            return ExitCode::from(2);
         }
     };
 
@@ -186,7 +182,7 @@ fn main() -> ExitCode {
         Ok(code) => code,
         Err(err) => {
             eprintln!("{}", err);
-            ExitCode::FAILURE
+            ExitCode::from(2)
         }
     }
 }
