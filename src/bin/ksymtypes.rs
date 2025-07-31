@@ -4,7 +4,7 @@
 use std::process::ExitCode;
 use std::{env, io};
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
-use suse_kabi_tools::symtypes::SymtypesCorpus;
+use suse_kabi_tools::symtypes::{CompareFormat, SymtypesCorpus};
 use suse_kabi_tools::text::Filter;
 use suse_kabi_tools::{Error, Timing, debug};
 
@@ -51,6 +51,9 @@ const COMPARE_USAGE_MSG: &str = concat!(
     "  -h, --help                    display this help and exit\n",
     "  -j NUM, --jobs=NUM            use NUM workers to perform the operation\n",
     "  --filter-symbol-list=FILE     consider only symbols matching patterns in FILE\n",
+    "  -f TYPE[:FILE], --format=TYPE[:FILE]\n",
+    "                                change the output format to TYPE, or write the\n",
+    "                                TYPE-formatted output to FILE\n",
 );
 
 /// Handles the `-j`/`--jobs` option which specifies the number of workers to perform a given
@@ -247,6 +250,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let mut args = args.into_iter();
     let mut num_workers = 1;
     let mut maybe_symbol_filter_path = None;
+    let mut writers_conf = vec![(CompareFormat::Pretty, "-".to_string())];
     let mut past_dash_dash = false;
     let mut maybe_path = None;
     let mut maybe_path2 = None;
@@ -260,6 +264,15 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             if let Some(value) = handle_value_option(&arg, &mut args, None, "--filter-symbol-list")?
             {
                 maybe_symbol_filter_path = Some(value);
+                continue;
+            }
+            if let Some(value) = handle_value_option(&arg, &mut args, "-f", "--format")? {
+                match value.split_once(':') {
+                    Some((format, path)) => {
+                        writers_conf.push((CompareFormat::try_from_str(format)?, path.to_string()))
+                    }
+                    None => writers_conf[0].0 = CompareFormat::try_from_str(&value)?,
+                }
                 continue;
             }
             if arg == "-h" || arg == "--help" {
@@ -349,7 +362,12 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, "Comparison");
 
         symtypes
-            .compare_with(&symtypes2, maybe_symbol_filter.as_ref(), "-", num_workers)
+            .compare_with(
+                &symtypes2,
+                maybe_symbol_filter.as_ref(),
+                &writers_conf[..],
+                num_workers,
+            )
             .map_err(|err| {
                 Error::new_context(
                     format!("Failed to compare symtypes from '{}' and '{}'", path, path2),

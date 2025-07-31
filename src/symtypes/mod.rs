@@ -216,6 +216,29 @@ impl<'a> LoadContext<'a> {
     }
 }
 
+/// The format of the output from [`SymtypesCorpus::compare_with()`].
+#[derive(Clone, Copy)]
+pub enum CompareFormat {
+    Null,
+    Pretty,
+    Symbols,
+}
+
+impl CompareFormat {
+    /// Obtains a [`CompareFormat`] matching the given format type, specified as a string.
+    pub fn try_from_str(format: &str) -> Result<Self, Error> {
+        match format {
+            "null" => Ok(Self::Null),
+            "pretty" => Ok(Self::Pretty),
+            "symbols" => Ok(Self::Symbols),
+            _ => Err(Error::new_parse(format!(
+                "Unrecognized format '{}'",
+                format
+            ))),
+        }
+    }
+}
+
 impl Default for SymtypesCorpus {
     fn default() -> Self {
         Self::new()
@@ -918,15 +941,16 @@ impl SymtypesCorpus {
         &self,
         other_symtypes: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
-        path: P,
+        writers_conf: &[(CompareFormat, P)],
         num_workers: i32,
     ) -> Result<bool, Error> {
-        self.compare_with_buffer(
-            other_symtypes,
-            maybe_filter,
-            Writer::new_file(path)?,
-            num_workers,
-        )
+        // Materialize all writers.
+        let mut writers = Vec::new();
+        for (format, path) in writers_conf {
+            writers.push((*format, Writer::new_file(path)?));
+        }
+
+        self.compare_with_buffer(other_symtypes, maybe_filter, &mut writers[..], num_workers)
     }
 
     /// Compares the symbols in `self` and `other_symtypes` and writes a human-readable report about
@@ -935,7 +959,7 @@ impl SymtypesCorpus {
         &self,
         other_symtypes: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
-        mut writer: W,
+        writers: &mut [(CompareFormat, W)],
         num_workers: i32,
     ) -> Result<bool, Error> {
         fn matches(maybe_filter: Option<&Filter>, name: &str) -> bool {
@@ -960,7 +984,18 @@ impl SymtypesCorpus {
             changed.sort();
             is_equal &= changed.is_empty();
             for name in changed {
-                writeln!(writer, "Export '{}' has been {}", name, change).map_io_err(err_desc)?;
+                for (format, writer) in &mut *writers {
+                    match format {
+                        CompareFormat::Null => {}
+                        CompareFormat::Pretty => {
+                            writeln!(writer, "Export '{}' has been {}", name, change)
+                                .map_io_err(err_desc)?
+                        }
+                        CompareFormat::Symbols => {
+                            writeln!(writer, "{}", name).map_io_err(err_desc)?
+                        }
+                    }
+                }
             }
         }
 
@@ -1011,29 +1046,39 @@ impl SymtypesCorpus {
 
         let mut add_separator = false;
         for ((name, tokens, other_tokens), exports) in changes {
-            // Add an empty line to separate individual changes.
-            if add_separator {
-                writeln!(writer).map_io_err(err_desc)?;
-            } else {
-                add_separator = true;
-            }
+            for (format, writer) in &mut *writers {
+                match format {
+                    CompareFormat::Null => {}
+                    CompareFormat::Pretty => {
+                        // Add an empty line to separate individual changes.
+                        if add_separator {
+                            writeln!(writer).map_io_err(err_desc)?;
+                        }
 
-            writeln!(
-                writer,
-                "The following '{}' exports are different:",
-                exports.len()
-            )
-            .map_io_err(err_desc)?;
-            for export in exports {
-                writeln!(writer, " {}", export).map_io_err(err_desc)?;
-            }
-            writeln!(writer).map_io_err(err_desc)?;
+                        writeln!(
+                            writer,
+                            "The following '{}' exports are different:",
+                            exports.len()
+                        )
+                        .map_io_err(err_desc)?;
+                        for &export in &exports {
+                            writeln!(writer, " {}", export).map_io_err(err_desc)?;
+                        }
+                        writeln!(writer).map_io_err(err_desc)?;
 
-            writeln!(writer, "because of a changed '{}':", name).map_io_err(err_desc)?;
-            write_type_diff(tokens, other_tokens, writer.by_ref())?;
+                        writeln!(writer, "because of a changed '{}':", name)
+                            .map_io_err(err_desc)?;
+                        write_type_diff(tokens, other_tokens, writer.by_ref())?;
+                    }
+                    CompareFormat::Symbols => writeln!(writer, "{}", name).map_io_err(err_desc)?,
+                }
+            }
+            add_separator = true;
         }
 
-        writer.flush().map_io_err(err_desc)?;
+        for (_, writer) in &mut *writers {
+            writer.flush().map_io_err(err_desc)?;
+        }
 
         Ok(is_equal)
     }

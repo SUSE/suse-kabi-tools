@@ -429,8 +429,14 @@ fn compare_identical() {
     );
     assert_ok!(result);
     assert!(warnings.is_empty());
-    let mut out = Vec::new();
-    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, true);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -466,8 +472,14 @@ fn compare_added_export() {
     );
     assert_ok!(result);
     assert!(warnings.is_empty());
-    let mut out = Vec::new();
-    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -504,8 +516,14 @@ fn compare_removed_export() {
     );
     assert_ok!(result);
     assert!(warnings.is_empty());
-    let mut out = Vec::new();
-    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -542,8 +560,14 @@ fn compare_changed_type() {
     );
     assert_ok!(result);
     assert!(warnings.is_empty());
-    let mut out = Vec::new();
-    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),
@@ -589,8 +613,14 @@ fn compare_changed_nested_type() {
     );
     assert_ok!(result);
     assert!(warnings.is_empty());
-    let mut out = Vec::new();
-    let result = symtypes.compare_with_buffer(&symtypes2, None, &mut out, 1);
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
     assert_eq!(
         str::from_utf8(&out).unwrap(),

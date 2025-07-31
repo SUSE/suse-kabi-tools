@@ -86,6 +86,19 @@ Use \fINUM\fR workers to perform the operation simultaneously.
 .TP
 \fB\-\-filter\-symbol\-list\fR=\fIFILE\fR
 Consider only symbols that match the patterns in \fIFILE\fR.
+.TP
+\fB\-f\fR \fITYPE[:FILE]\fR, \fB\-\-format\fR=\fITYPE[:FILE]\fR
+Change the output format to \fITYPE\fR, or write the \fITYPE\fR-formatted output to \fIFILE\fR.
+.IP
+The \fITYPE\fR can be one of the following:
+.RS 14
+.IP \[bu] 2
+\fInull\fR \(en produces no output,
+.IP \[bu] 2
+\fIpretty\fR \(en produces human-readable output,
+.IP \[bu] 2
+\fIsymbols\fR \(en shows only the names of symbols that have changed.
+.RE
 .SH EXAMPLES
 Build the Linux kernel and obtain a reference symvers and consolidated symtypes corpus:
 .IP
