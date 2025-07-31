@@ -649,3 +649,93 @@ fn compare_changed_nested_type() {
         )
     );
 }
+
+#[test]
+fn compare_format_null() {
+    // Check that when using the null format, the comparison output is empty and only the return
+    // code indicates any changes.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "a/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut symtypes2 = SymtypesCorpus::new();
+    let result = symtypes2.load_buffer(
+        "b/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; int b ; }\n",
+            "bar int bar ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Null, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "", //
+        )
+    );
+}
+
+#[test]
+fn compare_format_symbols() {
+    // Check that when using the symbols format, the comparison output is in alphabetical order,
+    // and lists each symbol only once, even if it has multiple changes.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "a/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo , int )\n",
+            "baz int baz ( )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut symtypes2 = SymtypesCorpus::new();
+    let result = symtypes2.load_buffer(
+        "b/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; int b ; }\n",
+            "bar int bar ( s#foo , long )\n", //
+            "qux int qux ( )\n",              //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Symbols, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "bar\n", "baz\n", "qux\n", //
+        )
+    );
+}

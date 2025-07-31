@@ -432,3 +432,77 @@ fn compare_ignored_changes() {
         )
     );
 }
+
+#[test]
+fn compare_format_null() {
+    // Check that when using the null format, the comparison output is empty and only the return
+    // code indicates any changes.
+    let mut symvers = SymversCorpus::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        bytes!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut symvers2 = SymversCorpus::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        bytes!(
+            "0x90abcdef foo vmlinux EXPORT_SYMBOL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut writer = Writer::new_buffer();
+    let result =
+        symvers.compare_with_buffer(&symvers2, None, &mut [(CompareFormat::Null, &mut writer)]);
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "", //
+        )
+    );
+}
+
+#[test]
+fn compare_format_symbols() {
+    // Check that when using the symbols format, the comparison output is in alphabetical order,
+    // doesn't contain tolerated changes, and lists each symbol only once, even if it has multiple
+    // changes.
+    let mut symvers = SymversCorpus::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        bytes!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
+            "0x34567890 baz vmlinux EXPORT_SYMBOL_GPL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut symvers2 = SymversCorpus::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        bytes!(
+            "0x90abcdef foo vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x23456789 bar vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with_buffer(
+        &symvers2,
+        None,
+        &mut [(CompareFormat::Symbols, &mut writer)],
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "bar\n", "baz\n", "foo\n", //
+        )
+    );
+}
