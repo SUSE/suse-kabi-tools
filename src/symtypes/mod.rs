@@ -970,7 +970,7 @@ impl SymtypesCorpus {
         }
 
         let err_desc = "Failed to write a comparison result";
-        let mut is_equal = true;
+        let mut output_symbols = HashSet::<&str>::new();
 
         // Check for symbols in self but not in other_symtypes, and vice versa.
         for (exports_a, exports_b, change) in [
@@ -982,20 +982,17 @@ impl SymtypesCorpus {
                 .filter(|&name| matches(maybe_filter, name) && !exports_b.contains_key(name))
                 .collect::<Vec<_>>();
             changed.sort();
-            is_equal &= changed.is_empty();
             for name in changed {
                 for (format, writer) in &mut *writers {
                     match format {
-                        CompareFormat::Null => {}
+                        CompareFormat::Null | CompareFormat::Symbols => {}
                         CompareFormat::Pretty => {
                             writeln!(writer, "Export '{}' has been {}", name, change)
                                 .map_io_err(err_desc)?
                         }
-                        CompareFormat::Symbols => {
-                            writeln!(writer, "{}", name).map_io_err(err_desc)?
-                        }
                     }
                 }
+                output_symbols.insert(name);
             }
         }
 
@@ -1042,13 +1039,12 @@ impl SymtypesCorpus {
         let mut changes = changes.into_iter().collect::<Vec<_>>();
         changes.iter_mut().for_each(|(_, exports)| exports.sort());
         changes.sort();
-        is_equal &= changes.is_empty();
 
         let mut add_separator = false;
         for ((name, tokens, other_tokens), exports) in changes {
             for (format, writer) in &mut *writers {
                 match format {
-                    CompareFormat::Null => {}
+                    CompareFormat::Null | CompareFormat::Symbols => {}
                     CompareFormat::Pretty => {
                         // Add an empty line to separate individual changes.
                         if add_separator {
@@ -1070,17 +1066,31 @@ impl SymtypesCorpus {
                             .map_io_err(err_desc)?;
                         write_type_diff(tokens, other_tokens, writer.by_ref())?;
                     }
+                }
+            }
+            for export in exports {
+                output_symbols.insert(export);
+            }
+            add_separator = true;
+        }
+
+        // Format symbol lists.
+        let mut sorted_output_symbols = output_symbols.iter().collect::<Vec<_>>();
+        sorted_output_symbols.sort();
+        for name in &sorted_output_symbols {
+            for (format, writer) in &mut *writers {
+                match format {
+                    CompareFormat::Null | CompareFormat::Pretty => {}
                     CompareFormat::Symbols => writeln!(writer, "{}", name).map_io_err(err_desc)?,
                 }
             }
-            add_separator = true;
         }
 
         for (_, writer) in &mut *writers {
             writer.flush().map_io_err(err_desc)?;
         }
 
-        Ok(is_equal)
+        Ok(output_symbols.is_empty())
     }
 }
 

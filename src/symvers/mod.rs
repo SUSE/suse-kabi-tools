@@ -4,7 +4,7 @@
 use crate::rules::Rules;
 use crate::text::{Writer, read_lines};
 use crate::{Error, MapIOErr, PathFile, debug};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::prelude::*;
 use std::path::Path;
 
@@ -173,13 +173,13 @@ impl SymversCorpus {
         writers: &mut [(CompareFormat, W)],
     ) -> Result<bool, Error> {
         // A helper function to handle common logic related to reporting a change. It determines if
-        // the change should be tolerated and updates the is_equal result.
-        fn process_change(
+        // the change should be tolerated and updates the `output_symbols` set.
+        fn process_change<'a>(
             maybe_rules: Option<&Rules>,
-            name: &str,
+            name: &'a str,
             info: &ExportInfo,
             always_tolerated: bool,
-            is_equal: &mut bool,
+            output_symbols: &mut HashSet<&'a str>,
         ) -> bool {
             let tolerated = always_tolerated
                 || match maybe_rules {
@@ -188,7 +188,9 @@ impl SymversCorpus {
                     }
                     None => false,
                 };
-            *is_equal &= tolerated;
+            if !tolerated {
+                output_symbols.insert(name);
+            }
             tolerated
         }
 
@@ -203,7 +205,7 @@ impl SymversCorpus {
         names.sort();
         let mut other_names = other_symvers.exports.keys().collect::<Vec<_>>();
         other_names.sort();
-        let mut is_equal = true;
+        let mut output_symbols = HashSet::<&str>::new();
 
         // Check for symbols in self but not in other_symvers, and vice versa.
         //
@@ -230,11 +232,16 @@ impl SymversCorpus {
             for &name in names_a {
                 if !exports_b.contains_key(name) {
                     let info = exports_a.get(name).unwrap();
-                    let tolerated =
-                        process_change(maybe_rules, name, info, always_tolerated, &mut is_equal);
+                    let tolerated = process_change(
+                        maybe_rules,
+                        name,
+                        info,
+                        always_tolerated,
+                        &mut output_symbols,
+                    );
                     for (format, writer) in &mut *writers {
                         match format {
-                            CompareFormat::Null => {}
+                            CompareFormat::Null | CompareFormat::Symbols => {}
                             CompareFormat::Pretty => writeln!(
                                 writer,
                                 "Export '{}' has been {}{}",
@@ -243,11 +250,6 @@ impl SymversCorpus {
                                 tolerated_suffix(tolerated)
                             )
                             .map_io_err(err_desc)?,
-                            CompareFormat::Symbols => {
-                                if !tolerated {
-                                    writeln!(writer, "{}", name).map_io_err(err_desc)?
-                                }
-                            }
                         }
                     }
                 }
@@ -259,10 +261,11 @@ impl SymversCorpus {
             if let Some(other_info) = other_symvers.exports.get(name) {
                 let info = self.exports.get(name).unwrap();
                 if info.crc != other_info.crc {
-                    let tolerated = process_change(maybe_rules, name, info, false, &mut is_equal);
+                    let tolerated =
+                        process_change(maybe_rules, name, info, false, &mut output_symbols);
                     for (format, writer) in &mut *writers {
                         match format {
-                            CompareFormat::Null => {}
+                            CompareFormat::Null | CompareFormat::Symbols => {}
                             CompareFormat::Pretty => writeln!(
                                 writer,
                                 "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'{}",
@@ -272,11 +275,6 @@ impl SymversCorpus {
                                 tolerated_suffix(tolerated)
                             )
                             .map_io_err(err_desc)?,
-                            CompareFormat::Symbols => {
-                                if !tolerated {
-                                    writeln!(writer, "{}", name).map_io_err(err_desc)?
-                                }
-                            }
                         }
                     }
                 }
@@ -286,11 +284,11 @@ impl SymversCorpus {
                         name,
                         info,
                         info.is_gpl_only && !other_info.is_gpl_only,
-                        &mut is_equal,
+                        &mut output_symbols,
                     );
                     for (format, writer) in &mut *writers {
                         match format {
-                            CompareFormat::Null => {}
+                            CompareFormat::Null | CompareFormat::Symbols => {}
                             CompareFormat::Pretty => writeln!(
                                 writer,
                                 "Export '{}' changed type from '{}' to '{}'{}",
@@ -300,13 +298,20 @@ impl SymversCorpus {
                                 tolerated_suffix(tolerated)
                             )
                             .map_io_err(err_desc)?,
-                            CompareFormat::Symbols => {
-                                if !tolerated {
-                                    writeln!(writer, "{}", name).map_io_err(err_desc)?
-                                }
-                            }
                         }
                     }
+                }
+            }
+        }
+
+        // Format symbol lists.
+        let mut sorted_output_symbols = output_symbols.iter().collect::<Vec<_>>();
+        sorted_output_symbols.sort();
+        for name in &sorted_output_symbols {
+            for (format, writer) in &mut *writers {
+                match format {
+                    CompareFormat::Null | CompareFormat::Pretty => {}
+                    CompareFormat::Symbols => writeln!(writer, "{}", name).map_io_err(err_desc)?,
                 }
             }
         }
@@ -315,7 +320,7 @@ impl SymversCorpus {
             writer.flush().map_io_err(err_desc)?;
         }
 
-        Ok(is_equal)
+        Ok(output_symbols.is_empty())
     }
 }
 
