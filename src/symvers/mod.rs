@@ -49,6 +49,12 @@ impl ExportInfo {
 /// A collection of export records.
 type Exports = HashMap<String, ExportInfo>;
 
+/// A representation of a kernel ABI, loaded from symvers files.
+#[derive(Debug, Default, PartialEq)]
+pub struct SymversCorpus {
+    exports: Exports,
+}
+
 /// The format of the output from [`SymversCorpus::compare_with()`].
 #[derive(Clone, Copy)]
 pub enum CompareFormat {
@@ -70,12 +76,6 @@ impl CompareFormat {
             ))),
         }
     }
-}
-
-/// A representation of a kernel ABI, loaded from symvers files.
-#[derive(Debug, Default, PartialEq)]
-pub struct SymversCorpus {
-    exports: Exports,
 }
 
 impl SymversCorpus {
