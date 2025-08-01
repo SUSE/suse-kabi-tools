@@ -981,8 +981,8 @@ impl SymtypesCorpus {
 
         // Check for symbols in self but not in other_symtypes, and vice versa.
         for (exports_a, exports_b, change) in [
-            (&self.exports, &other_symtypes.exports, "removed"),
             (&other_symtypes.exports, &self.exports, "added"),
+            (&self.exports, &other_symtypes.exports, "removed"),
         ] {
             let mut changed = exports_a
                 .keys()

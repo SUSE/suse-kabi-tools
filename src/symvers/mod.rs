@@ -247,20 +247,20 @@ impl SymversCorpus {
         // symvers, are always tolerated, so no rules come into play.
         for (names_a, exports_a, exports_b, change, always_tolerated, rules_tolerated_count) in [
             (
-                &names,
-                &self.exports,
-                &other_symvers.exports,
-                "removed",
-                false,
-                &mut rules_tolerated_removals,
-            ),
-            (
                 &other_names,
                 &other_symvers.exports,
                 &self.exports,
                 "added",
                 true,
                 &mut rules_tolerated_additions,
+            ),
+            (
+                &names,
+                &self.exports,
+                &other_symvers.exports,
+                "removed",
+                false,
+                &mut rules_tolerated_removals,
             ),
         ] {
             for &name in names_a {
