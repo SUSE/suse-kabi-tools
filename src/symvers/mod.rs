@@ -239,12 +239,13 @@ impl SymversCorpus {
         let mut other_names = other_symvers.exports.keys().collect::<Vec<_>>();
         other_names.sort();
 
-        // Check for symbols in self but not in other_symvers, and vice versa.
+        // Check for symbols in `self` but not in `other_symvers`, and vice versa.
         //
         // Note that this code and all other checks below use the original symvers to consult the
         // severity rules. That is, the original module and namespace values are matched against the
-        // rule patterns. A subtle detail is that added symbols, which lack a record in the original
-        // symvers, are always tolerated, so no rules come into play.
+        // rule patterns. An exception is added symbols, which lack a record in the original
+        // symvers. These are always implicitly tolerated but nonetheless get checked against the
+        // rules.
         for (names_a, exports_a, exports_b, change, always_tolerated, rules_tolerated_count) in [
             (
                 &other_names,

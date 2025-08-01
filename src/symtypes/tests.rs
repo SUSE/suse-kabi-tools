@@ -716,8 +716,8 @@ fn compare_format_symbols() {
         "b/test.symtypes",
         bytes!(
             "s#foo struct foo { int a ; int b ; }\n",
-            "bar int bar ( s#foo , long )\n", //
-            "qux int qux ( )\n",              //
+            "bar int bar ( s#foo , long )\n",
+            "qux int qux ( )\n", //
         ),
         &mut warnings,
     );

@@ -979,7 +979,7 @@ impl SymtypesCorpus {
         // the symbol was modified (true), or was added/removed (false).
         let mut output_symbols = HashMap::<&str, bool>::new();
 
-        // Check for symbols in self but not in other_symtypes, and vice versa.
+        // Check for symbols in `self` but not in `other_symtypes`, and vice versa.
         for (exports_a, exports_b, change) in [
             (&other_symtypes.exports, &self.exports, "added"),
             (&self.exports, &other_symtypes.exports, "removed"),
