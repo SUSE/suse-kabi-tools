@@ -48,9 +48,15 @@ The \fITYPE\fR can be one of the following:
 .IP \[bu] 2
 \fInull\fR \(en produces no output,
 .IP \[bu] 2
-\fIpretty\fR \(en produces human-readable output,
+\fIpretty\fR \(en produces human-readable output in detailed form,
 .IP \[bu] 2
-\fIsymbols\fR \(en shows only the names of symbols that have changed.
+\fIshort\fR \(en produces human-readable output in compact form,
+.IP \[bu] 2
+\fIsymbols\fR \(en shows only the names of exported symbols that have been added, removed, or
+modified,
+.IP \[bu] 2
+\fImod-symbols\fR \(en shows only the names of exported symbols that have been modified; any
+additions or removals are omitted.
 .RE
 .SH EXIT STATUS
 The exit status is 0 on success and 2 if an error occurs. The compare command returns 0 if there are
