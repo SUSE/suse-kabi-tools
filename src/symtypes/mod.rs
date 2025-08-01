@@ -217,11 +217,12 @@ impl<'a> LoadContext<'a> {
 }
 
 /// The format of the output from [`SymtypesCorpus::compare_with()`].
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum CompareFormat {
-    Null,
-    Pretty,
-    Symbols,
+    Null,       // No output.
+    Pretty,     // Verbose human-readable output.
+    Short,      // Compact human-readable output.
+    Symbols,    // A list of all added, removed, or modified symbols.
 }
 
 impl CompareFormat {
@@ -230,6 +231,7 @@ impl CompareFormat {
         match format {
             "null" => Ok(Self::Null),
             "pretty" => Ok(Self::Pretty),
+            "short" => Ok(Self::Short),
             "symbols" => Ok(Self::Symbols),
             _ => Err(Error::new_parse(format!(
                 "Unrecognized format '{}'",
@@ -983,13 +985,10 @@ impl SymtypesCorpus {
                 .collect::<Vec<_>>();
             changed.sort();
             for name in changed {
-                for (format, writer) in &mut *writers {
-                    match format {
-                        CompareFormat::Null | CompareFormat::Symbols => {}
-                        CompareFormat::Pretty => {
-                            writeln!(writer, "Export '{}' has been {}", name, change)
-                                .map_io_err(err_desc)?
-                        }
+                for &mut (format, ref mut writer) in &mut *writers {
+                    if format == CompareFormat::Pretty || format == CompareFormat::Short {
+                        writeln!(writer, "Export '{}' has been {}", name, change)
+                            .map_io_err(err_desc)?
                     }
                 }
                 output_symbols.insert(name);
@@ -1042,30 +1041,34 @@ impl SymtypesCorpus {
 
         let mut add_separator = false;
         for ((name, tokens, other_tokens), exports) in changes {
-            for (format, writer) in &mut *writers {
-                match format {
-                    CompareFormat::Null | CompareFormat::Symbols => {}
-                    CompareFormat::Pretty => {
-                        // Add an empty line to separate individual changes.
-                        if add_separator {
-                            writeln!(writer).map_io_err(err_desc)?;
-                        }
+            for &mut (format, ref mut writer) in &mut *writers {
+                if format == CompareFormat::Pretty || format == CompareFormat::Short {
+                    let is_short = format == CompareFormat::Short;
 
-                        writeln!(
-                            writer,
-                            "The following '{}' exports are different:",
-                            exports.len()
-                        )
-                        .map_io_err(err_desc)?;
-                        for &export in &exports {
-                            writeln!(writer, " {}", export).map_io_err(err_desc)?;
-                        }
+                    // Add an empty line to separate individual changes.
+                    if add_separator {
                         writeln!(writer).map_io_err(err_desc)?;
-
-                        writeln!(writer, "because of a changed '{}':", name)
-                            .map_io_err(err_desc)?;
-                        write_type_diff(tokens, other_tokens, writer.by_ref())?;
                     }
+
+                    // Output the affected exports, limit the list if the short format is selected.
+                    writeln!(
+                        writer,
+                        "The following '{}' exports are different:",
+                        exports.len()
+                    )
+                    .map_io_err(err_desc)?;
+                    let take_count = if is_short { 10 } else { exports.len() };
+                    for export in exports.iter().take(take_count) {
+                        writeln!(writer, " {}", export).map_io_err(err_desc)?;
+                    }
+                    if is_short && take_count < exports.len() {
+                        writeln!(writer, " <...>").map_io_err(err_desc)?;
+                    }
+                    writeln!(writer).map_io_err(err_desc)?;
+
+                    // Output the changed type.
+                    writeln!(writer, "because of a changed '{}':", name).map_io_err(err_desc)?;
+                    write_type_diff(tokens, other_tokens, writer.by_ref())?;
                 }
             }
             for export in exports {
@@ -1080,7 +1083,7 @@ impl SymtypesCorpus {
         for name in &sorted_output_symbols {
             for (format, writer) in &mut *writers {
                 match format {
-                    CompareFormat::Null | CompareFormat::Pretty => {}
+                    CompareFormat::Null | CompareFormat::Pretty | CompareFormat::Short => {}
                     CompareFormat::Symbols => writeln!(writer, "{}", name).map_io_err(err_desc)?,
                 }
             }
