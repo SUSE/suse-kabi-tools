@@ -4,7 +4,7 @@
 use crate::rules::Rules;
 use crate::text::{Writer, read_lines};
 use crate::{Error, MapIOErr, PathFile, debug};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io::prelude::*;
 use std::path::Path;
 
@@ -62,6 +62,7 @@ pub enum CompareFormat {
     Pretty,     // Verbose human-readable output.
     Short,      // Compact human-readable output.
     Symbols,    // A list of all added, removed, or modified symbols.
+    ModSymbols, // A list of all modified symbols only.
 }
 
 impl CompareFormat {
@@ -72,6 +73,7 @@ impl CompareFormat {
             "pretty" => Ok(Self::Pretty),
             "short" => Ok(Self::Short),
             "symbols" => Ok(Self::Symbols),
+            "mod-symbols" => Ok(Self::ModSymbols),
             _ => Err(Error::new_parse(format!(
                 "Unrecognized format '{}'",
                 format
@@ -187,8 +189,9 @@ impl SymversCorpus {
             maybe_rules: Option<&Rules>,
             name: &'a str,
             info: &ExportInfo,
+            modified: bool,
             always_tolerated: bool,
-            output_symbols: &mut HashSet<&'a str>,
+            output_symbols: &mut HashMap<&'a str, bool>,
         ) -> ChangeStatus {
             let mut status = ChangeStatus::Breaking;
             if let Some(rules) = maybe_rules {
@@ -200,7 +203,7 @@ impl SymversCorpus {
                 status = ChangeStatus::ImplicitlyTolerated;
             }
             if status == ChangeStatus::Breaking {
-                output_symbols.insert(name);
+                output_symbols.insert(name, modified);
             }
             status
         }
@@ -222,6 +225,10 @@ impl SymversCorpus {
 
         let err_desc = "Failed to write a comparison result";
 
+        // Track all changed symbols, mapping a symbol name to a boolean. The flag indicates whether
+        // the symbol was modified (true), or was added/removed (false).
+        let mut output_symbols = HashMap::<&str, bool>::new();
+
         // Record the number of changes tolerated by the explicit rules.
         let mut rules_tolerated_additions = 0;
         let mut rules_tolerated_removals = 0;
@@ -231,7 +238,6 @@ impl SymversCorpus {
         names.sort();
         let mut other_names = other_symvers.exports.keys().collect::<Vec<_>>();
         other_names.sort();
-        let mut output_symbols = HashSet::<&str>::new();
 
         // Check for symbols in self but not in other_symvers, and vice versa.
         //
@@ -264,6 +270,7 @@ impl SymversCorpus {
                         maybe_rules,
                         name,
                         info,
+                        false,
                         always_tolerated,
                         &mut output_symbols,
                     );
@@ -296,7 +303,7 @@ impl SymversCorpus {
 
                 if info.crc != other_info.crc {
                     let tolerated =
-                        process_change(maybe_rules, name, info, false, &mut output_symbols);
+                        process_change(maybe_rules, name, info, true, false, &mut output_symbols);
                     for &mut (format, ref mut writer) in &mut *writers {
                         if needs_pretty_print(format, tolerated) {
                             writeln!(
@@ -320,6 +327,7 @@ impl SymversCorpus {
                         maybe_rules,
                         name,
                         info,
+                        true,
                         info.is_gpl_only && !other_info.is_gpl_only,
                         &mut output_symbols,
                     );
@@ -362,13 +370,17 @@ impl SymversCorpus {
         }
 
         // Format symbol lists.
-        let mut sorted_output_symbols = output_symbols.iter().collect::<Vec<_>>();
+        let mut sorted_output_symbols = output_symbols
+            .iter()
+            .map(|(&k, &v)| (k, v))
+            .collect::<Vec<_>>();
         sorted_output_symbols.sort();
-        for name in &sorted_output_symbols {
-            for (format, writer) in &mut *writers {
-                match format {
-                    CompareFormat::Null | CompareFormat::Pretty | CompareFormat::Short => {}
-                    CompareFormat::Symbols => writeln!(writer, "{}", name).map_io_err(err_desc)?,
+        for (name, modified) in sorted_output_symbols {
+            for &mut (format, ref mut writer) in &mut *writers {
+                if format == CompareFormat::Symbols
+                    || (format == CompareFormat::ModSymbols && modified)
+                {
+                    writeln!(writer, "{}", name).map_io_err(err_desc)?;
                 }
             }
         }
