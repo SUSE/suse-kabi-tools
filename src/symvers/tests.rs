@@ -281,7 +281,7 @@ fn compare_added_export() {
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
-            "Export 'bar' has been added (tolerated)\n", //
+            "Export 'bar' has been added (implicitly tolerated)\n", //
         )
     );
 }
@@ -385,7 +385,7 @@ fn compare_changed_type() {
         str::from_utf8(&out).unwrap(),
         concat!(
             "Export 'bar' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'\n",
-            "Export 'baz' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (tolerated)\n", //
+            "Export 'baz' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (implicitly tolerated)\n", //
         )
     );
 }
@@ -428,7 +428,7 @@ fn compare_ignored_changes() {
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
-            "Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated)\n", //
+            "Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated by rules)\n", //
         )
     );
 }

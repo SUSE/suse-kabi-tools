@@ -56,11 +56,12 @@ pub struct SymversCorpus {
 }
 
 /// The format of the output from [`SymversCorpus::compare_with()`].
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum CompareFormat {
-    Null,
-    Pretty,
-    Symbols,
+    Null,       // No output.
+    Pretty,     // Verbose human-readable output.
+    Short,      // Compact human-readable output.
+    Symbols,    // A list of all added, removed, or modified symbols.
 }
 
 impl CompareFormat {
@@ -69,6 +70,7 @@ impl CompareFormat {
         match format {
             "null" => Ok(Self::Null),
             "pretty" => Ok(Self::Pretty),
+            "short" => Ok(Self::Short),
             "symbols" => Ok(Self::Symbols),
             _ => Err(Error::new_parse(format!(
                 "Unrecognized format '{}'",
@@ -172,6 +174,13 @@ impl SymversCorpus {
         maybe_rules: Option<&Rules>,
         writers: &mut [(CompareFormat, W)],
     ) -> Result<bool, Error> {
+        #[derive(Clone, Copy, Eq, PartialEq)]
+        enum ChangeStatus {
+            Breaking,
+            ImplicitlyTolerated,
+            RulesTolerated,
+        }
+
         // A helper function to handle common logic related to reporting a change. It determines if
         // the change should be tolerated and updates the `output_symbols` set.
         fn process_change<'a>(
@@ -180,26 +189,43 @@ impl SymversCorpus {
             info: &ExportInfo,
             always_tolerated: bool,
             output_symbols: &mut HashSet<&'a str>,
-        ) -> bool {
-            let tolerated = always_tolerated
-                || match maybe_rules {
-                    Some(rules) => {
-                        rules.is_tolerated(name, &info.module, info.namespace.as_deref())
-                    }
-                    None => false,
-                };
-            if !tolerated {
+        ) -> ChangeStatus {
+            let mut status = ChangeStatus::Breaking;
+            if let Some(rules) = maybe_rules {
+                if rules.is_tolerated(name, &info.module, info.namespace.as_deref()) {
+                    status = ChangeStatus::RulesTolerated;
+                }
+            }
+            if status == ChangeStatus::Breaking && always_tolerated {
+                status = ChangeStatus::ImplicitlyTolerated;
+            }
+            if status == ChangeStatus::Breaking {
                 output_symbols.insert(name);
             }
-            tolerated
+            status
         }
 
-        // A helper function to obtain the "(tolerated)" suffix string.
-        fn tolerated_suffix(tolerated: bool) -> &'static str {
-            if tolerated { " (tolerated)" } else { "" }
+        // A helper function to obtain the appropriate tolerated suffix string.
+        fn tolerated_suffix(tolerated: ChangeStatus) -> &'static str {
+            match tolerated {
+                ChangeStatus::Breaking => "",
+                ChangeStatus::ImplicitlyTolerated => " (implicitly tolerated)",
+                ChangeStatus::RulesTolerated => " (tolerated by rules)",
+            }
+        }
+
+        // A helper function to determine whether a specific change needs to be pretty-printed.
+        fn needs_pretty_print(format: CompareFormat, tolerated: ChangeStatus) -> bool {
+            format == CompareFormat::Pretty
+                || (format == CompareFormat::Short && tolerated != ChangeStatus::RulesTolerated)
         }
 
         let err_desc = "Failed to write a comparison result";
+
+        // Record the number of changes tolerated by the explicit rules.
+        let mut rules_tolerated_additions = 0;
+        let mut rules_tolerated_removals = 0;
+        let mut rules_tolerated_modifications = 0;
 
         let mut names = self.exports.keys().collect::<Vec<_>>();
         names.sort();
@@ -213,13 +239,14 @@ impl SymversCorpus {
         // severity rules. That is, the original module and namespace values are matched against the
         // rule patterns. A subtle detail is that added symbols, which lack a record in the original
         // symvers, are always tolerated, so no rules come into play.
-        for (names_a, exports_a, exports_b, change, always_tolerated) in [
+        for (names_a, exports_a, exports_b, change, always_tolerated, rules_tolerated_count) in [
             (
                 &names,
                 &self.exports,
                 &other_symvers.exports,
                 "removed",
                 false,
+                &mut rules_tolerated_removals,
             ),
             (
                 &other_names,
@@ -227,6 +254,7 @@ impl SymversCorpus {
                 &self.exports,
                 "added",
                 true,
+                &mut rules_tolerated_additions,
             ),
         ] {
             for &name in names_a {
@@ -239,18 +267,21 @@ impl SymversCorpus {
                         always_tolerated,
                         &mut output_symbols,
                     );
-                    for (format, writer) in &mut *writers {
-                        match format {
-                            CompareFormat::Null | CompareFormat::Symbols => {}
-                            CompareFormat::Pretty => writeln!(
+                    for &mut (format, ref mut writer) in &mut *writers {
+                        if needs_pretty_print(format, tolerated) {
+                            writeln!(
                                 writer,
                                 "Export '{}' has been {}{}",
                                 name,
                                 change,
                                 tolerated_suffix(tolerated)
                             )
-                            .map_io_err(err_desc)?,
+                            .map_io_err(err_desc)?;
                         }
+                    }
+
+                    if tolerated == ChangeStatus::RulesTolerated {
+                        *rules_tolerated_count += 1;
                     }
                 }
             }
@@ -260,13 +291,15 @@ impl SymversCorpus {
         for name in names {
             if let Some(other_info) = other_symvers.exports.get(name) {
                 let info = self.exports.get(name).unwrap();
+                let mut modified = false;
+                let mut rules_tolerated = true;
+
                 if info.crc != other_info.crc {
                     let tolerated =
                         process_change(maybe_rules, name, info, false, &mut output_symbols);
-                    for (format, writer) in &mut *writers {
-                        match format {
-                            CompareFormat::Null | CompareFormat::Symbols => {}
-                            CompareFormat::Pretty => writeln!(
+                    for &mut (format, ref mut writer) in &mut *writers {
+                        if needs_pretty_print(format, tolerated) {
+                            writeln!(
                                 writer,
                                 "Export '{}' changed CRC from '{:#010x}' to '{:#010x}'{}",
                                 name,
@@ -274,10 +307,14 @@ impl SymversCorpus {
                                 other_info.crc,
                                 tolerated_suffix(tolerated)
                             )
-                            .map_io_err(err_desc)?,
+                            .map_io_err(err_desc)?;
                         }
                     }
+
+                    modified = true;
+                    rules_tolerated &= tolerated == ChangeStatus::RulesTolerated;
                 }
+
                 if info.is_gpl_only != other_info.is_gpl_only {
                     let tolerated = process_change(
                         maybe_rules,
@@ -286,10 +323,9 @@ impl SymversCorpus {
                         info.is_gpl_only && !other_info.is_gpl_only,
                         &mut output_symbols,
                     );
-                    for (format, writer) in &mut *writers {
-                        match format {
-                            CompareFormat::Null | CompareFormat::Symbols => {}
-                            CompareFormat::Pretty => writeln!(
+                    for &mut (format, ref mut writer) in &mut *writers {
+                        if needs_pretty_print(format, tolerated) {
+                            writeln!(
                                 writer,
                                 "Export '{}' changed type from '{}' to '{}'{}",
                                 name,
@@ -297,10 +333,31 @@ impl SymversCorpus {
                                 other_info.type_as_str(),
                                 tolerated_suffix(tolerated)
                             )
-                            .map_io_err(err_desc)?,
+                            .map_io_err(err_desc)?;
                         }
                     }
+
+                    modified = true;
+                    rules_tolerated &= tolerated == ChangeStatus::RulesTolerated;
                 }
+
+                if modified && rules_tolerated {
+                    rules_tolerated_modifications += 1;
+                }
+            }
+        }
+
+        // Format the short summary about tolerated changes.
+        for &mut (format, ref mut writer) in &mut *writers {
+            if format == CompareFormat::Short {
+                writeln!(
+                    writer,
+                    "Changes tolerated by rules: '{}' additions, '{}' removals, '{}' modifications",
+                    rules_tolerated_additions,
+                    rules_tolerated_removals,
+                    rules_tolerated_modifications
+                )
+                .map_io_err(err_desc)?;
             }
         }
 
@@ -310,7 +367,7 @@ impl SymversCorpus {
         for name in &sorted_output_symbols {
             for (format, writer) in &mut *writers {
                 match format {
-                    CompareFormat::Null | CompareFormat::Pretty => {}
+                    CompareFormat::Null | CompareFormat::Pretty | CompareFormat::Short => {}
                     CompareFormat::Symbols => writeln!(writer, "{}", name).map_io_err(err_desc)?,
                 }
             }
