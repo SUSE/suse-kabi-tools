@@ -739,3 +739,146 @@ fn compare_format_symbols() {
         )
     );
 }
+
+#[test]
+fn compare_format_mod_symbols() {
+    // Check that when using the mod-symbols format, the comparison output lists only modified
+    // symbols and exludes any additions and removals.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "a/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo , int )\n",
+            "baz int baz ( )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut symtypes2 = SymtypesCorpus::new();
+    let result = symtypes2.load_buffer(
+        "b/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; int b ; }\n",
+            "bar int bar ( s#foo , long )\n",
+            "qux int qux ( )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::ModSymbols, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "bar\n" //
+        )
+    );
+}
+
+#[test]
+fn compare_format_short() {
+    // Check that when using the short format, the comparison output limits the list of different
+    // exports to 10.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "a/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo , int )\n",
+            "bar2 int bar2 ( s#foo , int )\n",
+            "bar3 int bar3 ( s#foo , int )\n",
+            "bar4 int bar4 ( s#foo , int )\n",
+            "bar5 int bar5 ( s#foo , int )\n",
+            "bar6 int bar6 ( s#foo , int )\n",
+            "bar7 int bar7 ( s#foo , int )\n",
+            "bar8 int bar8 ( s#foo , int )\n",
+            "bar9 int bar9 ( s#foo , int )\n",
+            "bar10 int bar10 ( s#foo , int )\n",
+            "bar11 int bar11 ( s#foo , int )\n",
+            "baz int baz ( )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut symtypes2 = SymtypesCorpus::new();
+    let result = symtypes2.load_buffer(
+        "b/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; int b ; }\n",
+            "bar int bar ( s#foo , long )\n",
+            "bar2 int bar2 ( s#foo , int )\n",
+            "bar3 int bar3 ( s#foo , int )\n",
+            "bar4 int bar4 ( s#foo , int )\n",
+            "bar5 int bar5 ( s#foo , int )\n",
+            "bar6 int bar6 ( s#foo , int )\n",
+            "bar7 int bar7 ( s#foo , int )\n",
+            "bar8 int bar8 ( s#foo , int )\n",
+            "bar9 int bar9 ( s#foo , int )\n",
+            "bar10 int bar10 ( s#foo , int )\n",
+            "bar11 int bar11 ( s#foo , int )\n",
+            "qux int qux ( )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Short, &mut writer)],
+        1,
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "Export 'qux' has been added\n",
+            "Export 'baz' has been removed\n",
+            "The following '1' exports are different:\n",
+            " bar\n",
+            "\n",
+            "because of a changed 'bar':\n",
+            "@@ -1,4 +1,4 @@\n",
+            " int bar (\n",
+            " \ts#foo,\n",
+            "-\tint\n",
+            "+\tlong\n",
+            " )\n",
+            "\n",
+            "The following '11' exports are different:\n",
+            " bar\n",
+            " bar10\n",
+            " bar11\n",
+            " bar2\n",
+            " bar3\n",
+            " bar4\n",
+            " bar5\n",
+            " bar6\n",
+            " bar7\n",
+            " bar8\n",
+            " <...>\n",
+            "\n",
+            "because of a changed 's#foo':\n",
+            "@@ -1,3 +1,4 @@\n",
+            " struct foo {\n",
+            " \tint a;\n",
+            "+\tint b;\n",
+            " }\n", //
+        )
+    );
+}

@@ -506,3 +506,126 @@ fn compare_format_symbols() {
         )
     );
 }
+
+#[test]
+fn compare_format_mod_symbols() {
+    // Check that when using the mod-symbols format, the comparison output lists only modified
+    // symbols and exludes any additions and removals.
+    let mut symvers = SymversCorpus::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        bytes!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
+            "0x34567890 baz vmlinux EXPORT_SYMBOL_GPL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut symvers2 = SymversCorpus::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        bytes!(
+            "0x90abcdef foo vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x23456789 bar vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with_buffer(
+        &symvers2,
+        None,
+        &mut [(CompareFormat::ModSymbols, &mut writer)],
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "bar\n", "foo\n", //
+        )
+    );
+}
+
+#[test]
+fn compare_format_short() {
+    // Check that when using the short format, the comparison output details all breaking and
+    // implicitly-tolerated changes, followed by a summary of changes tolerated by the rules.
+    //
+    // Cases:
+    // aaa: Added -> separately reported as implicitly tolerated.
+    // bbb: Removed -> reported separately.
+    // ccc: Changes its CRC and type from regular to GPL -> reported twice separately.
+    // ddd: Changes its type from regular to GPL -> reported separately.
+    // eee: Changes its type from GPL to regular -> reported separately as implicitly tolerated.
+    //
+    // .. and the same tests but with the symbols matching the rules:
+    // fff: Added -> included in the tolerated-by-rules summary.
+    // ggg: Removed -> included in the tolerated-by-rules summary.
+    // hhh: Changes its CRC and type from regular to GPL -> included once in the tolerated-by-rules
+    //      summary.
+    // iii: Changes its type from regular to GPL -> included in the tolerated-by-rules summary.
+    // jjj: Changes its type from GPL to regular -> included in the tolerated-by-rules summary.
+    let mut symvers = SymversCorpus::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        bytes!(
+            "0x12345678 bbb vmlinux EXPORT_SYMBOL\n",
+            "0x12345678 ccc vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 ddd vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 eee vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x12345678 ggg vmlinux EXPORT_SYMBOL\n",
+            "0x12345678 hhh vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 iii vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 jjj vmlinux EXPORT_SYMBOL_GPL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut symvers2 = SymversCorpus::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        bytes!(
+            "0x12345678 aaa vmlinux EXPORT_SYMBOL\n",
+            "0x90abcdef ccc vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x23456789 ddd vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x23456789 eee vmlinux EXPORT_SYMBOL\n",
+            "0x12345678 fff vmlinux EXPORT_SYMBOL\n",
+            "0x90abcdef hhh vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x23456789 iii vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x23456789 jjj vmlinux EXPORT_SYMBOL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "fff PASS\n",
+            "ggg PASS\n",
+            "hhh PASS\n",
+            "iii PASS\n",
+            "jjj PASS\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with_buffer(
+        &symvers2,
+        Some(&rules),
+        &mut [(CompareFormat::Short, &mut writer)],
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "Export 'aaa' has been added (implicitly tolerated)\n",
+            "Export 'bbb' has been removed\n",
+            "Export 'ccc' changed CRC from '0x12345678' to '0x90abcdef'\n",
+            "Export 'ccc' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'\n",
+            "Export 'ddd' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'\n",
+            "Export 'eee' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (implicitly tolerated)\n",
+            "Changes tolerated by rules: '1' additions, '1' removals, '3' modifications\n", //
+        )
+    );
+}
