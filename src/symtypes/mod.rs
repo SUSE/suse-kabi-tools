@@ -223,6 +223,7 @@ pub enum CompareFormat {
     Pretty,     // Verbose human-readable output.
     Short,      // Compact human-readable output.
     Symbols,    // A list of all added, removed, or modified symbols.
+    ModSymbols, // A list of all modified symbols only.
 }
 
 impl CompareFormat {
@@ -233,6 +234,7 @@ impl CompareFormat {
             "pretty" => Ok(Self::Pretty),
             "short" => Ok(Self::Short),
             "symbols" => Ok(Self::Symbols),
+            "mod-symbols" => Ok(Self::ModSymbols),
             _ => Err(Error::new_parse(format!(
                 "Unrecognized format '{}'",
                 format
@@ -972,7 +974,10 @@ impl SymtypesCorpus {
         }
 
         let err_desc = "Failed to write a comparison result";
-        let mut output_symbols = HashSet::<&str>::new();
+
+        // Track all changed symbols, mapping a symbol name to a boolean. The flag indicates whether
+        // the symbol was modified (true), or was added/removed (false).
+        let mut output_symbols = HashMap::<&str, bool>::new();
 
         // Check for symbols in self but not in other_symtypes, and vice versa.
         for (exports_a, exports_b, change) in [
@@ -991,7 +996,8 @@ impl SymtypesCorpus {
                             .map_io_err(err_desc)?
                     }
                 }
-                output_symbols.insert(name);
+
+                output_symbols.insert(name, false);
             }
         }
 
@@ -1072,19 +1078,23 @@ impl SymtypesCorpus {
                 }
             }
             for export in exports {
-                output_symbols.insert(export);
+                output_symbols.insert(export, true);
             }
             add_separator = true;
         }
 
         // Format symbol lists.
-        let mut sorted_output_symbols = output_symbols.iter().collect::<Vec<_>>();
+        let mut sorted_output_symbols = output_symbols
+            .iter()
+            .map(|(&k, &v)| (k, v))
+            .collect::<Vec<_>>();
         sorted_output_symbols.sort();
-        for name in &sorted_output_symbols {
-            for (format, writer) in &mut *writers {
-                match format {
-                    CompareFormat::Null | CompareFormat::Pretty | CompareFormat::Short => {}
-                    CompareFormat::Symbols => writeln!(writer, "{}", name).map_io_err(err_desc)?,
+        for (name, modified) in sorted_output_symbols {
+            for &mut (format, ref mut writer) in &mut *writers {
+                if format == CompareFormat::Symbols
+                    || (format == CompareFormat::ModSymbols && modified)
+                {
+                    writeln!(writer, "{}", name).map_io_err(err_desc)?;
                 }
             }
         }
