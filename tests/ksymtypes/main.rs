@@ -128,11 +128,9 @@ fn compare_cmd() {
             " foo\n",
             "\n",
             "because of a changed 'foo':\n",
-            "@@ -1,3 +1,3 @@\n",
-            " void foo (\n",
-            "-\tint a\n",
-            "+\tlong a\n",
-            " )\n", //
+            "@@ -1,1 +1,1 @@\n",
+            "-void foo ( int a )\n",
+            "+void foo ( long a )\n", //
         )
     );
     assert_eq!(result.stderr, "");
@@ -155,11 +153,9 @@ fn compare_cmd_dash_dash() {
             " foo\n",
             "\n",
             "because of a changed 'foo':\n",
-            "@@ -1,3 +1,3 @@\n",
-            " void foo (\n",
-            "-\tint a\n",
-            "+\tlong a\n",
-            " )\n", //
+            "@@ -1,1 +1,1 @@\n",
+            "-void foo ( int a )\n",
+            "+void foo ( long a )\n", //
         )
     );
     assert_eq!(result.stderr, "");

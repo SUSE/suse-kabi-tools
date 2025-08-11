@@ -1074,7 +1074,7 @@ impl SymtypesCorpus {
 
                     // Output the changed type.
                     writeln!(writer, "because of a changed '{}':", name).map_io_err(err_desc)?;
-                    write_type_diff(tokens, other_tokens, writer.by_ref())?;
+                    write_type_diff(name, tokens, other_tokens, writer.by_ref())?;
                 }
             }
             for export in exports {
@@ -1233,16 +1233,16 @@ fn parse_type_record(
 
 /// Processes tokens describing a type and produces its pretty-formatted version as a [`Vec`] of
 /// [`String`] lines.
-fn pretty_format_type(tokens: &Tokens) -> Vec<String> {
+fn pretty_format_type(type_name: &str, tokens: &Tokens) -> Vec<String> {
     // Iterate over all tokens and produce the formatted output.
     let mut res = Vec::new();
     let mut indent: usize = 0;
+    let comma_wraps = type_name.starts_with("e#");
 
     let mut line = String::new();
     for token in tokens {
-        // Handle the closing bracket and parenthesis early, they end any prior line and reduce
-        // indentation.
-        if token.as_str() == "}" || token.as_str() == ")" {
+        // Handle the closing bracket early, it ends any prior line and reduces indentation.
+        if token.as_str() == "}" {
             if !line.is_empty() {
                 res.push(line);
             }
@@ -1260,30 +1260,30 @@ fn pretty_format_type(tokens: &Tokens) -> Vec<String> {
 
         // Check if the token is special and append it appropriately to the output.
         match token.as_str() {
-            "{" | "(" => {
+            "{" => {
                 if !is_first {
                     line.push(' ');
                 }
                 line.push_str(token.as_str());
                 res.push(line);
                 indent = indent.saturating_add(1);
-
                 line = String::new();
             }
-            "}" | ")" => {
+            "}" => {
                 line.push_str(token.as_str());
             }
             ";" => {
                 line.push(';');
                 res.push(line);
-
+                line = String::new();
+            }
+            "," if comma_wraps => {
+                line.push(',');
+                res.push(line);
                 line = String::new();
             }
             "," => {
                 line.push(',');
-                res.push(line);
-
-                line = String::new();
             }
             _ => {
                 if !is_first {
@@ -1291,7 +1291,7 @@ fn pretty_format_type(tokens: &Tokens) -> Vec<String> {
                 }
                 line.push_str(token.as_str());
             }
-        };
+        }
     }
 
     if !line.is_empty() {
@@ -1304,11 +1304,12 @@ fn pretty_format_type(tokens: &Tokens) -> Vec<String> {
 /// Formats a unified diff between two supposedly different types and writes it to the provided
 /// output stream.
 fn write_type_diff<W: Write>(
+    type_name: &str,
     tokens: &Tokens,
     other_tokens: &Tokens,
     writer: W,
 ) -> Result<(), Error> {
-    let pretty = pretty_format_type(tokens);
-    let other_pretty = pretty_format_type(other_tokens);
+    let pretty = pretty_format_type(type_name, tokens);
+    let other_pretty = pretty_format_type(type_name, other_tokens);
     unified_diff(&pretty, &other_pretty, writer)
 }
