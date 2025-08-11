@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::text::{DirectoryWriter, Filter, WriteGenerator, Writer, read_lines, unified_diff};
-use crate::{Error, MapIOErr, PathFile, Size, debug, hash};
+use crate::{Error, MapIOErr, PathFile, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::prelude::*;
@@ -10,7 +10,7 @@ use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
-use std::{array, fs, mem, thread};
+use std::{fs, mem, thread};
 
 #[cfg(test)]
 mod tests;
@@ -62,13 +62,16 @@ type TypeVariants = Vec<Arc<Tokens>>;
 /// A mapping from a type name to all its known variants.
 type Types = HashMap<String, TypeVariants>;
 
-/// An array of `Types`, indexed by `type_bucket_idx(type_name)`. This allows each bucket to be
+/// The size of the `TypeBuckets` collection.
+const TYPE_BUCKETS_SIZE: usize = 256;
+
+/// A collection of `Types`, indexed by `type_bucket_idx(type_name)`. This allows each bucket to be
 /// protected by a separate lock when reading symtypes data.
-type TypeBuckets = [Types; 256];
+type TypeBuckets = Vec<Types>;
 
 /// Computes the index into `TypeBuckets` for a given type name.
 fn type_bucket_idx(type_name: &str) -> usize {
-    (hash(type_name) % TypeBuckets::SIZE as u64) as usize
+    (hash(type_name) % TYPE_BUCKETS_SIZE as u64) as usize
 }
 
 /// A mapping from a symbol name to an index in `SymtypesFiles`, specifying in which file the symbol
@@ -117,8 +120,8 @@ type SymtypesFiles = Vec<SymtypesFile>;
 ///
 /// The data would be represented as follows:
 ///
-/// The example assumes `type_bucket_idx("s#foo") % TypesBuckets::SIZE` evaluates to 1, and that
-/// `type_bucket_idx("bar") % TypesBuckets::SIZE` and `type_bucket_idx("baz") % TypesBuckets::SIZE`
+/// The example assumes `type_bucket_idx("s#foo") % TYPE_BUCKETS_SIZE` evaluates to 1, and that
+/// `type_bucket_idx("bar") % TYPE_BUCKETS_SIZE` and `type_bucket_idx("baz") % TYPE_BUCKETS_SIZE`
 /// both evaluate to 3.
 ///
 /// ```text
@@ -127,7 +130,7 @@ type SymtypesFiles = Vec<SymtypesFile>;
 /// bar_tokens = Arc { Tokens[ Atom("int"), Atom("bar"), Atom("("), TypeRef("s#foo"), Atom(")") ] }
 /// baz_tokens = Arc { Tokens[ Atom("int"), Atom("baz"), Atom("("), TypeRef("s#foo"), Atom(")") ] }
 /// corpus = SymtypesCorpus {
-///     types: TypesBuckets {
+///     types: TypeBuckets {
 ///         [0]: Types { },
 ///         [1]: Types {
 ///             "s#foo": TypeVariants[ foo_tokens, foo2_tokens ]
@@ -137,7 +140,7 @@ type SymtypesFiles = Vec<SymtypesFile>;
 ///             "bar": TypeVariants[ bar_tokens ],
 ///             "baz": TypeVariants[ baz_tokens ],
 ///         },
-///         [4..TypesBuckets::SIZE] = Types { },
+///         [4..TYPE_BUCKETS_SIZE] = Types { },
 ///     },
 ///     exports: Exports {
 ///         "bar": 0,
@@ -178,7 +181,7 @@ pub struct SymtypesCorpus {
 /// A helper struct to provide synchronized access to all corpus data and a warnings stream during
 /// parallel loading.
 struct LoadContext<'a> {
-    types: [RwLock<Types>; TypeBuckets::SIZE],
+    types: Vec<RwLock<Types>>,
     exports: Mutex<Exports>,
     files: Mutex<SymtypesFiles>,
     warnings: Mutex<Box<dyn Write + Send + 'a>>,
@@ -199,7 +202,7 @@ impl<'a> LoadContext<'a> {
     /// Creates a new load context from a symtypes corpus and a warnings stream.
     fn from<W: Write + Send + 'a>(mut symtypes: SymtypesCorpus, warnings: W) -> Self {
         Self {
-            types: array::from_fn(|i| RwLock::new(mem::take(&mut symtypes.types[i]))),
+            types: symtypes.types.into_iter().map(RwLock::new).collect(),
             exports: Mutex::new(mem::take(&mut symtypes.exports)),
             files: Mutex::new(mem::take(&mut symtypes.files)),
             warnings: Mutex::new(Box::new(warnings)),
@@ -207,9 +210,13 @@ impl<'a> LoadContext<'a> {
     }
 
     /// Consumes this load context, returning the underlying data.
-    fn into_inner(mut self) -> SymtypesCorpus {
+    fn into_inner(self) -> SymtypesCorpus {
         SymtypesCorpus {
-            types: array::from_fn(|i| mem::take(&mut self.types[i]).into_inner().unwrap()),
+            types: self
+                .types
+                .into_iter()
+                .map(|t| t.into_inner().unwrap())
+                .collect(),
             exports: self.exports.into_inner().unwrap(),
             files: self.files.into_inner().unwrap(),
         }
@@ -253,7 +260,7 @@ impl SymtypesCorpus {
     /// Creates a new empty corpus.
     pub fn new() -> Self {
         Self {
-            types: array::from_fn(|_| Types::new()),
+            types: vec![Types::new(); TYPE_BUCKETS_SIZE],
             exports: Exports::new(),
             files: SymtypesFiles::new(),
         }

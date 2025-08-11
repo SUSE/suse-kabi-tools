@@ -40,7 +40,7 @@ fn read_basic_single() {
         Token::new_atom(")"),
     ]);
     let mut exp_symtypes = SymtypesCorpus {
-        types: array::from_fn(|_| Types::new()),
+        types: vec![Types::new(); TYPE_BUCKETS_SIZE],
         exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 0)]),
         files: vec![SymtypesFile {
             path: PathBuf::from("test.symtypes"),
@@ -98,7 +98,7 @@ fn read_basic_consolidated() {
         Token::new_atom(")"),
     ]);
     let mut exp_symtypes = SymtypesCorpus {
-        types: array::from_fn(|_| Types::new()),
+        types: vec![Types::new(); TYPE_BUCKETS_SIZE],
         exports: HashMap::from([("bar".to_string(), 0), ("baz".to_string(), 1)]),
         files: vec![
             SymtypesFile {

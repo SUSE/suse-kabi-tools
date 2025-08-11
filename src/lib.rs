@@ -171,15 +171,6 @@ impl Write for PathFile {
     }
 }
 
-/// A helper extension trait to obtain the size of an array from its type.
-pub trait Size {
-    const SIZE: usize;
-}
-
-impl<T, const S: usize> Size for [T; S] {
-    const SIZE: usize = S;
-}
-
 /// Calculates the hash of a given value.
 fn hash<T: Hash + ?Sized>(t: &T) -> u64 {
     let mut s = DefaultHasher::new();
