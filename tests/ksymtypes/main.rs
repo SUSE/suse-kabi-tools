@@ -3,7 +3,6 @@
 
 use std::ffi::OsStr;
 use std::fs;
-use std::path::Path;
 use suse_kabi_tools::assert_inexact;
 
 #[path = "../common/mod.rs"]
@@ -17,7 +16,7 @@ fn ksymtypes_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResu
 #[test]
 fn consolidate_cmd() {
     // Check that the consolidate command trivially works.
-    let output_path = Path::new(env!("CARGO_TARGET_TMPDIR")).join("consolidate_cmd.symtypes");
+    let output_path = tmp_path("consolidate_cmd.symtypes");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("consolidate"),
@@ -55,8 +54,7 @@ fn consolidate_cmd_missing_output() {
 fn consolidate_cmd_invalid_input() {
     // Check that the consolidate command correctly propagates inner errors and writes them on the
     // standard error output.
-    let output_path =
-        Path::new(env!("CARGO_TARGET_TMPDIR")).join("consolidate_cmd_invalid_input.symtypes");
+    let output_path = tmp_path("consolidate_cmd_invalid_input.symtypes");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("consolidate"),
@@ -68,14 +66,14 @@ fn consolidate_cmd_invalid_input() {
     assert_eq!(result.stdout, "");
     assert_inexact!(
         result.stderr,
-        "Failed to read symtypes from 'tests/missing': Failed to query path 'tests/missing': *"
+        "Failed to read symtypes from 'tests/missing': Failed to query path 'tests/missing': *\n"
     );
 }
 
 #[test]
 fn split_cmd() {
     // Check that the split command trivially works.
-    let output_path = Path::new(env!("CARGO_TARGET_TMPDIR")).join("split_cmd_output");
+    let output_path = tmp_path("split_cmd_output");
     fs::remove_dir_all(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("split"),
