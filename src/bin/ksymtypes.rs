@@ -142,7 +142,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(
 
         let mut symtypes = SymtypesCorpus::new();
         symtypes
-            .load(&path, io::stderr(), num_workers)
+            .load_split(&path, io::stderr(), num_workers)
             .map_err(|err| {
                 Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
             })?;

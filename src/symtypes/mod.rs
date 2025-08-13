@@ -322,6 +322,29 @@ impl SymtypesCorpus {
         }
     }
 
+    /// Loads split symtypes data from the specified directory.
+    pub fn load_split<P: AsRef<Path>, W: Write + Send>(
+        &mut self,
+        path: P,
+        warnings: W,
+        num_workers: i32,
+    ) -> Result<(), Error> {
+        let path = path.as_ref();
+
+        // Recursively collect symtypes files within the directory.
+        let mut symfiles = Vec::new();
+        Self::collect_symfiles(path, Path::new(""), &mut symfiles)?;
+
+        // Load all found files.
+        self.load_symfiles(
+            path,
+            &symfiles.iter().map(Path::new).collect::<Vec<&Path>>(),
+            LoadKind::Simple,
+            warnings,
+            num_workers,
+        )
+    }
+
     /// Collects recursively all symtypes files under the given root path and its subpath.
     fn collect_symfiles(
         root: &Path,
