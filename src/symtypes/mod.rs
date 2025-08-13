@@ -280,7 +280,10 @@ impl SymtypesCorpus {
 
         // Determine if the input is a directory tree or a single symtypes file.
         let md = fs::metadata(path).map_err(|err| {
-            Error::new_io(format!("Failed to query path '{}'", path.display()), err)
+            Error::new_io(
+                format!("Failed to query the path '{}'", path.display()),
+                err,
+            )
         })?;
 
         if md.is_dir() {
@@ -311,7 +314,7 @@ impl SymtypesCorpus {
 
         let dir_iter = fs::read_dir(&path).map_err(|err| {
             Error::new_io(
-                format!("Failed to read directory '{}'", path.display()),
+                format!("Failed to read the directory '{}'", path.display()),
                 err,
             )
         })?;
@@ -319,7 +322,7 @@ impl SymtypesCorpus {
         for maybe_entry in dir_iter {
             let entry = maybe_entry.map_err(|err| {
                 Error::new_io(
-                    format!("Failed to read directory '{}'", path.display()),
+                    format!("Failed to read the directory '{}'", path.display()),
                     err,
                 )
             })?;
@@ -328,7 +331,7 @@ impl SymtypesCorpus {
 
             let md = fs::symlink_metadata(&entry_path).map_err(|err| {
                 Error::new_io(
-                    format!("Failed to query path '{}'", entry_path.display()),
+                    format!("Failed to query the path '{}'", entry_path.display()),
                     err,
                 )
             })?;
@@ -381,7 +384,10 @@ impl SymtypesCorpus {
 
                         let path = root.join(sub_path);
                         let file = PathFile::open(&path).map_err(|err| {
-                            Error::new_io(format!("Failed to open file '{}'", path.display()), err)
+                            Error::new_io(
+                                format!("Failed to open the file '{}'", path.display()),
+                                err,
+                            )
                         })?;
 
                         Self::load_inner(sub_path, file, &load_context)?;

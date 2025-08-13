@@ -97,7 +97,7 @@ impl SymversCorpus {
         let path = path.as_ref();
 
         let file = PathFile::open(path).map_err(|err| {
-            Error::new_io(format!("Failed to open file '{}'", path.display()), err)
+            Error::new_io(format!("Failed to open the file '{}'", path.display()), err)
         })?;
 
         self.load_buffer(path, file)

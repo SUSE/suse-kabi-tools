@@ -144,7 +144,7 @@ impl Read for PathFile {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.file.read(buf).map_err(|err| {
             io::Error::other(Error::new_io(
-                format!("Failed to read data from file '{}'", self.path.display()),
+                format!("Failed to read from the file '{}'", self.path.display()),
                 err,
             ))
         })
@@ -155,7 +155,7 @@ impl Write for PathFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.file.write(buf).map_err(|err| {
             io::Error::other(Error::new_io(
-                format!("Failed to write data to file '{}'", self.path.display()),
+                format!("Failed to write to the file '{}'", self.path.display()),
                 err,
             ))
         })
@@ -164,7 +164,7 @@ impl Write for PathFile {
     fn flush(&mut self) -> io::Result<()> {
         self.file.flush().map_err(|err| {
             io::Error::other(Error::new_io(
-                format!("Failed to flush data to file '{}'", self.path.display()),
+                format!("Failed to flush the file '{}'", self.path.display()),
                 err,
             ))
         })
