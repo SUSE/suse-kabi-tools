@@ -178,9 +178,21 @@ pub struct SymtypesCorpus {
     files: SymtypesFiles,
 }
 
+/// An identifier indicating what kind of symtypes data is expected to be loaded.
+#[derive(Eq, PartialEq)]
+enum LoadKind {
+    /// A plain symtypes file.
+    Simple,
+    /// A consolidated symtypes file.
+    Consolidated,
+    /// A plain or consolidated symtypes file.
+    Any,
+}
+
 /// A helper struct to provide synchronized access to all corpus data and a warnings stream during
 /// parallel loading.
 struct LoadContext<'a> {
+    load_kind: LoadKind,
     types: Vec<RwLock<Types>>,
     exports: Mutex<Exports>,
     files: Mutex<SymtypesFiles>,
@@ -200,8 +212,13 @@ type CompareFileTypes<'a> = HashSet<&'a str>;
 
 impl<'a> LoadContext<'a> {
     /// Creates a new load context from a symtypes corpus and a warnings stream.
-    fn from<W: Write + Send + 'a>(mut symtypes: SymtypesCorpus, warnings: W) -> Self {
+    fn from<W: Write + Send + 'a>(
+        mut symtypes: SymtypesCorpus,
+        load_kind: LoadKind,
+        warnings: W,
+    ) -> Self {
         Self {
+            load_kind,
             types: symtypes.types.into_iter().map(RwLock::new).collect(),
             exports: Mutex::new(mem::take(&mut symtypes.exports)),
             files: Mutex::new(mem::take(&mut symtypes.files)),
@@ -295,12 +312,13 @@ impl SymtypesCorpus {
             self.load_symfiles(
                 path,
                 &symfiles.iter().map(Path::new).collect::<Vec<&Path>>(),
+                LoadKind::Simple,
                 warnings,
                 num_workers,
             )
         } else {
             // Load the single file.
-            self.load_symfiles(Path::new(""), &[path], warnings, num_workers)
+            self.load_symfiles(Path::new(""), &[path], LoadKind::Any, warnings, num_workers)
         }
     }
 
@@ -364,12 +382,13 @@ impl SymtypesCorpus {
         &mut self,
         root: &Path,
         symfiles: &[&Path],
+        load_kind: LoadKind,
         warnings: W,
         num_workers: i32,
     ) -> Result<(), Error> {
         // Load data from the files.
         let next_work_idx = AtomicUsize::new(0);
-        let load_context = LoadContext::from(mem::take(self), warnings);
+        let load_context = LoadContext::from(mem::take(self), load_kind, warnings);
 
         thread::scope(|s| -> Result<(), Error> {
             let mut workers = Vec::new();
@@ -419,7 +438,7 @@ impl SymtypesCorpus {
         warnings: W,
     ) -> Result<(), Error> {
         let path = path.as_ref();
-        let load_context = LoadContext::from(mem::take(self), warnings);
+        let load_context = LoadContext::from(mem::take(self), LoadKind::Any, warnings);
 
         Self::load_inner(path, reader, &load_context)?;
 
@@ -445,6 +464,17 @@ impl SymtypesCorpus {
         // Detect whether the input is a single or consolidated symtypes file.
         let is_consolidated =
             !lines.is_empty() && lines[0].starts_with("/* ") && lines[0].ends_with(" */");
+        if load_context.load_kind == LoadKind::Simple && is_consolidated {
+            return Err(Error::new_parse(format!(
+                "{}:1: Expected a plain symtypes file, but found consolidated data",
+                path.display()
+            )));
+        } else if load_context.load_kind == LoadKind::Consolidated && !is_consolidated {
+            return Err(Error::new_parse(format!(
+                "{}:1: Expected a consolidated symtypes file, but found an invalid header",
+                path.display()
+            )));
+        }
 
         let mut file_idx = if !is_consolidated {
             Self::add_file(path, load_context)
