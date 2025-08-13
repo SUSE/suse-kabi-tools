@@ -322,6 +322,25 @@ impl SymtypesCorpus {
         }
     }
 
+    /// Loads consolidated symtypes data from the specified file.
+    pub fn load_consolidated<P: AsRef<Path>, W: Write + Send>(
+        &mut self,
+        path: P,
+        warnings: W,
+        num_workers: i32,
+    ) -> Result<(), Error> {
+        let path = path.as_ref();
+
+        // Load the single file.
+        self.load_symfiles(
+            Path::new(""),
+            &[path],
+            LoadKind::Consolidated,
+            warnings,
+            num_workers,
+        )
+    }
+
     /// Loads split symtypes data from the specified directory.
     pub fn load_split<P: AsRef<Path>, W: Write + Send>(
         &mut self,

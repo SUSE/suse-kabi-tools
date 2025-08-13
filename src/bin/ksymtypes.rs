@@ -220,7 +220,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
 
         let mut symtypes = SymtypesCorpus::new();
         symtypes
-            .load(&path, io::stderr(), num_workers)
+            .load_consolidated(&path, io::stderr(), num_workers)
             .map_err(|err| {
                 Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
             })?;
