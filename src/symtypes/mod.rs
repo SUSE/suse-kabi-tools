@@ -243,11 +243,16 @@ impl<'a> LoadContext<'a> {
 /// The format of the output from [`SymtypesCorpus::compare_with()`].
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum CompareFormat {
-    Null,       // No output.
-    Pretty,     // Verbose human-readable output.
-    Short,      // Compact human-readable output.
-    Symbols,    // A list of all added, removed, or modified symbols.
-    ModSymbols, // A list of all modified symbols only.
+    /// No output.
+    Null,
+    /// Verbose human-readable output.
+    Pretty,
+    /// Compact human-readable output.
+    Short,
+    /// A list of all added, removed, or modified symbols.
+    Symbols,
+    /// A list of all modified symbols only.
+    ModSymbols,
 }
 
 impl CompareFormat {
