@@ -869,71 +869,56 @@ impl SymtypesCorpus {
     }
 
     /// Writes the corpus in the split form to the specified directory.
-    pub fn write_split<P: AsRef<Path>>(&self, path: P, num_workers: i32) -> Result<(), Error> {
-        self.write_split_buffer(&mut DirectoryWriter::new_file(path), num_workers)
+    pub fn write_split<P: AsRef<Path>>(
+        &self,
+        path: P,
+        job_slots: &mut JobSlots,
+    ) -> Result<(), Error> {
+        self.write_split_buffer(&mut DirectoryWriter::new_file(path), job_slots)
     }
 
     /// Writes the corpus in the split form to the provided output stream factory.
     pub fn write_split_buffer<W: Write, WG: WriteGenerator<W> + Send>(
         &self,
         dir_writer: WG,
-        num_workers: i32,
+        job_slots: &mut JobSlots,
     ) -> Result<(), Error> {
         let err_desc = "Failed to write a split record";
-
-        let next_work_idx = AtomicUsize::new(0);
         let dir_writer = Mutex::new(dir_writer);
 
-        thread::scope(|s| -> Result<(), Error> {
-            let mut workers = Vec::new();
-            for _ in 0..num_workers {
-                workers.push(s.spawn(|| {
-                    loop {
-                        let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
-                        if work_idx >= self.files.len() {
-                            break;
-                        }
-                        let symfile = &self.files[work_idx];
+        burst::run_jobs(
+            |work_idx| {
+                let symfile = &self.files[work_idx];
 
-                        // Sort all types in the file.
-                        let mut sorted_types = symfile.records.iter().collect::<Vec<_>>();
-                        sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
+                // Sort all types in the file.
+                let mut sorted_types = symfile.records.iter().collect::<Vec<_>>();
+                sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
 
-                        // Create an output file.
-                        let mut writer = {
-                            let mut dir_writer = dir_writer.lock().unwrap();
-                            dir_writer.create(&symfile.path)?
-                        };
+                // Create an output file.
+                let mut writer = {
+                    let mut dir_writer = dir_writer.lock().unwrap();
+                    dir_writer.create(&symfile.path)?
+                };
 
-                        // Write all types into the output file.
-                        for (name, tokens_rc) in sorted_types {
-                            write!(writer, "{}", name).map_io_err(err_desc)?;
-                            for token in tokens_rc.iter() {
-                                write!(writer, " {}", token.as_str()).map_io_err(err_desc)?;
-                            }
-                            writeln!(writer).map_io_err(err_desc)?;
-                        }
-
-                        // Close the file.
-                        writer.flush().map_io_err(err_desc)?;
-                        let mut dir_writer = dir_writer.lock().unwrap();
-                        dir_writer.close(writer)
+                // Write all types into the output file.
+                for (name, tokens_rc) in sorted_types {
+                    write!(writer, "{}", name).map_io_err(err_desc)?;
+                    for token in tokens_rc.iter() {
+                        write!(writer, " {}", token.as_str()).map_io_err(err_desc)?;
                     }
+                    writeln!(writer).map_io_err(err_desc)?;
+                }
 
-                    Ok(())
-                }));
-            }
+                // Close the file.
+                writer.flush().map_io_err(err_desc)?;
+                let mut dir_writer = dir_writer.lock().unwrap();
+                dir_writer.close(writer);
 
-            // Join all worker threads. Return the first error if any is found, others are silently
-            // swallowed which is ok.
-            for worker in workers {
-                worker.join().unwrap()?
-            }
-
-            Ok(())
-        })?;
-
-        Ok(())
+                Ok(())
+            },
+            self.files.len(),
+            job_slots,
+        )
     }
 
     /// Compares the definitions of the given symbol in two files.

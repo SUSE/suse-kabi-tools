@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
+use crate::burst::JobControl;
 use crate::{assert_ok, assert_ok_eq, assert_parse_err, bytes};
 
 #[test]
@@ -385,7 +386,7 @@ fn write_split_basic() {
     assert_ok!(result);
     assert!(warnings.is_empty());
     let mut out = DirectoryWriter::new_buffer("split");
-    let result = symtypes.write_split_buffer(&mut out, 1);
+    let result = symtypes.write_split_buffer(&mut out, &mut JobControl::new_simple(1));
     assert_ok!(result);
     let files = out.into_inner_map();
     assert_eq!(files.len(), 2);

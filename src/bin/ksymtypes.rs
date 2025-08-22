@@ -242,12 +242,14 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
             &format!("Writing split symtypes to '{}'", output),
         );
 
-        symtypes.write_split(&output, num_workers).map_err(|err| {
-            Error::new_context(
-                format!("Failed to write split symtypes to '{}'", output),
-                err,
-            )
-        })?;
+        symtypes
+            .write_split(&output, &mut JobControl::new_simple(num_workers))
+            .map_err(|err| {
+                Error::new_context(
+                    format!("Failed to write split symtypes to '{}'", output),
+                    err,
+                )
+            })?;
     }
 
     Ok(ExitCode::from(0))
