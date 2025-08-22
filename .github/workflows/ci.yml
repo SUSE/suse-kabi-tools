@@ -15,6 +15,7 @@ jobs:
       matrix:
         toolchain:
           - distribution
+          - "1.88"
           - stable
           - beta
           - nightly
