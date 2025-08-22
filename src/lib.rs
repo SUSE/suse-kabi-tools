@@ -10,6 +10,7 @@ use std::sync::OnceLock;
 use std::time::Instant;
 use std::{error, fmt, hash, io};
 
+pub mod burst;
 pub mod cli;
 pub mod rules;
 pub mod symtypes;
