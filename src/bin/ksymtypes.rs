@@ -394,7 +394,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                 &symtypes2,
                 maybe_symbol_filter.as_ref(),
                 &writers_conf[..],
-                num_workers,
+                &mut JobControl::new_simple(num_workers),
             )
             .map_err(|err| {
                 Error::new_context(

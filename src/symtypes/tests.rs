@@ -435,7 +435,7 @@ fn compare_identical() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Pretty, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, true);
@@ -478,7 +478,7 @@ fn compare_added_export() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Pretty, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
@@ -522,7 +522,7 @@ fn compare_removed_export() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Pretty, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
@@ -566,7 +566,7 @@ fn compare_changed_type() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Pretty, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
@@ -619,7 +619,7 @@ fn compare_changed_nested_type() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Pretty, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
@@ -679,7 +679,7 @@ fn compare_format_null() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Null, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
@@ -725,7 +725,7 @@ fn compare_format_symbols() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Symbols, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
@@ -771,7 +771,7 @@ fn compare_format_mod_symbols() {
         &symtypes2,
         None,
         &mut [(CompareFormat::ModSymbols, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);
@@ -837,7 +837,7 @@ fn compare_format_short() {
         &symtypes2,
         None,
         &mut [(CompareFormat::Short, &mut writer)],
-        1,
+        &mut JobControl::new_simple(1),
     );
     let out = writer.into_inner_vec();
     assert_ok_eq!(result, false);

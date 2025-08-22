@@ -10,9 +10,8 @@ use std::collections::{HashMap, HashSet};
 use std::io::prelude::*;
 use std::iter::zip;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
-use std::{fs, mem, thread};
+use std::{fs, mem};
 
 #[cfg(test)]
 mod tests;
@@ -1005,7 +1004,7 @@ impl SymtypesCorpus {
         other_symtypes: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
         writers_conf: &[(CompareFormat, P)],
-        num_workers: i32,
+        job_slots: &mut JobSlots,
     ) -> Result<bool, Error> {
         // Materialize all writers.
         let mut writers = Vec::new();
@@ -1013,7 +1012,7 @@ impl SymtypesCorpus {
             writers.push((*format, Writer::new_file(path)?));
         }
 
-        self.compare_with_buffer(other_symtypes, maybe_filter, &mut writers[..], num_workers)
+        self.compare_with_buffer(other_symtypes, maybe_filter, &mut writers[..], job_slots)
     }
 
     /// Compares the symbols in `self` and `other_symtypes` and writes a human-readable report about
@@ -1023,7 +1022,7 @@ impl SymtypesCorpus {
         other_symtypes: &SymtypesCorpus,
         maybe_filter: Option<&Filter>,
         writers: &mut [(CompareFormat, W)],
-        num_workers: i32,
+        job_slots: &mut JobSlots,
     ) -> Result<bool, Error> {
         fn matches(maybe_filter: Option<&Filter>, name: &str) -> bool {
             match maybe_filter {
@@ -1066,37 +1065,24 @@ impl SymtypesCorpus {
             .iter()
             .filter(|&(name, _)| matches(maybe_filter, name))
             .collect::<Vec<_>>();
-        let next_work_idx = AtomicUsize::new(0);
-
         let changes = Mutex::new(CompareChangedTypes::new());
 
-        thread::scope(|s| {
-            for _ in 0..num_workers {
-                s.spawn(|| {
-                    loop {
-                        let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
-                        if work_idx >= works.len() {
-                            break;
-                        }
-                        let (name, file_idx) = works[work_idx];
+        burst::run_jobs(
+            |work_idx| {
+                let (name, file_idx) = works[work_idx];
 
-                        let file = &self.files[*file_idx];
-                        if let Some(other_file_idx) = other_symtypes.exports.get(name) {
-                            let other_file = &other_symtypes.files[*other_file_idx];
-                            let mut processed = CompareFileTypes::new();
-                            Self::compare_types(
-                                file,
-                                other_file,
-                                name,
-                                name,
-                                &changes,
-                                &mut processed,
-                            );
-                        }
-                    }
-                });
-            }
-        });
+                let file = &self.files[*file_idx];
+                if let Some(other_file_idx) = other_symtypes.exports.get(name) {
+                    let other_file = &other_symtypes.files[*other_file_idx];
+                    let mut processed = CompareFileTypes::new();
+                    Self::compare_types(file, other_file, name, name, &changes, &mut processed);
+                };
+
+                Ok(())
+            },
+            works.len(),
+            job_slots,
+        )?;
 
         // Format and output collected changes.
         let changes = changes.into_inner().unwrap(); // Get the inner HashMap.
