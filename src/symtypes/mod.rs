@@ -949,8 +949,7 @@ impl SymtypesCorpus {
 
         // Compare the immediate tokens.
         let is_equal = tokens.len() == other_tokens.len()
-            && zip(tokens.iter(), other_tokens.iter())
-                .all(|(token, other_token)| token == other_token);
+            && zip(tokens, other_tokens).all(|(token, other_token)| token == other_token);
         if !is_equal {
             let mut changes = changes.lock().unwrap();
             changes
@@ -1194,7 +1193,7 @@ fn try_shorten_decl(type_name: &str, tokens: &Tokens) -> Option<String> {
 
     if let Some((short_type, expanded_type, base_name)) = split_type_name(type_name, "#") {
         let unknown = [expanded_type, base_name, "{", "UNKNOWN", "}"];
-        if zip(tokens.iter(), unknown.into_iter()).all(|(token, check)| token.as_str() == check) {
+        if zip(tokens, unknown).all(|(token, check)| token.as_str() == check) {
             return Some(format!("{}##{}", short_type, base_name));
         }
     }
