@@ -1,4 +1,4 @@
-// Copyright (C) 2025 SUSE LLC <petr.pavlu@suse.com>
+// Copyright (C) 2025 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::text::{matches_wildcard, read_lines};
