@@ -1,0 +1,6 @@
+/* a.symtypes */
+s#foo struct foo { int a ; }
+bar int bar ( s#foo )
+
+/* b.symtypes */
+baz int baz ( s#foo )
