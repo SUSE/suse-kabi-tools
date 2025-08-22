@@ -213,7 +213,7 @@ macro_rules! assert_inexact {
     }};
 }
 
-/// Asserts that `result` is an [`Ok`] containing `()`, representing success.
+/// Asserts that `result` is `Ok(())`, representing success.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_ok {
@@ -225,7 +225,7 @@ macro_rules! assert_ok {
     };
 }
 
-/// Asserts that `result` is an [`Ok`] containing the `expected_inner` value.
+/// Asserts that `result` is `Ok` containing the `expected_inner` value.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_ok_eq {
@@ -237,7 +237,7 @@ macro_rules! assert_ok_eq {
     };
 }
 
-/// Asserts that `result` is an [`Err`] containing a [`Error::Parse`] error with the description
+/// Asserts that `result` is `Err` containing a [`Error::Parse`] error with the description
 /// `expected_desc`.
 #[cfg(any(test, doc))]
 #[macro_export]
@@ -253,8 +253,8 @@ macro_rules! assert_parse_err {
     };
 }
 
-/// Asserts that `result` is an [`Err`] containing a [`Error::Parse`] error with a description
-/// matching the shell wildcard pattern `expected_desc`.
+/// Asserts that `result` is `Err` containing a [`Error::Parse`] error with a description matching
+/// the shell wildcard pattern `expected_desc`.
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_inexact_parse_err {

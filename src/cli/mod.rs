@@ -5,9 +5,9 @@ use crate::{Error, init_debug_level};
 
 /// Handles a command-line option with a mandatory value.
 ///
-/// When the `arg` matches the `short` or `long` variant, the function returns [`Ok(Some(String))`]
-/// with the option value. Otherwise, [`Ok(None)`] is returned when the `arg` doesn't match, or
-/// [`Err`] in case of an error.
+/// When the `arg` matches the `short` or `long` variant, the function returns
+/// <code>Ok(Some([String]))</code> with the option value. Otherwise, `Ok(None)` is returned when
+/// the `arg` doesn't match, or <code>Err([Error])</code> in case of an error.
 pub fn handle_value_option<
     I: Iterator<Item = String>,
     S: Into<Option<&'static str>>,
@@ -60,8 +60,8 @@ pub fn handle_value_option<
 
 /// Processes command-line options, stopping at the command name.
 ///
-/// Returns [`Ok`] containing [`Some`] with the command name, or [`Ok`] containing [`None`] if the
-/// function handles an option directly (such as `--help`), or [`Err`] on error.
+/// Returns `Ok(Some())` containing the command name, `Ok(None)` if the function handles an option
+/// directly (such as `--help`), or `Err` on error.
 pub fn process_global_args<I: Iterator<Item = String>>(
     args: &mut I,
     usage_msg: &str,

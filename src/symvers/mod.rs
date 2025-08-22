@@ -153,8 +153,8 @@ impl SymversCorpus {
     /// Compares the symbols in `self` and `other_symvers`.
     ///
     /// Writes reports about any found changes to the specified files, formatted as requested.
-    /// Returns [`Ok`] containing a `bool` indicating whether the corpuses are the same, or [`Err`]
-    /// on error.
+    /// Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
+    /// <code>Err([Error])</code> on error.
     pub fn compare_with<P: AsRef<Path>>(
         &self,
         other_symvers: &SymversCorpus,
@@ -173,8 +173,8 @@ impl SymversCorpus {
     /// Compares the symbols in `self` and `other_symvers`.
     ///
     /// Writes reports about any found changes to the provided output streams, formatted as
-    /// requested. Returns [`Ok`] containing a `bool` indicating whether the corpuses are the same,
-    /// or [`Err`] on error.
+    /// requested. Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
+    /// <code>Err([Error])</code> on error.
     pub fn compare_with_buffer<W: Write>(
         &self,
         other_symvers: &SymversCorpus,
@@ -189,7 +189,7 @@ impl SymversCorpus {
         }
 
         // A helper function to handle common logic related to reporting a change. It determines if
-        // the change should be tolerated and updates the `output_symbols` set.
+        // the change should be tolerated and updates the `output_symbols` map.
         fn process_change<'a>(
             maybe_rules: Option<&Rules>,
             name: &'a str,
