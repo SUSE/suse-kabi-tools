@@ -978,18 +978,18 @@ impl SymtypesCorpus {
             for token in tokens {
                 if let Token::TypeRef(ref_name) = token {
                     for other_token in other_tokens {
-                        if let Token::TypeRef(other_ref_name) = other_token {
-                            if ref_name == other_ref_name {
-                                Self::compare_types(
-                                    file,
-                                    other_file,
-                                    ref_name.as_str(),
-                                    export,
-                                    changes,
-                                    processed,
-                                );
-                                break;
-                            }
+                        if let Token::TypeRef(other_ref_name) = other_token
+                            && ref_name == other_ref_name
+                        {
+                            Self::compare_types(
+                                file,
+                                other_file,
+                                ref_name.as_str(),
+                                export,
+                                changes,
+                                processed,
+                            );
+                            break;
                         }
                     }
                 }
@@ -1157,10 +1157,10 @@ fn words_into_tokens<'a, I: Iterator<Item = &'a str>>(words: &mut I) -> Tokens {
     let mut tokens = Tokens::new();
     for word in words {
         let mut is_typeref = false;
-        if let Some(ch) = word.chars().nth(1) {
-            if ch == '#' {
-                is_typeref = true;
-            }
+        if let Some(ch) = word.chars().nth(1)
+            && ch == '#'
+        {
+            is_typeref = true;
         }
         tokens.push(if is_typeref {
             Token::new_typeref(word)

@@ -199,10 +199,10 @@ impl SymversCorpus {
             output_symbols: &mut HashMap<&'a str, bool>,
         ) -> ChangeStatus {
             let mut status = ChangeStatus::Breaking;
-            if let Some(rules) = maybe_rules {
-                if rules.is_tolerated(name, &info.module, info.namespace.as_deref()) {
-                    status = ChangeStatus::RulesTolerated;
-                }
+            if let Some(rules) = maybe_rules
+                && rules.is_tolerated(name, &info.module, info.namespace.as_deref())
+            {
+                status = ChangeStatus::RulesTolerated;
             }
             if status == ChangeStatus::Breaking && always_tolerated {
                 status = ChangeStatus::ImplicitlyTolerated;

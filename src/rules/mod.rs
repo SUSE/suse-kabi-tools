@@ -124,10 +124,10 @@ impl Rules {
                     }
                 }
                 Pattern::Namespace(rule_namespace) => {
-                    if let Some(namespace) = maybe_namespace {
-                        if matches_wildcard(namespace, rule_namespace) {
-                            return rule.verdict == Verdict::Pass;
-                        }
+                    if let Some(namespace) = maybe_namespace
+                        && matches_wildcard(namespace, rule_namespace)
+                    {
+                        return rule.verdict == Verdict::Pass;
                     }
                 }
                 Pattern::Symbol(rule_symbol) => {
@@ -152,10 +152,10 @@ fn get_next_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<St
     }
 
     // Terminate when a comment starting with '#' is found.
-    if let Some(&c) = chars.peek() {
-        if c == '#' {
-            return None;
-        }
+    if let Some(&c) = chars.peek()
+        && c == '#'
+    {
+        return None;
     }
 
     // Read one word.

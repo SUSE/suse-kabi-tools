@@ -48,10 +48,10 @@ pub fn handle_value_option<
             };
         }
 
-        if let Some(rem) = arg.strip_prefix(long) {
-            if let Some(value) = rem.strip_prefix('=') {
-                return Ok(Some(value.to_string()));
-            }
+        if let Some(rem) = arg.strip_prefix(long)
+            && let Some(value) = rem.strip_prefix('=')
+        {
+            return Ok(Some(value.to_string()));
         }
     }
 
