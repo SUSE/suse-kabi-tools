@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use std::process::ExitCode;
-use std::{env, io};
+use std::{env, io, thread};
+use suse_kabi_tools::burst::JobControl;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::symtypes::{CompareFormat, SymtypesCorpus};
 use suse_kabi_tools::text::Filter;
@@ -142,7 +143,11 @@ fn do_consolidate<I: IntoIterator<Item = String>>(
 
         let mut symtypes = SymtypesCorpus::new();
         symtypes
-            .load_split(&path, io::stderr(), num_workers)
+            .load_split(
+                &path,
+                io::stderr(),
+                &mut JobControl::new_simple(num_workers),
+            )
             .map_err(|err| {
                 Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
             })?;
@@ -220,7 +225,11 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
 
         let mut symtypes = SymtypesCorpus::new();
         symtypes
-            .load_consolidated(&path, io::stderr(), num_workers)
+            .load_consolidated(
+                &path,
+                io::stderr(),
+                &mut JobControl::new_simple(num_workers),
+            )
             .map_err(|err| {
                 Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
             })?;
@@ -312,29 +321,46 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     // Do the comparison.
     debug!("Compare '{}' and '{}'", path, path2);
 
-    let symtypes = {
-        let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
+    let job_control_rc = JobControl::new(num_workers);
+    let job_slots = JobControl::new_slots(&job_control_rc, 1);
+    let job_slots2 = JobControl::new_slots(&job_control_rc, if num_workers > 1 { 1 } else { 0 });
 
-        let mut symtypes = SymtypesCorpus::new();
-        symtypes
-            .load(&path, io::stderr(), num_workers)
-            .map_err(|err| {
-                Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
-            })?;
-        symtypes
-    };
+    let (symtypes, symtypes2) = thread::scope(|scope| {
+        let read_thread = scope.spawn(|| {
+            let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
 
-    let symtypes2 = {
-        let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path2));
+            let mut job_slots = job_slots;
+            job_slots.ensure_one_reserved();
 
-        let mut symtypes2 = SymtypesCorpus::new();
-        symtypes2
-            .load(&path2, io::stderr(), num_workers)
-            .map_err(|err| {
-                Error::new_context(format!("Failed to read symtypes from '{}'", path2), err)
-            })?;
-        symtypes2
-    };
+            let mut symtypes = SymtypesCorpus::new();
+            symtypes
+                .load(&path, io::stderr(), &mut job_slots)
+                .map_err(|err| {
+                    Error::new_context(format!("Failed to read symtypes from '{}'", path), err)
+                })?;
+            Ok(symtypes)
+        });
+
+        let read_thread2 = scope.spawn(|| {
+            let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path2));
+
+            let mut job_slots2 = job_slots2;
+            job_slots2.ensure_one_reserved();
+
+            let mut symtypes2 = SymtypesCorpus::new();
+            symtypes2
+                .load(&path2, io::stderr(), &mut job_slots2)
+                .map_err(|err| {
+                    Error::new_context(format!("Failed to read symtypes from '{}'", path2), err)
+                })?;
+            Ok(symtypes2)
+        });
+
+        let symtypes = read_thread.join().unwrap()?;
+        let symtypes2 = read_thread2.join().unwrap()?;
+
+        Ok((symtypes, symtypes2))
+    })?;
 
     let maybe_symbol_filter = match maybe_symbol_filter_path {
         Some(symbol_filter_path) => {

@@ -1,6 +1,8 @@
 // Copyright (C) 2024 SUSE LLC <petr.pavlu@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+use crate::burst;
+use crate::burst::JobSlots;
 use crate::text::{DirectoryWriter, Filter, WriteGenerator, Writer, read_lines, unified_diff};
 use crate::{Error, MapIOErr, PathFile, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
@@ -296,7 +298,7 @@ impl SymtypesCorpus {
         &mut self,
         path: P,
         warnings: W,
-        num_workers: i32,
+        job_slots: &mut JobSlots,
     ) -> Result<(), Error> {
         let path = path.as_ref();
 
@@ -319,11 +321,11 @@ impl SymtypesCorpus {
                 &symfiles.iter().map(Path::new).collect::<Vec<&Path>>(),
                 LoadKind::Simple,
                 warnings,
-                num_workers,
+                job_slots,
             )
         } else {
             // Load the single file.
-            self.load_symfiles(Path::new(""), &[path], LoadKind::Any, warnings, num_workers)
+            self.load_symfiles(Path::new(""), &[path], LoadKind::Any, warnings, job_slots)
         }
     }
 
@@ -332,7 +334,7 @@ impl SymtypesCorpus {
         &mut self,
         path: P,
         warnings: W,
-        num_workers: i32,
+        job_slots: &mut JobSlots,
     ) -> Result<(), Error> {
         let path = path.as_ref();
 
@@ -342,7 +344,7 @@ impl SymtypesCorpus {
             &[path],
             LoadKind::Consolidated,
             warnings,
-            num_workers,
+            job_slots,
         )
     }
 
@@ -351,7 +353,7 @@ impl SymtypesCorpus {
         &mut self,
         path: P,
         warnings: W,
-        num_workers: i32,
+        job_slots: &mut JobSlots,
     ) -> Result<(), Error> {
         let path = path.as_ref();
 
@@ -365,7 +367,7 @@ impl SymtypesCorpus {
             &symfiles.iter().map(Path::new).collect::<Vec<&Path>>(),
             LoadKind::Simple,
             warnings,
-            num_workers,
+            job_slots,
         )
     }
 
@@ -431,44 +433,26 @@ impl SymtypesCorpus {
         symfiles: &[&Path],
         load_kind: LoadKind,
         warnings: W,
-        num_workers: i32,
+        job_slots: &mut JobSlots,
     ) -> Result<(), Error> {
-        // Load data from the files.
-        let next_work_idx = AtomicUsize::new(0);
         let load_context = LoadContext::from(mem::take(self), load_kind, warnings);
 
-        thread::scope(|s| -> Result<(), Error> {
-            let mut workers = Vec::new();
-            for _ in 0..num_workers {
-                workers.push(s.spawn(|| {
-                    loop {
-                        let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
-                        if work_idx >= symfiles.len() {
-                            return Ok(());
-                        }
-                        let sub_path = symfiles[work_idx];
+        burst::run_jobs(
+            |work_idx| {
+                let sub_path = symfiles[work_idx];
 
-                        let path = root.join(sub_path);
-                        let file = PathFile::open(&path).map_err(|err| {
-                            Error::new_io(
-                                format!("Failed to open the file '{}'", path.display()),
-                                err,
-                            )
-                        })?;
+                let path = root.join(sub_path);
+                let file = PathFile::open(&path).map_err(|err| {
+                    Error::new_io(format!("Failed to open the file '{}'", path.display()), err)
+                })?;
 
-                        Self::load_inner(sub_path, file, &load_context)?;
-                    }
-                }));
-            }
+                Self::load_inner(sub_path, file, &load_context)?;
 
-            // Join all worker threads. Return the first error if any is found, others are silently
-            // swallowed which is ok.
-            for worker in workers {
-                worker.join().unwrap()?
-            }
-
-            Ok(())
-        })?;
+                Ok(())
+            },
+            symfiles.len(),
+            job_slots,
+        )?;
 
         *self = load_context.into_inner();
 
