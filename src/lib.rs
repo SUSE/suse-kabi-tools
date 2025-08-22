@@ -109,7 +109,7 @@ impl Drop for Timing {
 
 /// A helper extension trait to map [`std::io::Error`] to [`Error`], as
 /// `write!(data).map_io_error(context)`.
-trait MapIOErr {
+pub trait MapIOErr {
     fn map_io_err(self, desc: &str) -> Result<(), Error>;
 }
 
