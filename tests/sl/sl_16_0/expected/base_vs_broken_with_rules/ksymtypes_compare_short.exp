@@ -1,0 +1,195 @@
+The following '3' exports are different:
+ __audit_inode_child
+ audit_log
+ audit_log_start
+
+because of a changed 's#audit_context':
+@@ -84,7 +84,7 @@
+ 			int argc;
+ 		} execve;
+ 		struct {
+-			char * name;
++			const char * name;
+ 		} module;
+ 		struct {
+ 			s#audit_ntp_data ntp_data;
+
+The following '63' exports are different:
+ __SCK__tp_func_xdp_bulk_tx
+ __SCK__tp_func_xdp_exception
+ __cgroup_bpf_run_filter_sk
+ __cgroup_bpf_run_filter_skb
+ __cgroup_bpf_run_filter_sock_addr
+ __cgroup_bpf_run_filter_sock_ops
+ __register_bpf_struct_ops
+ __traceiter_xdp_bulk_tx
+ __traceiter_xdp_exception
+ __tracepoint_xdp_bulk_tx
+ <...>
+
+because of a changed 's#bpf_jmp_history_entry':
+@@ -1,6 +1,6 @@
+ struct bpf_jmp_history_entry {
+ 	t#u32 idx;
+-	t#u32 prev_idx : 22;
+-	t#u32 flags : 10;
++	t#u32 prev_idx : 20;
++	t#u32 flags : 12;
+ 	t#u64 linked_regs;
+ }
+
+The following '158' exports are different:
+ __drm_atomic_helper_disable_plane
+ __drm_atomic_helper_set_config
+ drm_atomic_add_affected_connectors
+ drm_atomic_add_affected_planes
+ drm_atomic_add_encoder_bridges
+ drm_atomic_check_only
+ drm_atomic_commit
+ drm_atomic_get_bridge_state
+ drm_atomic_get_connector_state
+ drm_atomic_get_crtc_state
+ <...>
+
+because of a changed 's#dma_buf':
+@@ -1,3 +1,17 @@
+ struct dma_buf {
+-	UNKNOWN
++	t#size_t size;
++	s#file * file;
++	s#list_head attachments;
++	const s#dma_buf_ops * ops;
++	unsigned vmapping_counter;
++	s#iosys_map vmap_ptr;
++	const char * exp_name;
++	const char * name;
++	t#spinlock_t name_lock;
++	s#module * owner;
++	s#list_head list_node;
++	void * priv;
++	s#dma_resv * resv;
++	t#wait_queue_head_t poll;
++	s#dma_buf_poll_cb_t cb_in, cb_out;
+ }
+
+The following '158' exports are different:
+ __drm_atomic_helper_disable_plane
+ __drm_atomic_helper_set_config
+ drm_atomic_add_affected_connectors
+ drm_atomic_add_affected_planes
+ drm_atomic_add_encoder_bridges
+ drm_atomic_check_only
+ drm_atomic_commit
+ drm_atomic_get_bridge_state
+ drm_atomic_get_connector_state
+ drm_atomic_get_crtc_state
+ <...>
+
+because of a changed 's#dma_buf_attachment':
+@@ -1,3 +1,11 @@
+ struct dma_buf_attachment {
+-	UNKNOWN
++	s#dma_buf * dmabuf;
++	s#device * dev;
++	s#list_head node;
++	s#sg_table * sgt;
++	e#dma_data_direction dir;
++	t#bool peer2peer;
++	const s#dma_buf_attach_ops * importer_ops;
++	void * importer_priv;
++	void * priv;
+ }
+
+The following '59' exports are different:
+ drm_gpuva_find
+ drm_gpuva_find_first
+ drm_gpuva_find_next
+ drm_gpuva_find_prev
+ drm_gpuva_insert
+ drm_gpuva_link
+ drm_gpuva_map
+ drm_gpuva_ops_free
+ drm_gpuva_remap
+ drm_gpuva_remove
+ <...>
+
+because of a changed 's#fwnode_handle':
+@@ -1,3 +1,9 @@
+ struct fwnode_handle {
+-	UNKNOWN
++	s#fwnode_handle * secondary;
++	const s#fwnode_operations * ops;
++	s#device * dev;
++	s#list_head suppliers;
++	s#list_head consumers;
++	t#u8 flags;
++	void * suse_kabi_padding;
+ }
+
+The following '85' exports are different:
+ __drm_atomic_helper_disable_plane
+ __drm_atomic_helper_set_config
+ drm_atomic_add_affected_connectors
+ drm_atomic_add_affected_planes
+ drm_atomic_add_encoder_bridges
+ drm_atomic_check_only
+ drm_atomic_commit
+ drm_atomic_get_bridge_state
+ drm_atomic_get_connector_state
+ drm_atomic_get_crtc_state
+ <...>
+
+because of a changed 's#iosys_map':
+@@ -1,3 +1,7 @@
+ struct iosys_map {
+-	UNKNOWN
++	union {
++		void * vaddr_iomem;
++		void * vaddr;
++	};
++	t#bool is_iomem;
+ }
+
+The following '72' exports are different:
+ drm_exec_cleanup
+ drm_exec_fini
+ drm_exec_init
+ drm_exec_lock_obj
+ drm_exec_prepare_array
+ drm_exec_prepare_obj
+ drm_exec_unlock_obj
+ drm_fbdev_ttm_driver_fbdev_probe
+ drm_fbdev_ttm_setup
+ drm_gem_ttm_mmap
+ <...>
+
+because of a changed 's#sg_table':
+@@ -1,3 +1,5 @@
+ struct sg_table {
+-	UNKNOWN
++	s#scatterlist * sgl;
++	unsigned int nents;
++	unsigned int orig_nents;
+ }
+
+The following '12' exports are different:
+ __vlan_find_dev_deep_rcu
+ vlan_dev_real_dev
+ vlan_dev_vlan_id
+ vlan_dev_vlan_proto
+ vlan_filter_drop_vids
+ vlan_filter_push_vids
+ vlan_for_each
+ vlan_uses_dev
+ vlan_vid_add
+ vlan_vid_del
+ <...>
+
+because of a changed 's#vlan_info':
+@@ -3,5 +3,6 @@
+ 	s#vlan_group grp;
+ 	s#list_head vid_list;
+ 	unsigned int nr_vids;
++	t#bool auto_vid0;
+ 	s#callback_head rcu;
+ }

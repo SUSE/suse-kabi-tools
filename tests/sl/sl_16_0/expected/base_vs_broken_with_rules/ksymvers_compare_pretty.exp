@@ -1,0 +1,555 @@
+Export '__kvm_vcpu_kick' has been added (tolerated by rules)
+Export '__mt7925_start' has been added (tolerated by rules)
+Export 'anon_inode_make_secure_inode' has been added (implicitly tolerated)
+Export 'at8031_set_wol' has been added (implicitly tolerated)
+Export 'drm_buddy_reset_clear' has been added (implicitly tolerated)
+Export 'firmware_attributes_class' has been added (implicitly tolerated)
+Export 'hv_map_msi_interrupt' has been added (implicitly tolerated)
+Export 'ice_alloc_rdma_qvector' has been added (tolerated by rules)
+Export 'ice_free_rdma_qvector' has been added (tolerated by rules)
+Export 'mt7925_mac_init' has been added (tolerated by rules)
+Export 'mt7925_mac_sta_add' has been added (tolerated by rules)
+Export 'mt7925_mac_sta_event' has been added (tolerated by rules)
+Export 'mt7925_mac_sta_remove' has been added (tolerated by rules)
+Export 'mt7925_mac_write_txwi' has been added (tolerated by rules)
+Export 'mt7925_mcu_cancel_hw_scan' has been added (tolerated by rules)
+Export 'mt7925_mcu_fill_message' has been added (tolerated by rules)
+Export 'mt7925_mcu_hw_scan' has been added (tolerated by rules)
+Export 'mt7925_mcu_parse_response' has been added (tolerated by rules)
+Export 'mt7925_mcu_regval' has been added (tolerated by rules)
+Export 'mt7925_mcu_sched_scan_req' has been added (tolerated by rules)
+Export 'mt7925_mcu_set_channel_domain' has been added (tolerated by rules)
+Export 'mt7925_mcu_set_deep_sleep' has been added (tolerated by rules)
+Export 'mt7925_mcu_set_eeprom' has been added (tolerated by rules)
+Export 'mt7925_mcu_set_thermal_protect' has been added (tolerated by rules)
+Export 'mt7925_ops' has been added (tolerated by rules)
+Export 'mt7925_queue_rx_skb' has been added (tolerated by rules)
+Export 'mt7925_register_device' has been added (tolerated by rules)
+Export 'mt7925_roc_abort_sync' has been added (tolerated by rules)
+Export 'mt7925_run_firmware' has been added (tolerated by rules)
+Export 'mt7925_rx_check' has been added (tolerated by rules)
+Export 'mt7925_txwi_free' has been added (tolerated by rules)
+Export 'mt7925_usb_sdio_tx_complete_skb' has been added (tolerated by rules)
+Export 'mt7925_usb_sdio_tx_prepare_skb' has been added (tolerated by rules)
+Export 'mt7925_usb_sdio_tx_status_data' has been added (tolerated by rules)
+Export 'nfs_server_set_init_caps' has been added (implicitly tolerated)
+Export 'pci_msix_prepare_desc' has been added (implicitly tolerated)
+Export 'rdma_dev_has_raw_cap' has been added (implicitly tolerated)
+Export 'rdma_uattrs_has_raw_cap' has been added (implicitly tolerated)
+Export 'x86_match_min_microcode_rev' has been added (implicitly tolerated)
+Export 'zl30731_chip_info' has been added (implicitly tolerated)
+Export 'zl30732_chip_info' has been added (implicitly tolerated)
+Export 'zl30733_chip_info' has been added (implicitly tolerated)
+Export 'zl30734_chip_info' has been added (implicitly tolerated)
+Export 'zl30735_chip_info' has been added (implicitly tolerated)
+Export 'zl3073x_dev_probe' has been added (implicitly tolerated)
+Export 'zl3073x_devm_alloc' has been added (implicitly tolerated)
+Export 'zl3073x_regmap_config' has been added (implicitly tolerated)
+Export 'nf_flow_register_bpf' has been removed (tolerated by rules)
+Export 'vsc_tp_free_irq' has been removed (tolerated by rules)
+Export 'vsc_tp_request_irq' has been removed (tolerated by rules)
+Export 'xfrm_bpf_md_dst' has been removed (tolerated by rules)
+Export '__SCK__tp_func_xdp_bulk_tx' changed CRC from '0x9eb77448' to '0x5c8e00fa'
+Export '__SCK__tp_func_xdp_exception' changed CRC from '0x111442ba' to '0x908ff99c'
+Export '____kvm_emulate_hypercall' changed CRC from '0x27909a00' to '0x3c7695dd' (tolerated by rules)
+Export '__audit_inode_child' changed CRC from '0xfe3e5b1a' to '0x128a7eb0'
+Export '__cgroup_bpf_run_filter_sk' changed CRC from '0xb944c632' to '0xeb05c129'
+Export '__cgroup_bpf_run_filter_skb' changed CRC from '0x4d4fd7fd' to '0x80cd3e0f'
+Export '__cgroup_bpf_run_filter_sock_addr' changed CRC from '0x00ac5fab' to '0x889dad52'
+Export '__cgroup_bpf_run_filter_sock_ops' changed CRC from '0x718f3f95' to '0x35f00146'
+Export '__drm_atomic_helper_disable_plane' changed CRC from '0xb7541b34' to '0x64458166'
+Export '__drm_atomic_helper_set_config' changed CRC from '0xec76cb96' to '0xf6f6dbf2'
+Export '__gfn_to_page' changed CRC from '0x0fdadb62' to '0xe56ceeb3' (tolerated by rules)
+Export '__i915_gem_object_flush_map' changed CRC from '0x64391e17' to '0xd320d1fe' (tolerated by rules)
+Export '__i915_gem_object_set_pages' changed CRC from '0xba4bec83' to '0xe3e1ae99' (tolerated by rules)
+Export '__intel_context_do_pin' changed CRC from '0xa7152b40' to '0x3f258a62' (tolerated by rules)
+Export '__intel_context_do_unpin' changed CRC from '0x6233a22b' to '0x0c5847f6' (tolerated by rules)
+Export '__kvm_prepare_emulation_failure_exit' changed CRC from '0x01d262d0' to '0x55d4d642' (tolerated by rules)
+Export '__kvm_vcpu_map' changed CRC from '0x621007d2' to '0x79529124' (tolerated by rules)
+Export '__kvm_vcpu_update_apicv' changed CRC from '0x0c62b77d' to '0xdac8b173' (tolerated by rules)
+Export '__px_dma' changed CRC from '0xdc5a4516' to '0x38954706' (tolerated by rules)
+Export '__register_bpf_struct_ops' changed CRC from '0x10a15441' to '0x12ec6460'
+Export '__traceiter_kvm_entry' changed CRC from '0x0849d245' to '0xb7872b77' (tolerated by rules)
+Export '__traceiter_kvm_exit' changed CRC from '0xbcf63990' to '0xa26e1da3' (tolerated by rules)
+Export '__traceiter_kvm_nested_vmexit' changed CRC from '0x11238469' to '0x0fbba05a' (tolerated by rules)
+Export '__traceiter_kvm_page_fault' changed CRC from '0x0f5cf796' to '0xd7bf4c60' (tolerated by rules)
+Export '__traceiter_kvm_rmp_fault' changed CRC from '0xadd1c39b' to '0xb1b9752d' (tolerated by rules)
+Export '__traceiter_smc_rx_recvmsg' changed CRC from '0x4e8ccfaa' to '0xbc34e768' (tolerated by rules)
+Export '__traceiter_smc_switch_to_fallback' changed CRC from '0x90307a37' to '0x80dd56de' (tolerated by rules)
+Export '__traceiter_smc_tx_sendmsg' changed CRC from '0x1105957d' to '0xf57e1f70' (tolerated by rules)
+Export '__traceiter_xdp_bulk_tx' changed CRC from '0xcb384a36' to '0xa55ed3b2'
+Export '__traceiter_xdp_exception' changed CRC from '0x819799df' to '0x4d7d04d5'
+Export '__tracepoint_xdp_bulk_tx' changed CRC from '0x52cab882' to '0xbb71eec6'
+Export '__tracepoint_xdp_exception' changed CRC from '0xb2d33f98' to '0xa4cea8e3'
+Export '__vlan_find_dev_deep_rcu' changed CRC from '0xe2bdc41d' to '0x3abfad24'
+Export '__x86_set_memory_region' changed CRC from '0x2a31ec75' to '0x2237ca44' (tolerated by rules)
+Export '_i915_vma_move_to_active' changed CRC from '0x6fa3f20f' to '0xf4eb7424' (tolerated by rules)
+Export 'audit_log' changed CRC from '0x433e241f' to '0x2184d0e2'
+Export 'audit_log_start' changed CRC from '0x6d24089e' to '0x096ec07d'
+Export 'bpf_empty_prog_array' changed CRC from '0x7178651d' to '0xb0944504'
+Export 'bpf_event_output' changed CRC from '0xe9cf003f' to '0x5438cf12'
+Export 'bpf_link_get_from_fd' changed CRC from '0xb286f015' to '0x4a1cd055'
+Export 'bpf_link_inc_not_zero' changed CRC from '0x23b89f8f' to '0x4894e12b'
+Export 'bpf_link_put' changed CRC from '0x3ade2650' to '0x3a43d508'
+Export 'bpf_map_get' changed CRC from '0x2afeeb09' to '0x17a87e0d'
+Export 'bpf_map_inc' changed CRC from '0x6d148894' to '0x5d75c024'
+Export 'bpf_map_inc_not_zero' changed CRC from '0x73aee480' to '0x1ce79440'
+Export 'bpf_map_inc_with_uref' changed CRC from '0x27491025' to '0x17285895'
+Export 'bpf_map_put' changed CRC from '0x4354bd9b' to '0x7335f52b'
+Export 'bpf_offload_dev_create' changed CRC from '0x34a10176' to '0xbce3ddfd'
+Export 'bpf_offload_dev_match' changed CRC from '0x9e74699c' to '0x3214776d'
+Export 'bpf_offload_dev_netdev_register' changed CRC from '0xdaed59c4' to '0x9e8ad491'
+Export 'bpf_offload_dev_netdev_unregister' changed CRC from '0x18aa6a9e' to '0x5ccde7cb'
+Export 'bpf_prog_add' changed CRC from '0x4a8e05de' to '0xaeaf1c80'
+Export 'bpf_prog_alloc' changed CRC from '0x84800c1b' to '0x05111c6d'
+Export 'bpf_prog_create' changed CRC from '0xb350819f' to '0x5f0dda10'
+Export 'bpf_prog_create_from_user' changed CRC from '0xd4650fdc' to '0x1a35fa16'
+Export 'bpf_prog_destroy' changed CRC from '0x76fa53f9' to '0x85f1e782'
+Export 'bpf_prog_free' changed CRC from '0x446e501a' to '0x876b47f5'
+Export 'bpf_prog_get_type_dev' changed CRC from '0x83515af1' to '0x7b79c018'
+Export 'bpf_prog_inc' changed CRC from '0xbe6ce743' to '0x4d675338'
+Export 'bpf_prog_inc_not_zero' changed CRC from '0x653a9894' to '0xe46ce1da'
+Export 'bpf_prog_put' changed CRC from '0x2efdbae7' to '0xddf60e9c'
+Export 'bpf_prog_select_runtime' changed CRC from '0x27e878e5' to '0xc05702e0'
+Export 'bpf_prog_sub' changed CRC from '0xfc9e19c8' to '0x18bf0096'
+Export 'bpf_trace_run1' changed CRC from '0xd3786c34' to '0x8ee1b5c2'
+Export 'bpf_trace_run10' changed CRC from '0xc3155384' to '0x9a0d9c76'
+Export 'bpf_trace_run11' changed CRC from '0x967484c3' to '0x53ab2994'
+Export 'bpf_trace_run12' changed CRC from '0xbd83f0e6' to '0xcdec6eea'
+Export 'bpf_trace_run2' changed CRC from '0xa6b92f41' to '0x45bbdba0'
+Export 'bpf_trace_run3' changed CRC from '0xb39a8cc8' to '0xd29b1400'
+Export 'bpf_trace_run4' changed CRC from '0x9442312b' to '0x79260751'
+Export 'bpf_trace_run5' changed CRC from '0xd2f6510b' to '0x4350112d'
+Export 'bpf_trace_run6' changed CRC from '0xaf4a473d' to '0xb29d6d41'
+Export 'bpf_trace_run7' changed CRC from '0xe109501d' to '0xb9e51b01'
+Export 'bpf_trace_run8' changed CRC from '0xe587c6af' to '0x40b6ec9f'
+Export 'bpf_trace_run9' changed CRC from '0x9244fde3' to '0x8a6bcda4'
+Export 'bpf_verifier_log_write' changed CRC from '0xd53ce921' to '0x901474c4'
+Export 'bpf_warn_invalid_xdp_action' changed CRC from '0xe2916104' to '0x79ab15d5'
+Export 'btf_ctx_access' changed CRC from '0x03dd7a96' to '0x437f9a33'
+Export 'drm_atomic_add_affected_connectors' changed CRC from '0x320bdf69' to '0x778483e1'
+Export 'drm_atomic_add_affected_planes' changed CRC from '0x774f305f' to '0x7f82f59b'
+Export 'drm_atomic_add_encoder_bridges' changed CRC from '0x826841d5' to '0x98795a08'
+Export 'drm_atomic_check_only' changed CRC from '0xafaba03b' to '0xbf1ae476'
+Export 'drm_atomic_commit' changed CRC from '0x2944bf5d' to '0x6875a3c1'
+Export 'drm_atomic_get_bridge_state' changed CRC from '0x57877604' to '0xa9f037f0'
+Export 'drm_atomic_get_connector_state' changed CRC from '0x6b86b282' to '0xfc852901'
+Export 'drm_atomic_get_crtc_state' changed CRC from '0x08a3bcc4' to '0x60ae6460'
+Export 'drm_atomic_get_new_bridge_state' changed CRC from '0x5b0152ee' to '0x199bb044'
+Export 'drm_atomic_get_new_connector_for_encoder' changed CRC from '0x39d3bfe5' to '0xe0d1237a'
+Export 'drm_atomic_get_new_crtc_for_encoder' changed CRC from '0xd8b2a515' to '0x7434d84d'
+Export 'drm_atomic_get_new_private_obj_state' changed CRC from '0x7b5583a3' to '0x70773181'
+Export 'drm_atomic_get_old_bridge_state' changed CRC from '0xa8b2710e' to '0xea2893a4'
+Export 'drm_atomic_get_old_connector_for_encoder' changed CRC from '0xb8a2fdf2' to '0x61a0616d'
+Export 'drm_atomic_get_old_crtc_for_encoder' changed CRC from '0xd2e00d07' to '0x7e66705f'
+Export 'drm_atomic_get_old_private_obj_state' changed CRC from '0xfa24c1b4' to '0xf1067396'
+Export 'drm_atomic_get_plane_state' changed CRC from '0x9aa27957' to '0x8bc121dc'
+Export 'drm_atomic_get_private_obj_state' changed CRC from '0xaec92474' to '0x8b66dacb'
+Export 'drm_atomic_nonblocking_commit' changed CRC from '0xa12cd3a9' to '0x5757e521'
+Export 'drm_atomic_print_new_state' changed CRC from '0x18be274f' to '0xd7c35cd0'
+Export 'drm_atomic_private_obj_fini' changed CRC from '0xcb3ed178' to '0x26a4eea2'
+Export 'drm_atomic_private_obj_init' changed CRC from '0x87ba7c9c' to '0xabe21bef'
+Export 'drm_atomic_state_alloc' changed CRC from '0x0549cffa' to '0xf785ef60'
+Export 'drm_atomic_state_clear' changed CRC from '0x0971585f' to '0xb8b25405'
+Export 'drm_atomic_state_default_clear' changed CRC from '0xb4d34451' to '0xac639976'
+Export 'drm_atomic_state_default_release' changed CRC from '0xfd7edf75' to '0x28c04f53'
+Export 'drm_atomic_state_init' changed CRC from '0x3a530fb6' to '0x493ee8eb'
+Export 'drm_client_buffer_vmap' changed CRC from '0x6fc00fa3' to '0x22ccae4f'
+Export 'drm_client_buffer_vmap_local' changed CRC from '0xa207c3b9' to '0x490da203'
+Export 'drm_client_buffer_vunmap' changed CRC from '0x60702e58' to '0x90a5940c'
+Export 'drm_client_buffer_vunmap_local' changed CRC from '0x90bd1df3' to '0xf5d19509'
+Export 'drm_client_dev_hotplug' changed CRC from '0x418fb288' to '0x425eb372'
+Export 'drm_client_dev_unregister' changed CRC from '0x5b0c15a2' to '0x5a907538'
+Export 'drm_client_framebuffer_create' changed CRC from '0xd6427977' to '0x42b6a87e'
+Export 'drm_client_framebuffer_delete' changed CRC from '0x0c0f9c59' to '0x9ac45912'
+Export 'drm_client_framebuffer_flush' changed CRC from '0xb726892d' to '0x2218ce10'
+Export 'drm_client_init' changed CRC from '0xdb3b3e0b' to '0x2b85083f'
+Export 'drm_client_register' changed CRC from '0x472d996c' to '0xb419b7d0'
+Export 'drm_client_release' changed CRC from '0xc4c5d465' to '0x4115ca23'
+Export 'drm_crtc_commit_wait' changed CRC from '0x171da927' to '0x57c5192c'
+Export 'drm_debugfs_add_file' changed CRC from '0x12493177' to '0x50f714c1'
+Export 'drm_debugfs_add_files' changed CRC from '0xfbf7654c' to '0xbc31d840'
+Export 'drm_debugfs_create_files' changed CRC from '0x8effdd92' to '0x2353093b'
+Export 'drm_debugfs_gpuva_info' changed CRC from '0x26a2412c' to '0xab9b3f3e'
+Export 'drm_debugfs_remove_files' changed CRC from '0x56b8feba' to '0x669b95ee'
+Export 'drm_event_cancel_free' changed CRC from '0xe4e2e591' to '0xe0fc90f7'
+Export 'drm_event_reserve_init' changed CRC from '0x18789dcf' to '0xe617e40b'
+Export 'drm_event_reserve_init_locked' changed CRC from '0x04125ba6' to '0x0dc95356'
+Export 'drm_exec_cleanup' changed CRC from '0x6289950b' to '0xae446b1a'
+Export 'drm_exec_fini' changed CRC from '0xada49972' to '0x2869d456'
+Export 'drm_exec_init' changed CRC from '0xbe3e1a12' to '0xe26ac651'
+Export 'drm_exec_lock_obj' changed CRC from '0x24a8c251' to '0x57988326'
+Export 'drm_exec_prepare_array' changed CRC from '0x2c157bbd' to '0xc4ff7fdc'
+Export 'drm_exec_prepare_obj' changed CRC from '0x1c43d607' to '0xe60d117e'
+Export 'drm_exec_unlock_obj' changed CRC from '0x145729fc' to '0x28b2ad35'
+Export 'drm_fbdev_dma_setup' changed CRC from '0x4f64e42d' to '0xe84310d9'
+Export 'drm_fbdev_ttm_driver_fbdev_probe' changed CRC from '0x40a3936c' to '0xd002c95b'
+Export 'drm_fbdev_ttm_setup' changed CRC from '0x9fd525f2' to '0xeeecfb20'
+Export 'drm_framebuffer_cleanup' changed CRC from '0x910daeb0' to '0x62bff8e5'
+Export 'drm_framebuffer_init' changed CRC from '0x9ef00770' to '0xd5c8d0f0'
+Export 'drm_framebuffer_lookup' changed CRC from '0xa9e69359' to '0x462f1eb0'
+Export 'drm_framebuffer_remove' changed CRC from '0x79d06f45' to '0x12cc085a'
+Export 'drm_framebuffer_unregister_private' changed CRC from '0xc2a45444' to '0x2d5aa454'
+Export 'drm_gem_ttm_mmap' changed CRC from '0x00289f0a' to '0xb4d70816'
+Export 'drm_gem_ttm_print_info' changed CRC from '0xb4ece798' to '0x6b4ceab8'
+Export 'drm_gem_ttm_vmap' changed CRC from '0xfbf62d06' to '0xc75a3fb6'
+Export 'drm_gem_ttm_vunmap' changed CRC from '0xe459c5aa' to '0x6fdce127'
+Export 'drm_gpuva_find' changed CRC from '0xbd29ec31' to '0x65e7df54'
+Export 'drm_gpuva_find_first' changed CRC from '0xaae710fa' to '0x0157b1f8'
+Export 'drm_gpuva_find_next' changed CRC from '0x15f4d86f' to '0xd6ec67c7'
+Export 'drm_gpuva_find_prev' changed CRC from '0x2ee8cd7d' to '0xedf072d5'
+Export 'drm_gpuva_insert' changed CRC from '0x955d1815' to '0x8cf1b482'
+Export 'drm_gpuva_link' changed CRC from '0x641fe805' to '0xcc17af7a'
+Export 'drm_gpuva_map' changed CRC from '0xcd5e5551' to '0x91f233d8'
+Export 'drm_gpuva_ops_free' changed CRC from '0x85c9dda6' to '0x1d54b540'
+Export 'drm_gpuva_remap' changed CRC from '0xa92852f8' to '0xc76986e8'
+Export 'drm_gpuva_remove' changed CRC from '0x49e29c70' to '0x30a9245c'
+Export 'drm_gpuva_unlink' changed CRC from '0xdef705b1' to '0x4c3b7ae5'
+Export 'drm_gpuva_unmap' changed CRC from '0xfcb5ecaa' to '0x5be3223b'
+Export 'drm_gpuvm_bo_create' changed CRC from '0xe7d4fd56' to '0x0ff1efcb'
+Export 'drm_gpuvm_bo_evict' changed CRC from '0x67ae91a9' to '0xb79b04b6'
+Export 'drm_gpuvm_bo_extobj_add' changed CRC from '0x29c0e2af' to '0x971672c4'
+Export 'drm_gpuvm_bo_find' changed CRC from '0xed455320' to '0xf99cbba5'
+Export 'drm_gpuvm_bo_obtain' changed CRC from '0x8e7e8d89' to '0x665b9f14'
+Export 'drm_gpuvm_bo_obtain_prealloc' changed CRC from '0x894b8271' to '0x03161b6d'
+Export 'drm_gpuvm_bo_put' changed CRC from '0xae4cecaf' to '0x558cc3d1'
+Export 'drm_gpuvm_bo_unmap_ops_create' changed CRC from '0x9603f84c' to '0x19141fae'
+Export 'drm_gpuvm_exec_lock' changed CRC from '0xdb47dfcf' to '0xe03c788c'
+Export 'drm_gpuvm_exec_lock_array' changed CRC from '0xbf2e2a24' to '0x2e769f38'
+Export 'drm_gpuvm_exec_lock_range' changed CRC from '0x587199fe' to '0xe81ad66b'
+Export 'drm_gpuvm_init' changed CRC from '0x133e9eda' to '0xfd013bd0'
+Export 'drm_gpuvm_interval_empty' changed CRC from '0x6d214b16' to '0x24292e29'
+Export 'drm_gpuvm_prefetch_ops_create' changed CRC from '0x6b75fe29' to '0x0046f878'
+Export 'drm_gpuvm_prepare_objects' changed CRC from '0xbb3e55e8' to '0x705d3682'
+Export 'drm_gpuvm_prepare_range' changed CRC from '0xdd8f2c05' to '0xd9a338f4'
+Export 'drm_gpuvm_prepare_vm' changed CRC from '0xcf7f8541' to '0x42c71c1e'
+Export 'drm_gpuvm_put' changed CRC from '0xe3307e9e' to '0x56368750'
+Export 'drm_gpuvm_range_valid' changed CRC from '0xa39a74a9' to '0xe28737c6'
+Export 'drm_gpuvm_resv_add_fence' changed CRC from '0xcfcbef52' to '0x27340a1a'
+Export 'drm_gpuvm_resv_object_alloc' changed CRC from '0x9cf236ad' to '0x2c2b81f9'
+Export 'drm_gpuvm_sm_map' changed CRC from '0x6c5a37c6' to '0x2d4787cd'
+Export 'drm_gpuvm_sm_map_ops_create' changed CRC from '0x1b343e83' to '0x10bb1cbf'
+Export 'drm_gpuvm_sm_unmap' changed CRC from '0x5d240dda' to '0x6247f7ac'
+Export 'drm_gpuvm_sm_unmap_ops_create' changed CRC from '0x822913a7' to '0x81775f8e'
+Export 'drm_gpuvm_validate' changed CRC from '0xe01e77f2' to '0xa8d6645b'
+Export 'drm_sched_fault' changed CRC from '0x94af8d56' to '0xb597a646'
+Export 'drm_sched_fini' changed CRC from '0x40093167' to '0x03932801'
+Export 'drm_sched_increase_karma' changed CRC from '0x4985fd98' to '0x9cf0b2d6'
+Export 'drm_sched_init' changed CRC from '0x28c73184' to '0x3e36042f'
+Export 'drm_sched_job_add_dependency' changed CRC from '0x161221de' to '0x08239f7f'
+Export 'drm_sched_job_add_implicit_dependencies' changed CRC from '0x897a90f8' to '0x14e48142'
+Export 'drm_sched_job_add_resv_dependencies' changed CRC from '0x75e168d0' to '0xcb79d89c'
+Export 'drm_sched_job_add_syncobj_dependency' changed CRC from '0x937087b8' to '0x1c2176fa'
+Export 'drm_sched_job_arm' changed CRC from '0xaa79c69b' to '0x284cc18c'
+Export 'drm_sched_job_cleanup' changed CRC from '0x268c133a' to '0x83ae6a40'
+Export 'drm_sched_job_init' changed CRC from '0x7c4bca40' to '0x82b6bfcb'
+Export 'drm_sched_pick_best' changed CRC from '0xdd5be3f6' to '0x5c0d1b01'
+Export 'drm_sched_resubmit_jobs' changed CRC from '0xd7804809' to '0x6c4e233d'
+Export 'drm_sched_resume_timeout' changed CRC from '0x0e5aa5dd' to '0xad8b09de'
+Export 'drm_sched_start' changed CRC from '0x6fbba2b4' to '0xb554a4f1'
+Export 'drm_sched_stop' changed CRC from '0x1c16e064' to '0xef2777de'
+Export 'drm_sched_suspend_timeout' changed CRC from '0xbbeb4812' to '0xb3c06bff'
+Export 'drm_sched_tdr_queue_imm' changed CRC from '0x2197ca0d' to '0xafd049ef'
+Export 'drm_sched_wqueue_ready' changed CRC from '0x90a5b610' to '0xc324c572'
+Export 'drm_sched_wqueue_start' changed CRC from '0x0880f30e' to '0x94a20dce'
+Export 'drm_sched_wqueue_stop' changed CRC from '0x9b2d0c12' to '0x22c0bd4e'
+Export 'drm_send_event' changed CRC from '0xa0168891' to '0x6ef7beb8'
+Export 'drm_send_event_locked' changed CRC from '0x3c23e8e7' to '0x42ce558f'
+Export 'drm_send_event_timestamp_locked' changed CRC from '0x8110f0ff' to '0x8f2a019d'
+Export 'drm_show_memory_stats' changed CRC from '0x2da05978' to '0x95cf74d1'
+Export 'drm_state_dump' changed CRC from '0xb17faa60' to '0xa9b14495'
+Export 'drm_syncobj_find' changed CRC from '0x29681bd0' to '0x793f88c3'
+Export 'drm_syncobj_find_fence' changed CRC from '0x3b085963' to '0xba0de298'
+Export 'drm_syncobj_get_handle' changed CRC from '0x26fdc92d' to '0xcd0aa9c2'
+Export 'gfn_to_hva' changed CRC from '0xf9f4a05e' to '0x7efaa955' (tolerated by rules)
+Export 'gfn_to_memslot' changed CRC from '0xd06ba9c5' to '0xaface76a' (tolerated by rules)
+Export 'handle_fastpath_hlt' changed CRC from '0x916e4156' to '0x47c44758' (tolerated by rules)
+Export 'handle_fastpath_set_msr_irqoff' changed CRC from '0xea0544ec' to '0x3caf42e2' (tolerated by rules)
+Export 'handle_ud' changed CRC from '0xfb435d57' to '0x2de95b59' (tolerated by rules)
+Export 'hv_track_root_tdp' changed CRC from '0xdf99c183' to '0xb229bfc8' (tolerated by rules)
+Export 'i915_gem_gtt_insert' changed CRC from '0x8b29f2ce' to '0x000a218b' (tolerated by rules)
+Export 'i915_gem_object_alloc' changed CRC from '0x297665c3' to '0x56bbce7d' (tolerated by rules)
+Export 'i915_gem_object_create_shmem' changed CRC from '0x60c9e9cf' to '0x78dcab09' (tolerated by rules)
+Export 'i915_gem_object_ggtt_pin_ww' changed CRC from '0x4ed59ad7' to '0x45670497' (tolerated by rules)
+Export 'i915_gem_object_init' changed CRC from '0xef23dc7a' to '0x730b6e3b' (tolerated by rules)
+Export 'i915_gem_object_pin_map' changed CRC from '0x01f754b3' to '0x74b63d0b' (tolerated by rules)
+Export 'i915_gem_object_set_to_cpu_domain' changed CRC from '0x9b2cc563' to '0x0b011e62' (tolerated by rules)
+Export 'i915_gem_prime_export' changed CRC from '0x55ba3cd3' to '0x49c95a46' (tolerated by rules)
+Export 'i915_gem_ww_ctx_backoff' changed CRC from '0x24976eb4' to '0x2ddb1940' (tolerated by rules)
+Export 'i915_gem_ww_ctx_fini' changed CRC from '0x94581b86' to '0x5bf89d75' (tolerated by rules)
+Export 'i915_gem_ww_ctx_init' changed CRC from '0xcbc1a2f1' to '0x07e17d78' (tolerated by rules)
+Export 'i915_ppgtt_create' changed CRC from '0xd864458c' to '0x31b4d0c8' (tolerated by rules)
+Export 'i915_request_add' changed CRC from '0xd3c9cab5' to '0x74473f6c' (tolerated by rules)
+Export 'i915_request_create' changed CRC from '0x1d9e7e73' to '0x6de028a8' (tolerated by rules)
+Export 'i915_request_wait' changed CRC from '0xb6af0b42' to '0x1a2f776e' (tolerated by rules)
+Export 'i915_reserve_fence' changed CRC from '0x6744b896' to '0x38c6b58a' (tolerated by rules)
+Export 'i915_unreserve_fence' changed CRC from '0xae77fefc' to '0xd14cbc98' (tolerated by rules)
+Export 'ice_add_rdma_qset' changed CRC from '0xf1322718' to '0x2aba9513' (tolerated by rules)
+Export 'ice_del_rdma_qset' changed CRC from '0x4db30355' to '0xab43224d' (tolerated by rules)
+Export 'ice_get_qos_params' changed CRC from '0x19a0dbff' to '0x919b0ab7' (tolerated by rules)
+Export 'ice_rdma_request_reset' changed CRC from '0x5e013c95' to '0x56d1570e' (tolerated by rules)
+Export 'ice_rdma_update_vsi_filter' changed CRC from '0x14c5180f' to '0x9a51a878' (tolerated by rules)
+Export 'intel_context_create' changed CRC from '0x00d60f89' to '0x1368bdb8' (tolerated by rules)
+Export 'intel_gvt_clear_ops' changed CRC from '0x64b96dea' to '0xdb3c8c33' (tolerated by rules)
+Export 'intel_gvt_iterate_mmio_table' changed CRC from '0xbb16f16f' to '0xbb6977cd' (tolerated by rules)
+Export 'intel_gvt_set_ops' changed CRC from '0x19c1e453' to '0xe3a8fee3' (tolerated by rules)
+Export 'intel_ring_begin' changed CRC from '0x2b349bbb' to '0xdae194b8' (tolerated by rules)
+Export 'intel_runtime_pm_get' changed CRC from '0x146bbeae' to '0xaab6d458' (tolerated by rules)
+Export 'intel_runtime_pm_put_unchecked' changed CRC from '0x464d833c' to '0xf37e826e' (tolerated by rules)
+Export 'intel_uncore_forcewake_for_reg' changed CRC from '0x769b8e6d' to '0x8ca85777' (tolerated by rules)
+Export 'intel_uncore_forcewake_get' changed CRC from '0x4af7535a' to '0xac1c4683' (tolerated by rules)
+Export 'intel_uncore_forcewake_put' changed CRC from '0x797879bf' to '0xe412eb19' (tolerated by rules)
+Export 'ipv6_bpf_stub' changed CRC from '0xc2530bbb' to '0x675c5c66'
+Export 'kvm_alloc_apic_access_page' changed CRC from '0x5a85fe63' to '0xeff80cf3' (tolerated by rules)
+Export 'kvm_apic_ack_interrupt' changed CRC from '0x6295bda0' to '0x7c0d9993' (tolerated by rules)
+Export 'kvm_apic_clear_irr' changed CRC from '0x5c73f022' to '0x42ebd411' (tolerated by rules)
+Export 'kvm_apic_has_interrupt' changed CRC from '0xc1a4414a' to '0x170e4744' (tolerated by rules)
+Export 'kvm_apic_match_dest' changed CRC from '0x9b297f3f' to '0x27543217' (tolerated by rules)
+Export 'kvm_apic_send_ipi' changed CRC from '0xb8271843' to '0x7ba56f5e' (tolerated by rules)
+Export 'kvm_apic_set_base' changed CRC from '0x14e5cccb' to '0x40e37859' (tolerated by rules)
+Export 'kvm_apic_set_eoi_accelerated' changed CRC from '0x38ba5f9b' to '0x26227ba8' (tolerated by rules)
+Export 'kvm_apic_update_hwapic_isr' changed CRC from '0x31be65e2' to '0xe71463ec' (tolerated by rules)
+Export 'kvm_apic_update_irr' changed CRC from '0x54bc759b' to '0xc3e1d7d8' (tolerated by rules)
+Export 'kvm_apic_update_ppr' changed CRC from '0x5f6c3671' to '0x89c6307f' (tolerated by rules)
+Export 'kvm_apic_write_nodecode' changed CRC from '0x57901cbb' to '0x49083888' (tolerated by rules)
+Export 'kvm_apicv_activated' changed CRC from '0x5e3963b6' to '0x3bc3379c' (tolerated by rules)
+Export 'kvm_arch_end_assignment' changed CRC from '0x66595cee' to '0x03a308c4' (tolerated by rules)
+Export 'kvm_arch_has_assigned_device' changed CRC from '0x8a2d9bed' to '0xefd7cfc7' (tolerated by rules)
+Export 'kvm_arch_has_noncoherent_dma' changed CRC from '0x1ce483ba' to '0x791ed790' (tolerated by rules)
+Export 'kvm_arch_no_poll' changed CRC from '0x90a48316' to '0x460e8518' (tolerated by rules)
+Export 'kvm_arch_register_noncoherent_dma' changed CRC from '0x24e6339a' to '0x411c67b0' (tolerated by rules)
+Export 'kvm_arch_start_assignment' changed CRC from '0xc00c1119' to '0xa5f64533' (tolerated by rules)
+Export 'kvm_arch_unregister_noncoherent_dma' changed CRC from '0x6eb281d9' to '0x0b48d5f3' (tolerated by rules)
+Export 'kvm_are_all_memslots_empty' changed CRC from '0x902f57ae' to '0x43b2e8bc' (tolerated by rules)
+Export 'kvm_clear_guest' changed CRC from '0xaa3156ef' to '0x901a1cf2' (tolerated by rules)
+Export 'kvm_complete_insn_gp' changed CRC from '0x5189f62a' to '0x4f11d219' (tolerated by rules)
+Export 'kvm_cpu_caps' changed CRC from '0x5d2a48db' to '0xe5962fbe' (tolerated by rules)
+Export 'kvm_cpu_get_extint' changed CRC from '0x838eb6c9' to '0x5524b0c7' (tolerated by rules)
+Export 'kvm_cpu_has_injectable_intr' changed CRC from '0x4c4e76c7' to '0x9ae470c9' (tolerated by rules)
+Export 'kvm_cpu_has_interrupt' changed CRC from '0xff088cbd' to '0x29a28ab3' (tolerated by rules)
+Export 'kvm_cpuid' changed CRC from '0x2412278b' to '0xc3b881de' (tolerated by rules)
+Export 'kvm_deliver_exception_payload' changed CRC from '0xea736258' to '0x7aee61b7' (tolerated by rules)
+Export 'kvm_destroy_vcpus' changed CRC from '0x6ef6eed9' to '0xbd6b51cb' (tolerated by rules)
+Export 'kvm_emulate_ap_reset_hold' changed CRC from '0x3d826c58' to '0xeb286a56' (tolerated by rules)
+Export 'kvm_emulate_cpuid' changed CRC from '0xbece7268' to '0x68647466' (tolerated by rules)
+Export 'kvm_emulate_halt' changed CRC from '0x7c40f207' to '0xaaeaf409' (tolerated by rules)
+Export 'kvm_emulate_halt_noskip' changed CRC from '0xda9e76a4' to '0x0c3470aa' (tolerated by rules)
+Export 'kvm_emulate_hypercall' changed CRC from '0x279762c3' to '0xf13d64cd' (tolerated by rules)
+Export 'kvm_emulate_instruction' changed CRC from '0xa4f0e63b' to '0xba68c208' (tolerated by rules)
+Export 'kvm_emulate_instruction_from_buffer' changed CRC from '0xe8cb86b9' to '0x67b04db2' (tolerated by rules)
+Export 'kvm_emulate_invd' changed CRC from '0x1ed3abfc' to '0xc879adf2' (tolerated by rules)
+Export 'kvm_emulate_monitor' changed CRC from '0x1611800c' to '0xc0bb8602' (tolerated by rules)
+Export 'kvm_emulate_mwait' changed CRC from '0x9bfa3303' to '0x4d50350d' (tolerated by rules)
+Export 'kvm_emulate_rdmsr' changed CRC from '0xefe6e9ed' to '0x394cefe3' (tolerated by rules)
+Export 'kvm_emulate_rdpmc' changed CRC from '0xf51a88fe' to '0x23b08ef0' (tolerated by rules)
+Export 'kvm_emulate_wbinvd' changed CRC from '0x2a8aef24' to '0xfc20e92a' (tolerated by rules)
+Export 'kvm_emulate_wrmsr' changed CRC from '0x97eeb35b' to '0x4144b555' (tolerated by rules)
+Export 'kvm_emulate_xsetbv' changed CRC from '0x0fedaf15' to '0xd947a91b' (tolerated by rules)
+Export 'kvm_fast_pio' changed CRC from '0xe6185625' to '0xe2cf8274' (tolerated by rules)
+Export 'kvm_fixup_and_inject_pf_error' changed CRC from '0x859f8928' to '0x9bca7df4' (tolerated by rules)
+Export 'kvm_flush_remote_tlbs' changed CRC from '0x82ba5500' to '0x5127ea12' (tolerated by rules)
+Export 'kvm_get_cr8' changed CRC from '0x2d5f2ba2' to '0xfbf52dac' (tolerated by rules)
+Export 'kvm_get_dr' changed CRC from '0x42469298' to '0x5cdeb6ab' (tolerated by rules)
+Export 'kvm_get_kvm' changed CRC from '0xbb0780e8' to '0x689a3ffa' (tolerated by rules)
+Export 'kvm_get_kvm_safe' changed CRC from '0xfaac5866' to '0x2931e774' (tolerated by rules)
+Export 'kvm_get_linear_rip' changed CRC from '0x256bf67a' to '0xf3c1f074' (tolerated by rules)
+Export 'kvm_get_msr' changed CRC from '0xfe2265c8' to '0xe0779114' (tolerated by rules)
+Export 'kvm_get_msr_common' changed CRC from '0x9689847a' to '0x298844c5' (tolerated by rules)
+Export 'kvm_get_msr_with_filter' changed CRC from '0x2e54e348' to '0x30011794' (tolerated by rules)
+Export 'kvm_get_rflags' changed CRC from '0x572ef05b' to '0x8184f655' (tolerated by rules)
+Export 'kvm_get_running_vcpu' changed CRC from '0xf619c2c3' to '0xccb41b56' (tolerated by rules)
+Export 'kvm_gfn_to_hva_cache_init' changed CRC from '0xf38e4137' to '0x23da96d6' (tolerated by rules)
+Export 'kvm_handle_invalid_op' changed CRC from '0x40bfd9c9' to '0x9615dfc7' (tolerated by rules)
+Export 'kvm_handle_invpcid' changed CRC from '0xd68ed506' to '0x729e3266' (tolerated by rules)
+Export 'kvm_handle_memory_failure' changed CRC from '0x70bf9d92' to '0x52a1e39d' (tolerated by rules)
+Export 'kvm_handle_page_fault' changed CRC from '0xce697b18' to '0x2907fc19' (tolerated by rules)
+Export 'kvm_hv_assist_page_enabled' changed CRC from '0xd720f8c1' to '0x018afecf' (tolerated by rules)
+Export 'kvm_hv_get_assist_page' changed CRC from '0xe519a554' to '0x33b3a35a' (tolerated by rules)
+Export 'kvm_init_mmu' changed CRC from '0x38c617fd' to '0x42679e00' (tolerated by rules)
+Export 'kvm_init_shadow_ept_mmu' changed CRC from '0x6e21ca0c' to '0x19c1941d' (tolerated by rules)
+Export 'kvm_init_shadow_npt_mmu' changed CRC from '0xf5115b58' to '0xc732007b' (tolerated by rules)
+Export 'kvm_inject_emulated_page_fault' changed CRC from '0xb4f323b1' to '0xf9e5520e' (tolerated by rules)
+Export 'kvm_inject_realmode_interrupt' changed CRC from '0x2eb01c29' to '0xf653a7df' (tolerated by rules)
+Export 'kvm_intr_is_single_vcpu' changed CRC from '0x0b4ebfec' to '0x5aea1a64' (tolerated by rules)
+Export 'kvm_io_bus_get_dev' changed CRC from '0x72000b32' to '0x354b6013' (tolerated by rules)
+Export 'kvm_io_bus_read' changed CRC from '0x72fffe3b' to '0x406aca61' (tolerated by rules)
+Export 'kvm_io_bus_write' changed CRC from '0x32f8971f' to '0x663d82a0' (tolerated by rules)
+Export 'kvm_irq_has_notifier' changed CRC from '0xff9d4e1a' to '0x80db8c1d' (tolerated by rules)
+Export 'kvm_is_linear_rip' changed CRC from '0x2cf7ccf7' to '0xbbaa6eb4' (tolerated by rules)
+Export 'kvm_is_visible_gfn' changed CRC from '0xb28ca914' to '0x3582a01f' (tolerated by rules)
+Export 'kvm_lapic_expired_hv_timer' changed CRC from '0xe7fb78f1' to '0x31517eff' (tolerated by rules)
+Export 'kvm_lapic_find_highest_irr' changed CRC from '0x90a89e67' to '0x46029869' (tolerated by rules)
+Export 'kvm_lapic_readable_reg_mask' changed CRC from '0x75228805' to '0xf24dbb72' (tolerated by rules)
+Export 'kvm_lapic_set_eoi' changed CRC from '0x53bc909d' to '0x85169693' (tolerated by rules)
+Export 'kvm_lmsw' changed CRC from '0xe1f7a746' to '0x76aa0505' (tolerated by rules)
+Export 'kvm_load_guest_xsave_state' changed CRC from '0x0525a2fd' to '0xd38fa4f3' (tolerated by rules)
+Export 'kvm_load_host_xsave_state' changed CRC from '0x53a76836' to '0x850d6e38' (tolerated by rules)
+Export 'kvm_make_all_cpus_request' changed CRC from '0x75021115' to '0x9fb424c4' (tolerated by rules)
+Export 'kvm_mmu_free_guest_mode_roots' changed CRC from '0x2281609c' to '0x552fa18f' (tolerated by rules)
+Export 'kvm_mmu_free_obsolete_roots' changed CRC from '0x3f130dad' to '0x45b28450' (tolerated by rules)
+Export 'kvm_mmu_free_roots' changed CRC from '0x5df889ba' to '0xad42670c' (tolerated by rules)
+Export 'kvm_mmu_gva_to_gpa_read' changed CRC from '0x197760c9' to '0x29520223' (tolerated by rules)
+Export 'kvm_mmu_gva_to_gpa_write' changed CRC from '0xa5d7de7c' to '0x95f2bc96' (tolerated by rules)
+Export 'kvm_mmu_invalidate_addr' changed CRC from '0xc3daa4e0' to '0x4ca16feb' (tolerated by rules)
+Export 'kvm_mmu_invlpg' changed CRC from '0x7e2ce797' to '0x66ee7308' (tolerated by rules)
+Export 'kvm_mmu_load' changed CRC from '0x8d3fbbe0' to '0xf79e321d' (tolerated by rules)
+Export 'kvm_mmu_new_pgd' changed CRC from '0x126319b7' to '0x0aa18d28' (tolerated by rules)
+Export 'kvm_mmu_page_fault' changed CRC from '0x75b5e66b' to '0x1f7226c7' (tolerated by rules)
+Export 'kvm_mmu_print_sptes' changed CRC from '0xbb05f079' to '0x6eaa9a70' (tolerated by rules)
+Export 'kvm_mmu_reset_context' changed CRC from '0xa63fd35c' to '0xdc9e5aa1' (tolerated by rules)
+Export 'kvm_msr_allowed' changed CRC from '0x5473a1f0' to '0x8c901a06' (tolerated by rules)
+Export 'kvm_pmu_trigger_event' changed CRC from '0x3ee31891' to '0x207b3ca2' (tolerated by rules)
+Export 'kvm_post_set_cr0' changed CRC from '0x8b5e9bfa' to '0x1bc39815' (tolerated by rules)
+Export 'kvm_post_set_cr4' changed CRC from '0x7774c6dc' to '0xe7e9c533' (tolerated by rules)
+Export 'kvm_prepare_emulation_failure_exit' changed CRC from '0xd5ba9be4' to '0x03109dea' (tolerated by rules)
+Export 'kvm_prepare_event_vectoring_exit' changed CRC from '0x2cd504be' to '0xe4bd9bc7' (tolerated by rules)
+Export 'kvm_put_kvm' changed CRC from '0x3f4e9ee6' to '0xecd321f4' (tolerated by rules)
+Export 'kvm_put_kvm_no_destroy' changed CRC from '0xd31e3859' to '0x0083874b' (tolerated by rules)
+Export 'kvm_queue_exception' changed CRC from '0x265447e6' to '0xc8c46b4e' (tolerated by rules)
+Export 'kvm_queue_exception_e' changed CRC from '0x989e800e' to '0x77dccd86' (tolerated by rules)
+Export 'kvm_queue_exception_p' changed CRC from '0x05b93a0d' to '0x41e684c6' (tolerated by rules)
+Export 'kvm_read_guest' changed CRC from '0x2c5f2435' to '0xa1d6169b' (tolerated by rules)
+Export 'kvm_read_guest_cached' changed CRC from '0xffea641c' to '0x2837e225' (tolerated by rules)
+Export 'kvm_read_guest_offset_cached' changed CRC from '0x5ec39881' to '0x594f2410' (tolerated by rules)
+Export 'kvm_read_guest_page' changed CRC from '0xedc8d8a3' to '0x90a044b1' (tolerated by rules)
+Export 'kvm_read_guest_virt' changed CRC from '0x76af9086' to '0x1da905e4' (tolerated by rules)
+Export 'kvm_read_l1_tsc' changed CRC from '0xa2d36897' to '0xbc4b4ca4' (tolerated by rules)
+Export 'kvm_requeue_exception' changed CRC from '0xa5269b41' to '0x4bb6b7e9' (tolerated by rules)
+Export 'kvm_requeue_exception_e' changed CRC from '0xe4d96122' to '0x0b9b2caa' (tolerated by rules)
+Export 'kvm_require_dr' changed CRC from '0xd118f165' to '0xcf80d556' (tolerated by rules)
+Export 'kvm_service_local_tlb_flush_requests' changed CRC from '0xa7d7386d' to '0x717d3e63' (tolerated by rules)
+Export 'kvm_set_cr0' changed CRC from '0xc37b8ea0' to '0x54262ce3' (tolerated by rules)
+Export 'kvm_set_cr3' changed CRC from '0xa34b8c27' to '0x34162e64' (tolerated by rules)
+Export 'kvm_set_cr4' changed CRC from '0xf5eb756b' to '0x62b6d728' (tolerated by rules)
+Export 'kvm_set_cr8' changed CRC from '0xae5a7936' to '0x3907db75' (tolerated by rules)
+Export 'kvm_set_dr' changed CRC from '0xa93800f6' to '0xeb28cdc8' (tolerated by rules)
+Export 'kvm_set_internal_memslot' changed CRC from '0xe2d9098c' to '0x78a12f45' (tolerated by rules)
+Export 'kvm_set_msi_irq' changed CRC from '0x00f4709c' to '0x8aae249f' (tolerated by rules)
+Export 'kvm_set_msr' changed CRC from '0x82b38fd5' to '0x5a503423' (tolerated by rules)
+Export 'kvm_set_msr_common' changed CRC from '0x42805b14' to '0xfd819bab' (tolerated by rules)
+Export 'kvm_set_msr_with_filter' changed CRC from '0x6d3ea2b4' to '0xb5dd1942' (tolerated by rules)
+Export 'kvm_set_or_clear_apicv_inhibit' changed CRC from '0x1878a67f' to '0xac6f5a90' (tolerated by rules)
+Export 'kvm_set_rflags' changed CRC from '0x6146e76a' to '0xf61b4529' (tolerated by rules)
+Export 'kvm_sev_es_mmio_read' changed CRC from '0x51f95667' to '0xc1645588' (tolerated by rules)
+Export 'kvm_sev_es_mmio_write' changed CRC from '0x9379522f' to '0x03e451c0' (tolerated by rules)
+Export 'kvm_sev_es_string_io' changed CRC from '0xf9310449' to '0x5737c006' (tolerated by rules)
+Export 'kvm_skip_emulated_instruction' changed CRC from '0x21d34672' to '0xf779407c' (tolerated by rules)
+Export 'kvm_smm_changed' changed CRC from '0x0aad04e5' to '0x6737a4f0' (tolerated by rules)
+Export 'kvm_task_switch' changed CRC from '0x73a37f94' to '0x51bd019b' (tolerated by rules)
+Export 'kvm_tdp_map_page' changed CRC from '0x0176d4b2' to '0x900e6f84' (tolerated by rules)
+Export 'kvm_tdp_mmu_gpa_is_mapped' changed CRC from '0x274f1f2c' to '0x7b488e23' (tolerated by rules)
+Export 'kvm_update_cpuid_runtime' changed CRC from '0x7bd5c7b4' to '0xad7fc1ba' (tolerated by rules)
+Export 'kvm_update_dr7' changed CRC from '0x665a0462' to '0xb0f0026c' (tolerated by rules)
+Export 'kvm_valid_efer' changed CRC from '0x8b115341' to '0x95897772' (tolerated by rules)
+Export 'kvm_vcpu_apicv_activated' changed CRC from '0xe6064127' to '0x30ac4729' (tolerated by rules)
+Export 'kvm_vcpu_deliver_sipi_vector' changed CRC from '0x98c994c2' to '0x011fcf50' (tolerated by rules)
+Export 'kvm_vcpu_gfn_to_hva' changed CRC from '0x2fa17712' to '0x0ca37f64' (tolerated by rules)
+Export 'kvm_vcpu_halt' changed CRC from '0xf175b6f2' to '0xf658803f' (tolerated by rules)
+Export 'kvm_vcpu_has_events' changed CRC from '0x865937bf' to '0x50f331b1' (tolerated by rules)
+Export 'kvm_vcpu_is_reset_bsp' changed CRC from '0x78d5cc9c' to '0xae7fca92' (tolerated by rules)
+Export 'kvm_vcpu_is_visible_gfn' changed CRC from '0x5c232f1b' to '0x7f21276d' (tolerated by rules)
+Export 'kvm_vcpu_kick' changed CRC from '0x33abe101' to '0x3486d7cc' (tolerated by rules)
+Export 'kvm_vcpu_mark_page_dirty' changed CRC from '0xf303195d' to '0xd001112b' (tolerated by rules)
+Export 'kvm_vcpu_on_spin' changed CRC from '0xc576e0ec' to '0x1e19291b' (tolerated by rules)
+Export 'kvm_vcpu_read_guest' changed CRC from '0xd2347e3e' to '0x64873007' (tolerated by rules)
+Export 'kvm_vcpu_read_guest_atomic' changed CRC from '0xc278be19' to '0x74cbf020' (tolerated by rules)
+Export 'kvm_vcpu_read_guest_page' changed CRC from '0x74593bb8' to '0xf406f1aa' (tolerated by rules)
+Export 'kvm_vcpu_reset' changed CRC from '0x78360037' to '0xc7f8f905' (tolerated by rules)
+Export 'kvm_vcpu_unmap' changed CRC from '0xc7427c44' to '0x905b727e' (tolerated by rules)
+Export 'kvm_vcpu_wake_up' changed CRC from '0x496e054b' to '0x4e433386' (tolerated by rules)
+Export 'kvm_vcpu_write_guest' changed CRC from '0xb7d30e36' to '0xbd71ddad' (tolerated by rules)
+Export 'kvm_vcpu_write_guest_page' changed CRC from '0x55b3be80' to '0xca53e91e' (tolerated by rules)
+Export 'kvm_vcpu_yield_to' changed CRC from '0x5c63e2ba' to '0x5b4ed477' (tolerated by rules)
+Export 'kvm_wait_lapic_expire' changed CRC from '0xd84f4bda' to '0x0ee54dd4' (tolerated by rules)
+Export 'kvm_write_guest' changed CRC from '0x730d97d0' to '0xf2467dca' (tolerated by rules)
+Export 'kvm_write_guest_cached' changed CRC from '0x134d824d' to '0xc4900474' (tolerated by rules)
+Export 'kvm_write_guest_offset_cached' changed CRC from '0x0ce88134' to '0x0b643da5' (tolerated by rules)
+Export 'kvm_write_guest_page' changed CRC from '0xca0c351e' to '0x325f7870' (tolerated by rules)
+Export 'kvm_write_guest_virt_system' changed CRC from '0x9e74ebaf' to '0xf5727ecd' (tolerated by rules)
+Export 'kvm_x86_vendor_init' changed CRC from '0x49347314' to '0xc6fdc254' (tolerated by rules)
+Export 'kvm_zap_gfn_range' changed CRC from '0x509e688e' to '0xc9addcee' (tolerated by rules)
+Export 'load_pdptrs' changed CRC from '0xf042914a' to '0x671f3309' (tolerated by rules)
+Export 'mana_cfg_vport' changed CRC from '0x59a9a071' to '0x75f56694' (tolerated by rules)
+Export 'mana_create_wq_obj' changed CRC from '0x83e36801' to '0xe89502e8' (tolerated by rules)
+Export 'mana_destroy_wq_obj' changed CRC from '0x716d846a' to '0x428262d1' (tolerated by rules)
+Export 'mana_gd_create_mana_eq' changed CRC from '0xf6d72b11' to '0x9f9abad4' (tolerated by rules)
+Export 'mana_gd_create_mana_wq_cq' changed CRC from '0x9ae142e6' to '0xdcc9c9fd' (tolerated by rules)
+Export 'mana_gd_destroy_dma_region' changed CRC from '0xfbf68166' to '0x9464806f' (tolerated by rules)
+Export 'mana_gd_destroy_queue' changed CRC from '0x05ae9eb6' to '0x6d00cc45' (tolerated by rules)
+Export 'mana_gd_poll_cq' changed CRC from '0x88f5db86' to '0x4d1a208b' (tolerated by rules)
+Export 'mana_gd_post_work_request' changed CRC from '0x4a4e9cba' to '0x29ff688c' (tolerated by rules)
+Export 'mana_gd_ring_cq' changed CRC from '0xdaca47ca' to '0xcaeb396e' (tolerated by rules)
+Export 'mana_gd_send_request' changed CRC from '0xa3051939' to '0xd50a1977' (tolerated by rules)
+Export 'mana_gd_wq_ring_doorbell' changed CRC from '0xbbfbd061' to '0x731c4e58' (tolerated by rules)
+Export 'mana_get_primary_netdev' changed CRC from '0xffc2ce86' to '0xad602d18' (tolerated by rules)
+Export 'mana_uncfg_vport' changed CRC from '0x081983af' to '0x1c663deb' (tolerated by rules)
+Export 'mark_page_dirty' changed CRC from '0x48bfeae1' to '0xcfb1e3ea' (tolerated by rules)
+Export 'mark_page_dirty_in_slot' changed CRC from '0xa91ed04f' to '0x59eca0b9' (tolerated by rules)
+Export 'nfct_btf_struct_access' changed CRC from '0xf5c31c71' to '0xe20a11ca'
+Export 'pmc_write_counter' changed CRC from '0x55841f30' to '0x1bf9626b' (tolerated by rules)
+Export 'register_btf_fmodret_id_set' changed CRC from '0x7dfa776f' to '0x8b855856'
+Export 'register_btf_id_dtor_kfuncs' changed CRC from '0x0b3be0a8' to '0x93e340fd'
+Export 'register_btf_kfunc_id_set' changed CRC from '0x17f9c080' to '0xe186efb9'
+Export 'sk_attach_filter' changed CRC from '0xedf94bb2' to '0xbc0226d7'
+Export 'sk_detach_filter' changed CRC from '0x5b5e7c95' to '0xbcb69583'
+Export 'sk_filter_trim_cap' changed CRC from '0xc353f522' to '0xde20f0df'
+Export 'ttm_bo_eviction_valuable' changed CRC from '0x093f14d7' to '0xcd699a98'
+Export 'ttm_bo_init_reserved' changed CRC from '0xac18e24f' to '0xb264b1f5'
+Export 'ttm_bo_init_validate' changed CRC from '0xead61221' to '0xcdd094ce'
+Export 'ttm_bo_kmap' changed CRC from '0xed800de9' to '0x179bcb46'
+Export 'ttm_bo_kunmap' changed CRC from '0x464dac8c' to '0x5185b949'
+Export 'ttm_bo_mem_space' changed CRC from '0x73bd48fa' to '0x263ae3d3'
+Export 'ttm_bo_mmap_obj' changed CRC from '0x7d7387a2' to '0xf54c3358'
+Export 'ttm_bo_move_accel_cleanup' changed CRC from '0xafd200b3' to '0xe645f270'
+Export 'ttm_bo_move_memcpy' changed CRC from '0xb027ae5a' to '0x44be030d'
+Export 'ttm_bo_move_sync_cleanup' changed CRC from '0x5a81777a' to '0x7b06f61f'
+Export 'ttm_bo_move_to_lru_tail' changed CRC from '0x5cf8c2a7' to '0xe170e2a3'
+Export 'ttm_bo_pin' changed CRC from '0x272c7ace' to '0x7ac5f47b'
+Export 'ttm_bo_put' changed CRC from '0xd803faef' to '0x9c91abe1'
+Export 'ttm_bo_set_bulk_move' changed CRC from '0x3319735d' to '0x40375516'
+Export 'ttm_bo_unmap_virtual' changed CRC from '0x7e2b84e4' to '0x30bb6e65'
+Export 'ttm_bo_unpin' changed CRC from '0x3b530386' to '0x541cae18'
+Export 'ttm_bo_validate' changed CRC from '0x5c2777a4' to '0xe542e190'
+Export 'ttm_bo_vm_reserve' changed CRC from '0x8cc96a86' to '0xc1760076'
+Export 'ttm_bo_vmap' changed CRC from '0x8ba87c1d' to '0xf3cf6ae7'
+Export 'ttm_bo_vunmap' changed CRC from '0x0c69799d' to '0xf3e7b7f5'
+Export 'ttm_bo_wait_ctx' changed CRC from '0xbadafcf4' to '0xef099a90'
+Export 'ttm_device_clear_dma_mappings' changed CRC from '0x00a7ddc1' to '0x1745afb8'
+Export 'ttm_device_fini' changed CRC from '0x07303b2a' to '0x8b65a2af'
+Export 'ttm_device_init' changed CRC from '0x7ead9a3f' to '0x51e9cff9'
+Export 'ttm_device_swapout' changed CRC from '0xeea73270' to '0x1c40f2aa'
+Export 'ttm_io_prot' changed CRC from '0x02231ae5' to '0xe43668b4'
+Export 'ttm_lru_bulk_move_fini' changed CRC from '0xcdc88ba3' to '0xba61b53e'
+Export 'ttm_lru_bulk_move_init' changed CRC from '0x1e2fabb4' to '0x8545017a'
+Export 'ttm_lru_bulk_move_tail' changed CRC from '0x0e72c87a' to '0x357b3ef9'
+Export 'ttm_range_man_fini_nocheck' changed CRC from '0xc42a4619' to '0x217d1288'
+Export 'ttm_range_man_init_nocheck' changed CRC from '0xbf774ac3' to '0x683c9df4'
+Export 'ttm_resource_fini' changed CRC from '0x66d7d7b3' to '0x60941fdd'
+Export 'ttm_resource_free' changed CRC from '0xf50e0892' to '0x54719067'
+Export 'ttm_resource_init' changed CRC from '0x43bfd1bf' to '0x88377354'
+Export 'ttm_resource_manager_create_debugfs' changed CRC from '0x842d2d63' to '0x459f2763'
+Export 'ttm_resource_manager_debug' changed CRC from '0xa9194611' to '0x3efa9233'
+Export 'ttm_resource_manager_evict_all' changed CRC from '0xee8b08c5' to '0x1548dcc0'
+Export 'ttm_resource_manager_init' changed CRC from '0x24d9a162' to '0x886bc593'
+Export 'ttm_resource_manager_usage' changed CRC from '0x7d38e619' to '0x85ad9787'
+Export 'ttm_sg_tt_init' changed CRC from '0x39e2c52e' to '0xe02f0851'
+Export 'ttm_tt_init' changed CRC from '0x992b0aa1' to '0x9a0fc150'
+Export 'ttm_tt_populate' changed CRC from '0x625b2447' to '0xeca02a20'
+Export 'vcpu_load' changed CRC from '0x1937452c' to '0x1e1a73e1' (tolerated by rules)
+Export 'vcpu_put' changed CRC from '0x59ef95a6' to '0x5ec2a36b' (tolerated by rules)
+Export 'vlan_dev_real_dev' changed CRC from '0xf2e338de' to '0xd0958eff'
+Export 'vlan_dev_vlan_id' changed CRC from '0x7fd2b1a2' to '0x23103516'
+Export 'vlan_dev_vlan_proto' changed CRC from '0xe4876bf0' to '0xcacb743e'
+Export 'vlan_filter_drop_vids' changed CRC from '0x06f2f822' to '0x8e036b7f'
+Export 'vlan_filter_push_vids' changed CRC from '0x549c1fb3' to '0x55153809'
+Export 'vlan_for_each' changed CRC from '0x6715289f' to '0xd68cb85e'
+Export 'vlan_uses_dev' changed CRC from '0xe7fd8276' to '0x7286e412'
+Export 'vlan_vid_add' changed CRC from '0x11826d17' to '0x0ad73793'
+Export 'vlan_vid_del' changed CRC from '0xddd293c6' to '0xb8550efb'
+Export 'vlan_vids_add_by_dev' changed CRC from '0xe89646e2' to '0x82ab7802'
+Export 'vlan_vids_del_by_dev' changed CRC from '0x9ab13880' to '0xc253bc15'
+Export 'x86_decode_emulated_instruction' changed CRC from '0x0bd2ca6a' to '0xa9879843' (tolerated by rules)
+Export 'xdp_do_redirect' changed CRC from '0xffb79d6e' to '0xb8a5e600'
+Export 'xdp_do_redirect_frame' changed CRC from '0x87ddba12' to '0xf6de5934'
+Export 'xdp_master_redirect' changed CRC from '0x5bffc872' to '0x0f8db2d2'
+Export 'xfer_to_guest_mode_handle_work' changed CRC from '0xdb676511' to '0xdc4a53dc' (tolerated by rules)

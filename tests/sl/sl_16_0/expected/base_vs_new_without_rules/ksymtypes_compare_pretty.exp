@@ -1,0 +1,399 @@
+Export 'nf_flow_register_bpf' has been removed
+Export 'vsc_tp_free_irq' has been removed
+Export 'vsc_tp_request_irq' has been removed
+Export 'xfrm_bpf_md_dst' has been removed
+The following '193' exports are different:
+ ____kvm_emulate_hypercall
+ __gfn_to_page
+ __kvm_prepare_emulation_failure_exit
+ __kvm_vcpu_map
+ __kvm_vcpu_update_apicv
+ __traceiter_kvm_entry
+ __traceiter_kvm_exit
+ __traceiter_kvm_nested_vmexit
+ __traceiter_kvm_page_fault
+ __traceiter_kvm_rmp_fault
+ __x86_set_memory_region
+ gfn_to_hva
+ gfn_to_memslot
+ handle_fastpath_hlt
+ handle_fastpath_set_msr_irqoff
+ handle_ud
+ hv_track_root_tdp
+ kvm_alloc_apic_access_page
+ kvm_apic_ack_interrupt
+ kvm_apic_clear_irr
+ kvm_apic_has_interrupt
+ kvm_apic_match_dest
+ kvm_apic_send_ipi
+ kvm_apic_set_base
+ kvm_apic_set_eoi_accelerated
+ kvm_apic_update_hwapic_isr
+ kvm_apic_update_irr
+ kvm_apic_update_ppr
+ kvm_apic_write_nodecode
+ kvm_apicv_activated
+ kvm_arch_end_assignment
+ kvm_arch_has_assigned_device
+ kvm_arch_has_noncoherent_dma
+ kvm_arch_no_poll
+ kvm_arch_register_noncoherent_dma
+ kvm_arch_start_assignment
+ kvm_arch_unregister_noncoherent_dma
+ kvm_are_all_memslots_empty
+ kvm_clear_guest
+ kvm_complete_insn_gp
+ kvm_cpu_caps
+ kvm_cpu_get_extint
+ kvm_cpu_has_injectable_intr
+ kvm_cpu_has_interrupt
+ kvm_cpuid
+ kvm_deliver_exception_payload
+ kvm_destroy_vcpus
+ kvm_emulate_ap_reset_hold
+ kvm_emulate_cpuid
+ kvm_emulate_halt
+ kvm_emulate_halt_noskip
+ kvm_emulate_hypercall
+ kvm_emulate_instruction
+ kvm_emulate_instruction_from_buffer
+ kvm_emulate_invd
+ kvm_emulate_monitor
+ kvm_emulate_mwait
+ kvm_emulate_rdmsr
+ kvm_emulate_rdpmc
+ kvm_emulate_wbinvd
+ kvm_emulate_wrmsr
+ kvm_emulate_xsetbv
+ kvm_fast_pio
+ kvm_fixup_and_inject_pf_error
+ kvm_flush_remote_tlbs
+ kvm_get_cr8
+ kvm_get_dr
+ kvm_get_kvm
+ kvm_get_kvm_safe
+ kvm_get_linear_rip
+ kvm_get_msr
+ kvm_get_msr_common
+ kvm_get_msr_with_filter
+ kvm_get_rflags
+ kvm_get_running_vcpu
+ kvm_gfn_to_hva_cache_init
+ kvm_handle_invalid_op
+ kvm_handle_invpcid
+ kvm_handle_memory_failure
+ kvm_handle_page_fault
+ kvm_hv_assist_page_enabled
+ kvm_hv_get_assist_page
+ kvm_init_mmu
+ kvm_init_shadow_ept_mmu
+ kvm_init_shadow_npt_mmu
+ kvm_inject_emulated_page_fault
+ kvm_inject_realmode_interrupt
+ kvm_intr_is_single_vcpu
+ kvm_io_bus_get_dev
+ kvm_io_bus_read
+ kvm_io_bus_write
+ kvm_irq_has_notifier
+ kvm_is_linear_rip
+ kvm_is_visible_gfn
+ kvm_lapic_expired_hv_timer
+ kvm_lapic_find_highest_irr
+ kvm_lapic_readable_reg_mask
+ kvm_lapic_set_eoi
+ kvm_lmsw
+ kvm_load_guest_xsave_state
+ kvm_load_host_xsave_state
+ kvm_make_all_cpus_request
+ kvm_mmu_free_guest_mode_roots
+ kvm_mmu_free_obsolete_roots
+ kvm_mmu_free_roots
+ kvm_mmu_gva_to_gpa_read
+ kvm_mmu_gva_to_gpa_write
+ kvm_mmu_invalidate_addr
+ kvm_mmu_invlpg
+ kvm_mmu_load
+ kvm_mmu_new_pgd
+ kvm_mmu_page_fault
+ kvm_mmu_print_sptes
+ kvm_mmu_reset_context
+ kvm_msr_allowed
+ kvm_pmu_trigger_event
+ kvm_post_set_cr0
+ kvm_post_set_cr4
+ kvm_prepare_emulation_failure_exit
+ kvm_prepare_event_vectoring_exit
+ kvm_put_kvm
+ kvm_put_kvm_no_destroy
+ kvm_queue_exception
+ kvm_queue_exception_e
+ kvm_queue_exception_p
+ kvm_read_guest
+ kvm_read_guest_cached
+ kvm_read_guest_offset_cached
+ kvm_read_guest_page
+ kvm_read_guest_virt
+ kvm_read_l1_tsc
+ kvm_requeue_exception
+ kvm_requeue_exception_e
+ kvm_require_dr
+ kvm_service_local_tlb_flush_requests
+ kvm_set_cr0
+ kvm_set_cr3
+ kvm_set_cr4
+ kvm_set_cr8
+ kvm_set_dr
+ kvm_set_internal_memslot
+ kvm_set_msi_irq
+ kvm_set_msr
+ kvm_set_msr_common
+ kvm_set_msr_with_filter
+ kvm_set_or_clear_apicv_inhibit
+ kvm_set_rflags
+ kvm_sev_es_mmio_read
+ kvm_sev_es_mmio_write
+ kvm_sev_es_string_io
+ kvm_skip_emulated_instruction
+ kvm_smm_changed
+ kvm_task_switch
+ kvm_tdp_map_page
+ kvm_tdp_mmu_gpa_is_mapped
+ kvm_update_cpuid_runtime
+ kvm_update_dr7
+ kvm_valid_efer
+ kvm_vcpu_apicv_activated
+ kvm_vcpu_deliver_sipi_vector
+ kvm_vcpu_gfn_to_hva
+ kvm_vcpu_halt
+ kvm_vcpu_has_events
+ kvm_vcpu_is_reset_bsp
+ kvm_vcpu_is_visible_gfn
+ kvm_vcpu_kick
+ kvm_vcpu_mark_page_dirty
+ kvm_vcpu_on_spin
+ kvm_vcpu_read_guest
+ kvm_vcpu_read_guest_atomic
+ kvm_vcpu_read_guest_page
+ kvm_vcpu_reset
+ kvm_vcpu_unmap
+ kvm_vcpu_wake_up
+ kvm_vcpu_write_guest
+ kvm_vcpu_write_guest_page
+ kvm_vcpu_yield_to
+ kvm_wait_lapic_expire
+ kvm_write_guest
+ kvm_write_guest_cached
+ kvm_write_guest_offset_cached
+ kvm_write_guest_page
+ kvm_write_guest_virt_system
+ kvm_x86_vendor_init
+ kvm_zap_gfn_range
+ load_pdptrs
+ mark_page_dirty
+ mark_page_dirty_in_slot
+ pmc_write_counter
+ vcpu_load
+ vcpu_put
+ x86_decode_emulated_instruction
+ xfer_to_guest_mode_handle_work
+
+because of a changed 'E#NR_KVM_CPU_CAPS':
+@@ -1,1 +1,1 @@
+-( 25 ) + 6
++( 25 ) + 7
+
+The following '9' exports are different:
+ mana_gd_create_mana_eq
+ mana_gd_create_mana_wq_cq
+ mana_gd_destroy_dma_region
+ mana_gd_destroy_queue
+ mana_gd_poll_cq
+ mana_gd_post_work_request
+ mana_gd_ring_cq
+ mana_gd_send_request
+ mana_gd_wq_ring_doorbell
+
+because of a changed 's#device_node':
+@@ -1,3 +1,13 @@
+ struct device_node {
+-	UNKNOWN
++	const char * name;
++	t#phandle t#phandle;
++	const char * full_name;
++	s#fwnode_handle fwnode;
++	s#property * properties;
++	s#property * deadprops;
++	s#device_node * parent;
++	s#device_node * child;
++	s#device_node * sibling;
++	unsigned long _flags;
++	void * data;
+ }
+
+The following '14' exports are different:
+ mana_cfg_vport
+ mana_create_wq_obj
+ mana_destroy_wq_obj
+ mana_gd_create_mana_eq
+ mana_gd_create_mana_wq_cq
+ mana_gd_destroy_dma_region
+ mana_gd_destroy_queue
+ mana_gd_poll_cq
+ mana_gd_post_work_request
+ mana_gd_ring_cq
+ mana_gd_send_request
+ mana_gd_wq_ring_doorbell
+ mana_get_primary_netdev
+ mana_uncfg_vport
+
+because of a changed 's#gdma_context':
+@@ -4,7 +4,7 @@
+ 	unsigned int max_num_queues;
+ 	unsigned int max_num_msix;
+ 	unsigned int num_msix_usable;
+-	s#gdma_irq_context * irq_contexts;
++	s#xarray irq_contexts;
+ 	t#u16 adapter_mtu;
+ 	unsigned int max_num_cqs;
+ 	s#gdma_queue * * cq_table;
+@@ -12,6 +12,7 @@
+ 	s#completion eq_test_event;
+ 	t#u32 test_event_eq_id;
+ 	t#bool is_pf;
++	t#bool in_service;
+ 	t#phys_addr_t bar0_pa;
+ 	void * bar0_va;
+ 	void * shm_base;
+
+The following '5' exports are different:
+ ice_add_rdma_qset
+ ice_del_rdma_qset
+ ice_get_qos_params
+ ice_rdma_request_reset
+ ice_rdma_update_vsi_filter
+
+because of a changed 's#ice_pf':
+@@ -7,9 +7,7 @@
+ 	s#devlink_port devlink_port;
+ 	s#msix_entry * msix_entries;
+ 	s#ice_irq_tracker irq_tracker;
+-	t#u16 sriov_base_vector;
+-	unsigned long * sriov_irq_bm;
+-	t#u16 sriov_irq_size;
++	s#ice_virt_irq_tracker virt_irq_tracker;
+ 	t#u16 ctrl_vsi_idx;
+ 	s#ice_vsi * * vsi;
+ 	s#ice_vsi_stats * * vsi_stats;
+@@ -52,7 +50,7 @@
+ 	s#msi_map ll_ts_irq;
+ 	t#u16 max_pf_txqs;
+ 	t#u16 max_pf_rxqs;
+-	t#u16 num_lan_msix;
++	s#ice_pf_msix msix;
+ 	t#u16 num_lan_tx;
+ 	t#u16 num_lan_rx;
+ 	t#u16 next_vsi;
+
+The following '9' exports are different:
+ mana_gd_create_mana_eq
+ mana_gd_create_mana_wq_cq
+ mana_gd_destroy_dma_region
+ mana_gd_destroy_queue
+ mana_gd_poll_cq
+ mana_gd_post_work_request
+ mana_gd_ring_cq
+ mana_gd_send_request
+ mana_gd_wq_ring_doorbell
+
+because of a changed 's#irq_domain':
+@@ -1,3 +1,23 @@
+ struct irq_domain {
+-	UNKNOWN
++	s#list_head link;
++	const char * name;
++	const s#irq_domain_ops * ops;
++	void * host_data;
++	unsigned int flags;
++	unsigned int mapcount;
++	s#mutex mutex;
++	s#irq_domain * root;
++	s#fwnode_handle * fwnode;
++	e#irq_domain_bus_token bus_token;
++	s#irq_domain_chip_generic * gc;
++	s#device * dev;
++	s#device * pm_dev;
++	s#irq_domain * parent;
++	const s#msi_parent_ops * msi_parent_ops;
++	void ( * exit ) ( s#irq_domain * );
++	void * suse_kabi_padding;
++	t#irq_hw_number_t hwirq_max;
++	unsigned int revmap_size;
++	s#xarray revmap_tree;
++	s#irq_data * revmap [ ];
+ }
+
+The following '4' exports are different:
+ mana_cfg_vport
+ mana_create_wq_obj
+ mana_destroy_wq_obj
+ mana_uncfg_vport
+
+because of a changed 's#mana_port_context':
+@@ -27,9 +27,13 @@
+ 	t#mana_handle_t pf_filter_handle;
+ 	s#mutex vport_mutex;
+ 	int vport_use_count;
++	s#net_shaper_handle handle;
+ 	t#u16 port_idx;
++	t#u32 speed;
++	t#u32 max_speed;
+ 	t#bool port_is_up;
+ 	t#bool port_st_save;
+ 	s#mana_ethtool_stats eth_stats;
++	s#mana_ethtool_phy_stats phy_stats;
+ 	s#dentry * mana_port_debugfs;
+ }
+
+The following '14' exports are different:
+ mana_cfg_vport
+ mana_create_wq_obj
+ mana_destroy_wq_obj
+ mana_gd_create_mana_eq
+ mana_gd_create_mana_wq_cq
+ mana_gd_destroy_dma_region
+ mana_gd_destroy_queue
+ mana_gd_poll_cq
+ mana_gd_post_work_request
+ mana_gd_ring_cq
+ mana_gd_send_request
+ mana_gd_wq_ring_doorbell
+ mana_get_primary_netdev
+ mana_uncfg_vport
+
+because of a changed 's#net_shaper_ops':
+@@ -1,3 +1,6 @@
+ struct net_shaper_ops {
+-	UNKNOWN
++	int ( * group ) ( s#net_shaper_binding *, int, const s#net_shaper *, const s#net_shaper *, s#netlink_ext_ack * );
++	int ( * set ) ( s#net_shaper_binding *, const s#net_shaper *, s#netlink_ext_ack * );
++	int ( * delete ) ( s#net_shaper_binding *, const s#net_shaper_handle *, s#netlink_ext_ack * );
++	void ( * capabilities ) ( s#net_shaper_binding *, e#net_shaper_scope, unsigned long * );
+ }
+
+The following '3' exports are different:
+ __traceiter_smc_rx_recvmsg
+ __traceiter_smc_switch_to_fallback
+ __traceiter_smc_tx_sendmsg
+
+because of a changed 's#smc_sock':
+@@ -1,6 +1,8 @@
+ struct smc_sock {
+-	s#sock sk;
+-	s#ipv6_pinfo * pinet6;
++	union {
++		s#sock sk;
++		s#inet_sock icsk_inet;
++	};
+ 	s#socket * clcsock;
+ 	void ( * clcsk_state_change ) ( s#sock * );
+ 	void ( * clcsk_data_ready ) ( s#sock * );

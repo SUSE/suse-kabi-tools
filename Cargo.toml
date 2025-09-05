@@ -6,3 +6,6 @@ name = "suse-kabi-tools"
 authors = ["Petr Pavlu <petr.pavlu@suse.com>"]
 edition = "2024"
 rust-version = "1.88"
+
+[features]
+skip_expensive_tests = []
