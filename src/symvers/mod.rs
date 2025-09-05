@@ -198,19 +198,16 @@ impl SymversCorpus {
             always_tolerated: bool,
             output_symbols: &mut HashMap<&'a str, bool>,
         ) -> ChangeStatus {
-            let mut status = ChangeStatus::Breaking;
             if let Some(rules) = maybe_rules
                 && rules.is_tolerated(name, &info.module, info.namespace.as_deref())
             {
-                status = ChangeStatus::RulesTolerated;
+                return ChangeStatus::RulesTolerated;
             }
-            if status == ChangeStatus::Breaking && always_tolerated {
-                status = ChangeStatus::ImplicitlyTolerated;
+            if always_tolerated {
+                return ChangeStatus::ImplicitlyTolerated;
             }
-            if status == ChangeStatus::Breaking {
-                output_symbols.insert(name, modified);
-            }
-            status
+            output_symbols.insert(name, modified);
+            ChangeStatus::Breaking
         }
 
         // A helper function to obtain the appropriate tolerated suffix string.
