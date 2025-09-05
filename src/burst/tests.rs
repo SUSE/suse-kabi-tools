@@ -250,3 +250,12 @@ fn run_jobs_error() {
     // reach the end of the entire operation.
     assert!(vec.len() < 100);
 }
+
+#[test]
+fn run_jobs_no_work() {
+    // Check that `burst::run_jobs()` terminates when there no work is present.
+    let mut job_slots = JobControl::new_simple(8);
+
+    let result = run_jobs(|_| Ok(()), 0, &mut job_slots);
+    assert_ok!(result);
+}

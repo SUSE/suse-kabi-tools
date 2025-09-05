@@ -324,13 +324,16 @@ pub fn run_jobs<F: Fn(usize) -> Result<(), Error> + Send + Sync>(
         let mut workers = Vec::new();
 
         loop {
-            // Check if more work needs to be processed and attempt to spawn a new worker if needed.
-            if next_work_idx.load(Ordering::Relaxed) < num_works
-                && job_slots.acquire_one().is_some()
-            {
+            // Check if the operation has been completed.
+            if next_work_idx.load(Ordering::Relaxed) >= num_works {
+                break;
+            }
+
+            // Attempt to spawn a new worker to process more work.
+            if job_slots.acquire_one().is_some() {
                 let worker_sender = job_slots.get_ctrl_sender();
                 workers.push(scope.spawn(|| {
-                    // Run the worker, fetching new work one by one until everything is complete.
+                    // Run the worker, fetching new work one by one until everything is completed.
                     let worker_sender = worker_sender;
 
                     loop {
@@ -355,10 +358,7 @@ pub fn run_jobs<F: Fn(usize) -> Result<(), Error> + Send + Sync>(
             }
 
             // Wait for a new job slot to become available, or for the work to be completed.
-            match job_slots.recv_ctrl_msg() {
-                JobMessage::SlotAvailable => continue,
-                JobMessage::Completed => break,
-            }
+            job_slots.recv_ctrl_msg();
         }
 
         // Join all the worker threads. Return the first error if any is found, others are silently
