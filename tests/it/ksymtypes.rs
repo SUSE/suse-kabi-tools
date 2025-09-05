@@ -7,10 +7,6 @@ use std::fs;
 use std::path::Path;
 use suse_kabi_tools::assert_inexact;
 
-fn ksymtypes_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResult {
-    tool_run(env!("CARGO_BIN_EXE_ksymtypes"), args)
-}
-
 #[test]
 fn ksymtypes_consolidate() {
     // Check that the consolidate command trivially works.

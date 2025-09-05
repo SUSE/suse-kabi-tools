@@ -2,11 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::common::*;
-use std::ffi::OsStr;
-
-fn ksymvers_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResult {
-    tool_run(env!("CARGO_BIN_EXE_ksymvers"), args)
-}
 
 #[test]
 fn ksymvers_compare_identical() {

@@ -28,6 +28,14 @@ pub fn tool_run<P: AsRef<OsStr>, I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
     }
 }
 
+pub fn ksymtypes_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResult {
+    tool_run(env!("CARGO_BIN_EXE_ksymtypes"), args)
+}
+
+pub fn ksymvers_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResult {
+    tool_run(env!("CARGO_BIN_EXE_ksymvers"), args)
+}
+
 pub fn tmp_path<P: AsRef<Path>>(path: P) -> PathBuf {
     let res = Path::new(env!("CARGO_TARGET_TMPDIR")).join(path);
     if let Some(parent) = res.parent() {
