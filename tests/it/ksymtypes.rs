@@ -14,7 +14,7 @@ fn ksymtypes_run<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(args: I) -> RunResu
 #[test]
 fn ksymtypes_consolidate() {
     // Check that the consolidate command trivially works.
-    let output_path = tmp_path("ksymtypes/consolidate.symtypes");
+    let output_path = tmp_path("it/ksymtypes/consolidate.symtypes");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("consolidate"),
@@ -52,7 +52,7 @@ fn ksymtypes_consolidate_missing_output() {
 fn ksymtypes_consolidate_invalid_input() {
     // Check that the consolidate command correctly propagates inner errors and writes them on the
     // standard error output.
-    let output_path = tmp_path("ksymtypes/consolidate_invalid_input.symtypes");
+    let output_path = tmp_path("it/ksymtypes/consolidate_invalid_input.symtypes");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("consolidate"),
@@ -93,7 +93,7 @@ fn ksymtypes_consolidate_non_directory() {
 fn ksymtypes_consolidate_reject_consolidated() {
     // Check that the consolidate command rejects loading any symtypes files in the consolidated
     // format.
-    let output_path = tmp_path("consolidate/reject_consolidated.symtypes");
+    let output_path = tmp_path("it/consolidate/reject_consolidated.symtypes");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("consolidate"),
@@ -112,7 +112,7 @@ fn ksymtypes_consolidate_reject_consolidated() {
 #[test]
 fn ksymtypes_split() {
     // Check that the split command trivially works.
-    let output_path = tmp_path("ksymtypes/split");
+    let output_path = tmp_path("it/ksymtypes/split");
     fs::remove_dir_all(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("split"),
@@ -152,7 +152,7 @@ fn ksymtypes_split_missing_output() {
 fn ksymtypes_split_invalid_input() {
     // Check that the split command correctly propagates inner errors and writes them on the
     // standard error output.
-    let output_path = tmp_path("ksymtypes/split_invalid_input");
+    let output_path = tmp_path("it/ksymtypes/split_invalid_input");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("split"),
@@ -171,7 +171,7 @@ fn ksymtypes_split_invalid_input() {
 #[test]
 fn ksymtypes_split_non_file() {
     // Check that the split command rejects an input path that is not a file.
-    let output_path = tmp_path("ksymtypes/split_non_file");
+    let output_path = tmp_path("it/ksymtypes/split_non_file");
     fs::remove_file(&output_path).ok();
     let input_path = Path::new("tests/it/ksymtypes/split_non_file");
     assert!(input_path.is_dir());
@@ -192,7 +192,7 @@ fn ksymtypes_split_non_file() {
 #[test]
 fn ksymtypes_split_reject_plain() {
     // Check that the split command rejects loading a symtypes file in the non-consolidated format.
-    let output_path = tmp_path("split/reject_plain");
+    let output_path = tmp_path("it/split/reject_plain");
     fs::remove_file(&output_path).ok();
     let result = ksymtypes_run([
         AsRef::<OsStr>::as_ref("split"),
