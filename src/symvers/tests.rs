@@ -663,6 +663,8 @@ fn compare_format_short() {
     //      summary.
     // iii: Changes its type from regular to GPL -> included in the tolerated-by-rules summary.
     // jjj: Changes its type from GPL to regular -> included in the tolerated-by-rules summary.
+    //
+    // NOTE: Keep this test synchronized with the ksymtypes_compare_format integration test.
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(
         "a/test.symvers",

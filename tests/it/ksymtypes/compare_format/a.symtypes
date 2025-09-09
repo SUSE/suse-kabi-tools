@@ -1,0 +1,13 @@
+s#foo struct foo { int a ; }
+bar int bar ( s#foo , int )
+bar2 int bar2 ( s#foo , int )
+bar3 int bar3 ( s#foo , int )
+bar4 int bar4 ( s#foo , int )
+bar5 int bar5 ( s#foo , int )
+bar6 int bar6 ( s#foo , int )
+bar7 int bar7 ( s#foo , int )
+bar8 int bar8 ( s#foo , int )
+bar9 int bar9 ( s#foo , int )
+bar10 int bar10 ( s#foo , int )
+bar11 int bar11 ( s#foo , int )
+baz int baz ( )

@@ -1,0 +1,29 @@
+Export 'qux' has been added
+Export 'baz' has been removed
+The following '1' exports are different:
+ bar
+
+because of a changed 'bar':
+@@ -1,1 +1,1 @@
+-int bar ( s#foo, int )
++int bar ( s#foo, long )
+
+The following '11' exports are different:
+ bar
+ bar10
+ bar11
+ bar2
+ bar3
+ bar4
+ bar5
+ bar6
+ bar7
+ bar8
+ <...>
+
+because of a changed 's#foo':
+@@ -1,3 +1,4 @@
+ struct foo {
+ 	int a;
++	int b;
+ }

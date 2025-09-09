@@ -883,6 +883,8 @@ fn compare_format_mod_symbols() {
 fn compare_format_short() {
     // Check that when using the short format, the comparison output limits the list of different
     // exports to 10.
+    //
+    // NOTE: Keep this test synchronized with the ksymtypes_compare_format integration test.
     let mut symtypes = SymtypesCorpus::new();
     let mut warnings = Vec::new();
     let result = symtypes.load_buffer(

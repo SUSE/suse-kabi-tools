@@ -1,0 +1,12 @@
+Export 'aaa' has been added (implicitly tolerated)
+Export 'fff' has been added (tolerated by rules)
+Export 'bbb' has been removed
+Export 'ggg' has been removed (tolerated by rules)
+Export 'ccc' changed CRC from '0x12345678' to '0x9abcdef0'
+Export 'ccc' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'
+Export 'ddd' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'
+Export 'eee' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (implicitly tolerated)
+Export 'hhh' changed CRC from '0x12345678' to '0x9abcdef0' (tolerated by rules)
+Export 'hhh' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL' (tolerated by rules)
+Export 'iii' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL' (tolerated by rules)
+Export 'jjj' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (tolerated by rules)

@@ -1,0 +1,7 @@
+Export 'aaa' has been added (implicitly tolerated)
+Export 'bbb' has been removed
+Export 'ccc' changed CRC from '0x12345678' to '0x9abcdef0'
+Export 'ccc' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'
+Export 'ddd' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'
+Export 'eee' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (implicitly tolerated)
+Changes tolerated by rules: '1' additions, '1' removals, '3' modifications
