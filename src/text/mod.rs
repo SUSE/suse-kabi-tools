@@ -614,7 +614,7 @@ impl Filter {
         Ok(())
     }
 
-    /// Checks whether the given text matches any of the filter patterns.
+    /// Checks if the given text matches any of the filter patterns.
     pub fn matches(&self, name: &str) -> bool {
         if self.literals.contains(name) {
             return true;

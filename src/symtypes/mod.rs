@@ -998,8 +998,11 @@ impl SymtypesCorpus {
         }
     }
 
-    /// Compares the symbols in `self` and `other_symtypes` and writes a human-readable report about
-    /// all found changes to the specified file.
+    /// Compares the symbols in `self` and `other_symtypes`.
+    ///
+    /// Writes reports about any found changes to the specified files, formatted as requested.
+    /// Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
+    /// <code>Err([Error])</code> on error.
     pub fn compare_with<P: AsRef<Path>>(
         &self,
         other_symtypes: &SymtypesCorpus,
@@ -1016,8 +1019,11 @@ impl SymtypesCorpus {
         self.compare_with_buffer(other_symtypes, maybe_filter, &mut writers[..], job_slots)
     }
 
-    /// Compares the symbols in `self` and `other_symtypes` and writes a human-readable report about
-    /// all found changes to the provided output stream.
+    /// Compares the symbols in `self` and `other_symtypes`.
+    ///
+    /// Writes reports about any found changes to the provided output streams, formatted as
+    /// requested. Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
+    /// <code>Err([Error])</code> on error.
     pub fn compare_with_buffer<W: Write>(
         &self,
         other_symtypes: &SymtypesCorpus,
