@@ -5,7 +5,7 @@
 mod common;
 
 use crate::common::*;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -28,16 +28,6 @@ use std::path::{Path, PathBuf};
 //   structures defined.
 // * patches.kabi/kABI-Fix-the-module-name-type-in-audit_context.patch: affects audit_context.
 // * patches.kabi/kABI-fix-for-net-vlan-fix-VLAN-0-refcount-imbalance-.patch: affects vlan_info.
-
-fn concat_os<S: AsRef<OsStr>, S2: AsRef<OsStr>>(s: S, s2: S2) -> OsString {
-    let s = s.as_ref();
-    let s2 = s2.as_ref();
-
-    let mut res = OsString::with_capacity(s.len() + s2.len());
-    res.push(s);
-    res.push(s2);
-    res
-}
 
 #[test]
 #[cfg_attr(feature = "skip_expensive_tests", ignore)]

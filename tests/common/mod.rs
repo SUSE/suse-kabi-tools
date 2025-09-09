@@ -1,7 +1,7 @@
 // Copyright (C) 2025 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
@@ -41,5 +41,15 @@ pub fn tmp_path<P: AsRef<Path>>(path: P) -> PathBuf {
     if let Some(parent) = res.parent() {
         fs::create_dir_all(parent).unwrap()
     }
+    res
+}
+
+pub fn concat_os<S: AsRef<OsStr>, S2: AsRef<OsStr>>(s: S, s2: S2) -> OsString {
+    let s = s.as_ref();
+    let s2 = s2.as_ref();
+
+    let mut res = OsString::with_capacity(s.len() + s2.len());
+    res.push(s);
+    res.push(s2);
     res
 }
