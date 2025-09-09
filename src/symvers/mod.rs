@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use crate::rules::Rules;
-use crate::text::{Writer, read_lines};
+use crate::text::{Filter, Writer, matches_filter, read_lines};
 use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::HashMap;
 use std::io::prelude::*;
@@ -158,6 +158,7 @@ impl SymversCorpus {
     pub fn compare_with<P: AsRef<Path>>(
         &self,
         other_symvers: &SymversCorpus,
+        maybe_filter: Option<&Filter>,
         maybe_rules: Option<&Rules>,
         writers_conf: &[(CompareFormat, P)],
     ) -> Result<bool, Error> {
@@ -167,7 +168,7 @@ impl SymversCorpus {
             writers.push((*format, Writer::new_file(path)?));
         }
 
-        self.compare_with_buffer(other_symvers, maybe_rules, &mut writers[..])
+        self.compare_with_buffer(other_symvers, maybe_filter, maybe_rules, &mut writers[..])
     }
 
     /// Compares the symbols in `self` and `other_symvers`.
@@ -178,6 +179,7 @@ impl SymversCorpus {
     pub fn compare_with_buffer<W: Write>(
         &self,
         other_symvers: &SymversCorpus,
+        maybe_filter: Option<&Filter>,
         maybe_rules: Option<&Rules>,
         writers: &mut [(CompareFormat, W)],
     ) -> Result<bool, Error> {
@@ -236,9 +238,17 @@ impl SymversCorpus {
         let mut rules_tolerated_removals = 0;
         let mut rules_tolerated_modifications = 0;
 
-        let mut names = self.exports.keys().collect::<Vec<_>>();
+        let mut names = self
+            .exports
+            .keys()
+            .filter(|&name| matches_filter(maybe_filter, name))
+            .collect::<Vec<_>>();
         names.sort();
-        let mut other_names = other_symvers.exports.keys().collect::<Vec<_>>();
+        let mut other_names = other_symvers
+            .exports
+            .keys()
+            .filter(|&name| matches_filter(maybe_filter, name))
+            .collect::<Vec<_>>();
         other_names.sort();
 
         // Check for symbols in `self` but not in `other_symvers`, and vice versa.

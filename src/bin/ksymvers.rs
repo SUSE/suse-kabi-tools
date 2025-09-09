@@ -137,7 +137,12 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         let _timing = Timing::new(do_timing, "Comparison");
 
         symvers
-            .compare_with(&symvers2, maybe_rules.as_ref(), &writers_conf[..])
+            .compare_with(
+                &symvers2,
+                None,
+                maybe_rules.as_ref(),
+                &writers_conf[..],
+            )
             .map_err(|err| {
                 Error::new_context(
                     format!("Failed to compare symvers from '{}' and '{}'", path, path2),
