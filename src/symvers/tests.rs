@@ -411,6 +411,76 @@ fn compare_changed_type() {
 }
 
 #[test]
+fn compare_filter() {
+    // Check that the comparison of two symvers can be restricted to specific exports.
+    let mut symvers = SymversCorpus::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        bytes!(
+            "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
+            "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
+            "0x3456789a baz vmlinux EXPORT_SYMBOL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut symvers2 = SymversCorpus::new();
+    let result = symvers2.load_buffer(
+        "b/test.symvers",
+        bytes!(
+            "0x9abcdef0 foo vmlinux EXPORT_SYMBOL\n",
+            "0xabcdef01 bar vmlinux EXPORT_SYMBOL\n",
+            "0xbcdef012 baz vmlinux EXPORT_SYMBOL\n", //
+        ),
+    );
+    assert_ok!(result);
+
+    // Check that the result is sensible without a filter.
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with_buffer(
+        &symvers2,
+        None,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "Export 'bar' changed CRC from '0x23456789' to '0xabcdef01'\n",
+            "Export 'baz' changed CRC from '0x3456789a' to '0xbcdef012'\n",
+            "Export 'foo' changed CRC from '0x12345678' to '0x9abcdef0'\n", //
+        )
+    );
+
+    // Check the result when using a filter.
+    let mut symbol_filter = Filter::new();
+    let result = symbol_filter.load_buffer(
+        "filter-symbol-list.txt",
+        bytes!(
+            "bar\n", "baz\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut writer = Writer::new_buffer();
+    let result = symvers.compare_with_buffer(
+        &symvers2,
+        Some(&symbol_filter),
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "Export 'bar' changed CRC from '0x23456789' to '0xabcdef01'\n",
+            "Export 'baz' changed CRC from '0x3456789a' to '0xbcdef012'\n", //
+        )
+    );
+}
+
+#[test]
 fn compare_ignored_changes() {
     // Check that severity rules can be used to tolerate changes.
     let mut symvers = SymversCorpus::new();

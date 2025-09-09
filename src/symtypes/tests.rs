@@ -648,6 +648,102 @@ fn compare_changed_nested_type() {
 }
 
 #[test]
+fn compare_filter() {
+    // Check that the comparison of two corpuses can be restricted to specific exports.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "a/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n",
+            "baz int baz ( s#foo )\n",
+            "qux int qux ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut symtypes2 = SymtypesCorpus::new();
+    let result = symtypes2.load_buffer(
+        "b/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; int b ; }\n",
+            "bar int bar ( s#foo )\n",
+            "baz int baz ( s#foo )\n",
+            "qux int qux ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+
+    // Check that the result is sensible without a filter.
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        &mut JobControl::new_simple(1),
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "The following '3' exports are different:\n",
+            " bar\n",
+            " baz\n",
+            " qux\n",
+            "\n",
+            "because of a changed 's#foo':\n",
+            "@@ -1,3 +1,4 @@",
+            "\n",
+            " struct foo {\n",
+            " \tint a;\n",
+            "+\tint b;\n",
+            " }\n", //
+        )
+    );
+
+    // Check the result when using a filter.
+    let mut symbol_filter = Filter::new();
+    let result = symbol_filter.load_buffer(
+        "filter-symbol-list.txt",
+        bytes!(
+            "bar\n", "baz\n", //
+        ),
+    );
+    assert_ok!(result);
+
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        Some(&symbol_filter),
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        &mut JobControl::new_simple(1),
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "The following '2' exports are different:\n",
+            " bar\n",
+            " baz\n",
+            "\n",
+            "because of a changed 's#foo':\n",
+            "@@ -1,3 +1,4 @@",
+            "\n",
+            " struct foo {\n",
+            " \tint a;\n",
+            "+\tint b;\n",
+            " }\n", //
+        )
+    );
+}
+
+#[test]
 fn compare_format_null() {
     // Check that when using the null format, the comparison output is empty and only the return
     // code indicates any changes.

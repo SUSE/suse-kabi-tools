@@ -278,3 +278,58 @@ fn ksymtypes_compare_split_and_consolidated() {
     );
     assert_eq!(result.stderr, "");
 }
+
+#[test]
+fn ksymtypes_compare_filter_symbol_list() {
+    // Check that the comparison of two symtypes files can be restricted to specific exports.
+
+    // Check that the result is sensible without a filter.
+    let result = ksymtypes_run([
+        "compare",
+        "tests/it/ksymtypes/compare_filter_symbol_list/a.symtypes",
+        "tests/it/ksymtypes/compare_filter_symbol_list/b.symtypes",
+    ]);
+    assert_eq!(result.status.code().unwrap(), 1);
+    assert_eq!(
+        result.stdout,
+        concat!(
+            "The following '3' exports are different:\n",
+            " bar\n",
+            " baz\n",
+            " qux\n",
+            "\n",
+            "because of a changed 's#foo':\n",
+            "@@ -1,3 +1,4 @@\n",
+            " struct foo {\n",
+            " \tint a;\n",
+            "+\tint b;\n",
+            " }\n", //
+        )
+    );
+    assert_eq!(result.stderr, "");
+
+    // Check the result when using a filter.
+    let result = ksymtypes_run([
+        "compare",
+        "--filter-symbol-list=tests/it/ksymtypes/compare_filter_symbol_list/filter-symbol-list.txt",
+        "tests/it/ksymtypes/compare_filter_symbol_list/a.symtypes",
+        "tests/it/ksymtypes/compare_filter_symbol_list/b.symtypes",
+    ]);
+    assert_eq!(result.status.code().unwrap(), 1);
+    assert_eq!(
+        result.stdout,
+        concat!(
+            "The following '2' exports are different:\n",
+            " bar\n",
+            " baz\n",
+            "\n",
+            "because of a changed 's#foo':\n",
+            "@@ -1,3 +1,4 @@\n",
+            " struct foo {\n",
+            " \tint a;\n",
+            "+\tint b;\n",
+            " }\n", //
+        )
+    );
+    assert_eq!(result.stderr, "");
+}

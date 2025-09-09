@@ -1,0 +1,3 @@
+0x9abcdef0 foo vmlinux EXPORT_SYMBOL
+0xabcdef01 bar vmlinux EXPORT_SYMBOL
+0xbcdef012 baz vmlinux EXPORT_SYMBOL
