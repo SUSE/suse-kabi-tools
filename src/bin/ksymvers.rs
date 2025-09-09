@@ -6,6 +6,7 @@ use std::process::ExitCode;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
 use suse_kabi_tools::symvers::{CompareFormat, SymversCorpus};
+use suse_kabi_tools::text::Filter;
 use suse_kabi_tools::{Error, Timing, debug};
 
 const USAGE_MSG: &str = concat!(
@@ -26,6 +27,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
     "\n",
     "Options:\n",
     "  -h, --help                    display this help and exit\n",
+    "  --filter-symbol-list=FILE     consider only symbols matching patterns in FILE\n",
     "  -r FILE, --rules=FILE         load severity rules from FILE\n",
     "  -f TYPE[:FILE], --format=TYPE[:FILE]\n",
     "                                change the output format to TYPE, or write the\n",
@@ -36,6 +38,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
 fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<ExitCode, Error> {
     // Parse specific command options.
     let mut args = args.into_iter();
+    let mut maybe_symbol_filter_path = None;
     let mut maybe_rules_path = None;
     let mut writers_conf = vec![(CompareFormat::Pretty, "-".to_string())];
     let mut past_dash_dash = false;
@@ -44,6 +47,11 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
 
     while let Some(arg) = args.next() {
         if !past_dash_dash {
+            if let Some(value) = handle_value_option(&arg, &mut args, None, "--filter-symbol-list")?
+            {
+                maybe_symbol_filter_path = Some(value);
+                continue;
+            }
             if let Some(value) = handle_value_option(&arg, &mut args, "-r", "--rules")? {
                 maybe_rules_path = Some(value);
                 continue;
@@ -114,6 +122,28 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         symvers2
     };
 
+    let maybe_symbol_filter = match maybe_symbol_filter_path {
+        Some(symbol_filter_path) => {
+            let _timing = Timing::new(
+                do_timing,
+                &format!("Reading symbol filters from '{}'", symbol_filter_path),
+            );
+
+            let mut symbol_filter = Filter::new();
+            symbol_filter.load(&symbol_filter_path).map_err(|err| {
+                Error::new_context(
+                    format!(
+                        "Failed to read symbol filters from '{}'",
+                        symbol_filter_path
+                    ),
+                    err,
+                )
+            })?;
+            Some(symbol_filter)
+        }
+        None => None,
+    };
+
     let maybe_rules = match maybe_rules_path {
         Some(rules_path) => {
             let _timing = Timing::new(
@@ -139,7 +169,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         symvers
             .compare_with(
                 &symvers2,
-                None,
+                maybe_symbol_filter.as_ref(),
                 maybe_rules.as_ref(),
                 &writers_conf[..],
             )
