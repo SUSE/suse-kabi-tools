@@ -36,7 +36,7 @@ fn read_empty_record() {
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "\n",
-            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
+            "0x9abcdef0 bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
         ),
     );
     assert_parse_err!(result, "test.symvers:2: The export does not specify a CRC");
@@ -130,7 +130,7 @@ fn read_type() {
         "test.symvers",
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
-            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x9abcdef0 bar vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
     assert_ok!(result);
@@ -144,7 +144,7 @@ fn read_type() {
                 ),
                 (
                     "bar".to_string(),
-                    ExportInfo::new(0x90abcdef, "vmlinux", true, None::<&str>)
+                    ExportInfo::new(0x9abcdef0, "vmlinux", true, None::<&str>)
                 ),
             ])
         }
@@ -269,7 +269,7 @@ fn compare_added_export() {
         "b/test.symvers",
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
-            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
+            "0x9abcdef0 bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
         ),
     );
     assert_ok!(result);
@@ -294,7 +294,7 @@ fn compare_removed_export() {
         "a/test.symvers",
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
-            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
+            "0x9abcdef0 bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
         ),
     );
     assert_ok!(result);
@@ -302,7 +302,7 @@ fn compare_removed_export() {
     let result = symvers2.load_buffer(
         "b/test.symvers",
         bytes!(
-            "0x90abcdef bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
+            "0x9abcdef0 bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
         ),
     );
     assert_ok!(result);
@@ -334,7 +334,7 @@ fn compare_changed_crc() {
     let result = symvers2.load_buffer(
         "b/test.symvers",
         bytes!(
-            "0x09abcdef foo vmlinux EXPORT_SYMBOL\n", //
+            "0x9abcdef0 foo vmlinux EXPORT_SYMBOL\n", //
         ),
     );
     assert_ok!(result);
@@ -346,7 +346,7 @@ fn compare_changed_crc() {
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
-            "Export 'foo' changed CRC from '0x12345678' to '0x09abcdef'\n", //
+            "Export 'foo' changed CRC from '0x12345678' to '0x9abcdef0'\n", //
         )
     );
 }
@@ -360,8 +360,8 @@ fn compare_changed_type() {
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
-            "0x34567890 baz vmlinux EXPORT_SYMBOL_GPL\n",
-            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x3456789a baz vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x456789ab qux vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
     assert_ok!(result);
@@ -371,8 +371,8 @@ fn compare_changed_type() {
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL_GPL\n",
-            "0x34567890 baz vmlinux EXPORT_SYMBOL\n",
-            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x3456789a baz vmlinux EXPORT_SYMBOL\n",
+            "0x456789ab qux vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
     assert_ok!(result);
@@ -405,7 +405,7 @@ fn compare_ignored_changes() {
     let result = symvers2.load_buffer(
         "b/test.symvers",
         bytes!(
-            "0x90abcdef foo vmlinux EXPORT_SYMBOL\n", //
+            "0x9abcdef0 foo vmlinux EXPORT_SYMBOL\n", //
         ),
     );
     assert_ok!(result);
@@ -428,7 +428,7 @@ fn compare_ignored_changes() {
     assert_eq!(
         str::from_utf8(&out).unwrap(),
         concat!(
-            "Export 'foo' changed CRC from '0x12345678' to '0x90abcdef' (tolerated by rules)\n", //
+            "Export 'foo' changed CRC from '0x12345678' to '0x9abcdef0' (tolerated by rules)\n", //
         )
     );
 }
@@ -449,7 +449,7 @@ fn compare_format_null() {
     let result = symvers2.load_buffer(
         "b/test.symvers",
         bytes!(
-            "0x90abcdef foo vmlinux EXPORT_SYMBOL\n", //
+            "0x9abcdef0 foo vmlinux EXPORT_SYMBOL\n", //
         ),
     );
     assert_ok!(result);
@@ -477,7 +477,7 @@ fn compare_format_symbols() {
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
-            "0x34567890 baz vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x3456789a baz vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
     assert_ok!(result);
@@ -485,9 +485,9 @@ fn compare_format_symbols() {
     let result = symvers2.load_buffer(
         "b/test.symvers",
         bytes!(
-            "0x90abcdef foo vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x9abcdef0 foo vmlinux EXPORT_SYMBOL_GPL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL_GPL\n",
-            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x456789ab qux vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
     assert_ok!(result);
@@ -517,7 +517,7 @@ fn compare_format_mod_symbols() {
         bytes!(
             "0x12345678 foo vmlinux EXPORT_SYMBOL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL\n",
-            "0x34567890 baz vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x3456789a baz vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
     assert_ok!(result);
@@ -525,9 +525,9 @@ fn compare_format_mod_symbols() {
     let result = symvers2.load_buffer(
         "b/test.symvers",
         bytes!(
-            "0x90abcdef foo vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x9abcdef0 foo vmlinux EXPORT_SYMBOL_GPL\n",
             "0x23456789 bar vmlinux EXPORT_SYMBOL_GPL\n",
-            "0x4567890a qux vmlinux EXPORT_SYMBOL_GPL\n", //
+            "0x456789ab qux vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
     assert_ok!(result);
@@ -586,11 +586,11 @@ fn compare_format_short() {
         "b/test.symvers",
         bytes!(
             "0x12345678 aaa vmlinux EXPORT_SYMBOL\n",
-            "0x90abcdef ccc vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x9abcdef0 ccc vmlinux EXPORT_SYMBOL_GPL\n",
             "0x23456789 ddd vmlinux EXPORT_SYMBOL_GPL\n",
             "0x23456789 eee vmlinux EXPORT_SYMBOL\n",
             "0x12345678 fff vmlinux EXPORT_SYMBOL\n",
-            "0x90abcdef hhh vmlinux EXPORT_SYMBOL_GPL\n",
+            "0x9abcdef0 hhh vmlinux EXPORT_SYMBOL_GPL\n",
             "0x23456789 iii vmlinux EXPORT_SYMBOL_GPL\n",
             "0x23456789 jjj vmlinux EXPORT_SYMBOL\n", //
         ),
@@ -621,7 +621,7 @@ fn compare_format_short() {
         concat!(
             "Export 'aaa' has been added (implicitly tolerated)\n",
             "Export 'bbb' has been removed\n",
-            "Export 'ccc' changed CRC from '0x12345678' to '0x90abcdef'\n",
+            "Export 'ccc' changed CRC from '0x12345678' to '0x9abcdef0'\n",
             "Export 'ccc' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'\n",
             "Export 'ddd' changed type from 'EXPORT_SYMBOL' to 'EXPORT_SYMBOL_GPL'\n",
             "Export 'eee' changed type from 'EXPORT_SYMBOL_GPL' to 'EXPORT_SYMBOL' (implicitly tolerated)\n",
