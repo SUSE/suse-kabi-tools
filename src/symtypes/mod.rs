@@ -3,7 +3,9 @@
 
 use crate::burst;
 use crate::burst::JobSlots;
-use crate::text::{DirectoryWriter, Filter, WriteGenerator, Writer, read_lines, unified_diff};
+use crate::text::{
+    DirectoryWriter, Filter, WriteGenerator, Writer, matches_filter, read_lines, unified_diff,
+};
 use crate::{Error, MapIOErr, PathFile, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
@@ -1023,13 +1025,6 @@ impl SymtypesCorpus {
         writers: &mut [(CompareFormat, W)],
         job_slots: &mut JobSlots,
     ) -> Result<bool, Error> {
-        fn matches(maybe_filter: Option<&Filter>, name: &str) -> bool {
-            match maybe_filter {
-                Some(filter) => filter.matches(name),
-                None => true,
-            }
-        }
-
         let err_desc = "Failed to write a comparison result";
 
         // Track all changed symbols, mapping a symbol name to a boolean. The flag indicates whether
@@ -1043,7 +1038,7 @@ impl SymtypesCorpus {
         ] {
             let mut changed = exports_a
                 .keys()
-                .filter(|&name| matches(maybe_filter, name) && !exports_b.contains_key(name))
+                .filter(|&name| matches_filter(maybe_filter, name) && !exports_b.contains_key(name))
                 .collect::<Vec<_>>();
             changed.sort();
             for name in changed {
@@ -1062,7 +1057,7 @@ impl SymtypesCorpus {
         let works = self
             .exports
             .iter()
-            .filter(|&(name, _)| matches(maybe_filter, name))
+            .filter(|&(name, _)| matches_filter(maybe_filter, name))
             .collect::<Vec<_>>();
         let changes = Mutex::new(CompareChangedTypes::new());
 

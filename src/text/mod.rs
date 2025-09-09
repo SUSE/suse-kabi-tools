@@ -629,3 +629,12 @@ impl Filter {
         false
     }
 }
+
+/// Checks if the given text matches any of the filter patterns. If the filter is `None`, the
+/// function always returns `true`.
+pub fn matches_filter(maybe_filter: Option<&Filter>, name: &str) -> bool {
+    match maybe_filter {
+        Some(filter) => filter.matches(name),
+        None => true,
+    }
+}
