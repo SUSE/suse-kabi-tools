@@ -481,7 +481,7 @@ fn compare_filter() {
 }
 
 #[test]
-fn compare_ignored_changes() {
+fn compare_rules() {
     // Check that severity rules can be used to tolerate changes.
     let mut symvers = SymversCorpus::new();
     let result = symvers.load_buffer(

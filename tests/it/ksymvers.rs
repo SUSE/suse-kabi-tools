@@ -73,3 +73,22 @@ fn ksymvers_compare_filter_symbol_list() {
     );
     assert_eq!(result.stderr, "");
 }
+
+#[test]
+fn ksymvers_compare_rules() {
+    // Check that severity rules can be used to tolerate changes.
+    let result = ksymvers_run([
+        "compare",
+        "--rules=tests/it/ksymvers/compare_rules/severities.txt",
+        "tests/it/ksymvers/compare_rules/a.symvers",
+        "tests/it/ksymvers/compare_rules/b.symvers",
+    ]);
+    assert_eq!(result.status.code().unwrap(), 0);
+    assert_eq!(
+        result.stdout,
+        concat!(
+            "Export 'foo' changed CRC from '0x12345678' to '0x9abcdef0' (tolerated by rules)\n", //
+        )
+    );
+    assert_eq!(result.stderr, "");
+}
