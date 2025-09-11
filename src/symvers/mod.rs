@@ -135,12 +135,12 @@ impl SymversCorpus {
 
             // Check if the record is a duplicate of another one.
             if new_exports.contains_key(&name) || self.exports.contains_key(&name) {
-                return Err(Error::new_parse(format!(
-                    "{}:{}: Duplicate record '{}'",
-                    path.display(),
+                return Err(Error::new_parse_format(
+                    &format!("Duplicate record '{}'", name),
+                    path,
                     line_idx + 1,
-                    name,
-                )));
+                    &lines[line_idx],
+                ));
             }
 
             new_exports.insert(name, info);
@@ -414,66 +414,75 @@ fn parse_export(path: &Path, line_idx: usize, line: &str) -> Result<(String, Exp
 
     // Parse the CRC value.
     let crc = words.next().ok_or_else(|| {
-        Error::new_parse(format!(
-            "{}:{}: The export does not specify a CRC",
-            path.display(),
-            line_idx + 1
-        ))
+        Error::new_parse_format(
+            "The export does not specify a CRC",
+            path,
+            line_idx + 1,
+            line,
+        )
     })?;
     if !crc.starts_with("0x") && !crc.starts_with("0X") {
-        return Err(Error::new_parse(format!(
-            "{}:{}: Failed to parse the CRC value '{}': string does not start with 0x or 0X",
-            path.display(),
+        return Err(Error::new_parse_format(
+            &format!(
+                "Failed to parse the CRC value '{}': string does not start with 0x or 0X",
+                crc
+            ),
+            path,
             line_idx + 1,
-            crc
-        )));
+            line,
+        ));
     }
     let crc = u32::from_str_radix(&crc[2..], 16).map_err(|err| {
-        Error::new_parse(format!(
-            "{}:{}: Failed to parse the CRC value '{}': {}",
-            path.display(),
+        Error::new_parse_format(
+            &format!("Failed to parse the CRC value '{}': {}", crc, err),
+            path,
             line_idx + 1,
-            crc,
-            err
-        ))
+            line,
+        )
     })?;
 
     // Parse the export name.
     let name = words.next().ok_or_else(|| {
-        Error::new_parse(format!(
-            "{}:{}: The export does not specify a name",
-            path.display(),
-            line_idx + 1
-        ))
+        Error::new_parse_format(
+            "The export does not specify a name",
+            path,
+            line_idx + 1,
+            line,
+        )
     })?;
 
     // Parse the module name.
     let module = words.next().ok_or_else(|| {
-        Error::new_parse(format!(
-            "{}:{}: The export does not specify a module",
-            path.display(),
-            line_idx + 1
-        ))
+        Error::new_parse_format(
+            "The export does not specify a module",
+            path,
+            line_idx + 1,
+            line,
+        )
     })?;
 
     // Parse the export type.
     let export_type = words.next().ok_or_else(|| {
-        Error::new_parse(format!(
-            "{}:{}: The export does not specify a type",
-            path.display(),
-            line_idx + 1
-        ))
+        Error::new_parse_format(
+            "The export does not specify a type",
+            path,
+            line_idx + 1,
+            line,
+        )
     })?;
     let is_gpl_only = match export_type {
         "EXPORT_SYMBOL" => false,
         "EXPORT_SYMBOL_GPL" => true,
         _ => {
-            return Err(Error::new_parse(format!(
-                "{}:{}: Invalid export type '{}', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL",
-                path.display(),
+            return Err(Error::new_parse_format(
+                &format!(
+                    "Invalid export type '{}', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL",
+                    export_type
+                ),
+                path,
                 line_idx + 1,
-                export_type
-            )));
+                line,
+            ));
         }
     };
 
@@ -481,13 +490,13 @@ fn parse_export(path: &Path, line_idx: usize, line: &str) -> Result<(String, Exp
     let namespace = words.next().map(String::from);
 
     // Check that nothing else is left on the line.
-    if let Some(word) = words.next() {
-        return Err(Error::new_parse(format!(
-            "{}:{}: Unexpected string '{}' found at the end of the export record",
-            path.display(),
+    if words.next().is_some() {
+        return Err(Error::new_parse_format(
+            "Unexpected string found at the end of the export record",
+            path,
             line_idx + 1,
-            word
-        )));
+            line,
+        ));
     }
 
     Ok((

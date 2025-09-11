@@ -53,6 +53,17 @@ impl Error {
     pub fn new_parse<S: Into<String>>(desc: S) -> Self {
         Self::Parse(desc.into())
     }
+
+    /// Creates a new `Error::Parse` by formatting the given error details.
+    pub fn new_parse_format(desc: &str, path: &Path, line_num: usize, line: &str) -> Self {
+        Self::Parse(format!(
+            "{}\n {}:{}\n | {}",
+            desc,
+            path.display(),
+            line_num,
+            line
+        ))
+    }
 }
 
 impl error::Error for Error {}

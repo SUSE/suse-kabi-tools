@@ -139,7 +139,14 @@ fn read_empty_record_single() {
         ),
         &mut warnings,
     );
-    assert_parse_err!(result, "test.symtypes:2: Expected a record name");
+    assert_parse_err!(
+        result,
+        concat!(
+            "Expected a record name\n",
+            " test.symtypes:2\n",
+            " | ", //
+        ),
+    );
     assert!(warnings.is_empty());
 }
 
@@ -182,7 +189,14 @@ fn read_duplicate_type_record() {
         ),
         &mut warnings,
     );
-    assert_parse_err!(result, "test.symtypes:2: Duplicate record 's#foo'");
+    assert_parse_err!(
+        result,
+        concat!(
+            "Duplicate record 's#foo'\n",
+            " test.symtypes:2\n",
+            " | s#foo struct foo { int b ; }", //
+        ),
+    );
     assert!(warnings.is_empty());
 }
 
@@ -220,7 +234,14 @@ fn read_invalid_reference() {
         ),
         &mut warnings,
     );
-    assert_parse_err!(result, "test.symtypes:1: Type 's#foo' is not known");
+    assert_parse_err!(
+        result,
+        concat!(
+            "Type 's#foo' is not known\n",
+            " test.symtypes:1\n",
+            " | bar void bar ( s#foo )", //
+        ),
+    );
     assert!(warnings.is_empty());
 }
 

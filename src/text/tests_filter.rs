@@ -54,7 +54,14 @@ fn read_empty_record() {
             "foo\n", "\n", "bar\n", //
         ),
     );
-    assert_parse_err!(result, "test.filter:2: Expected a pattern");
+    assert_parse_err!(
+        result,
+        concat!(
+            "Expected a pattern\n",
+            " test.filter:2\n",
+            " | ", //
+        ),
+    );
     assert_eq!(filter, Filter::new());
 }
 

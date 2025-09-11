@@ -112,7 +112,11 @@ fn read_no_verdict() {
     );
     assert_parse_err!(
         result,
-        "test.severities:1: The rule does not specify a verdict"
+        concat!(
+            "The rule does not specify a verdict, must be either PASS or FAIL\n",
+            " test.severities:1\n",
+            " | symbol_name", //
+        ),
     );
     assert_eq!(rules, Rules { data: vec![] });
 }
@@ -129,7 +133,11 @@ fn read_invalid_verdict() {
     );
     assert_parse_err!(
         result,
-        "test.severities:1: Invalid verdict 'OK', must be either PASS or FAIL"
+        concat!(
+            "Invalid verdict 'OK', must be either PASS or FAIL\n",
+            " test.severities:1\n",
+            " | symbol_name OK", //
+        ),
     );
     assert_eq!(rules, Rules { data: vec![] });
 }
@@ -146,7 +154,11 @@ fn read_extra_data() {
     );
     assert_parse_err!(
         result,
-        "test.severities:1: Unexpected string 'garbage' found after the verdict"
+        concat!(
+            "Unexpected string found after the verdict\n",
+            " test.severities:1\n",
+            " | symbol_name PASS garbage", //
+        ),
     );
     assert_eq!(rules, Rules { data: vec![] });
 }

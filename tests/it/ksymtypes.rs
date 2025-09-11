@@ -101,7 +101,11 @@ fn ksymtypes_consolidate_reject_consolidated() {
     assert_eq!(result.stdout, "");
     assert_eq!(
         result.stderr,
-        "Failed to read symtypes from 'tests/it/ksymtypes/consolidate_reject_consolidated': consolidated.symtypes:1: Expected a plain symtypes file, but found consolidated data\n"
+        concat!(
+            "Failed to read symtypes from 'tests/it/ksymtypes/consolidate_reject_consolidated': Expected a plain symtypes file, but found consolidated data\n",
+            " consolidated.symtypes:1\n",
+            " | /* a.symtypes */\n", //
+        )
     );
 }
 
@@ -200,7 +204,11 @@ fn ksymtypes_split_reject_plain() {
     assert_eq!(result.stdout, "");
     assert_eq!(
         result.stderr,
-        "Failed to read symtypes from 'tests/it/ksymtypes/split_reject_plain/a.symtypes': tests/it/ksymtypes/split_reject_plain/a.symtypes:1: Expected a consolidated symtypes file, but found an invalid header\n"
+        concat!(
+            "Failed to read symtypes from 'tests/it/ksymtypes/split_reject_plain/a.symtypes': Expected a consolidated symtypes file, but found an invalid header\n",
+            " tests/it/ksymtypes/split_reject_plain/a.symtypes:1\n",
+            " | s#foo struct foo { int a ; }\n", //
+        ),
     );
 }
 

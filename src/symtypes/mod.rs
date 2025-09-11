@@ -499,15 +499,19 @@ impl SymtypesCorpus {
         let is_consolidated =
             !lines.is_empty() && lines[0].starts_with("/* ") && lines[0].ends_with(" */");
         if load_context.load_kind == LoadKind::Simple && is_consolidated {
-            return Err(Error::new_parse(format!(
-                "{}:1: Expected a plain symtypes file, but found consolidated data",
-                path.display()
-            )));
+            return Err(Error::new_parse_format(
+                "Expected a plain symtypes file, but found consolidated data",
+                path,
+                1,
+                &lines[0],
+            ));
         } else if load_context.load_kind == LoadKind::Consolidated && !is_consolidated {
-            return Err(Error::new_parse(format!(
-                "{}:1: Expected a consolidated symtypes file, but found an invalid header",
-                path.display()
-            )));
+            return Err(Error::new_parse_format(
+                "Expected a consolidated symtypes file, but found an invalid header",
+                path,
+                1,
+                if lines.is_empty() { "" } else { &lines[0] },
+            ));
         }
 
         let mut file_idx = if !is_consolidated {
@@ -536,6 +540,7 @@ impl SymtypesCorpus {
                 if file_idx != usize::MAX {
                     Self::close_file(
                         path,
+                        &lines,
                         file_idx,
                         mem::take(&mut records),
                         mem::take(&mut local_override),
@@ -556,12 +561,12 @@ impl SymtypesCorpus {
 
             // Check if the record is a duplicate of another one.
             if records.contains_key(&name) {
-                return Err(Error::new_parse(format!(
-                    "{}:{}: Duplicate record '{}'",
-                    path.display(),
+                return Err(Error::new_parse_format(
+                    &format!("Duplicate record '{}'", name),
+                    path,
                     line_idx + 1,
-                    name,
-                )));
+                    &lines[line_idx],
+                ));
             }
 
             // Insert the type into the corpus and file records.
@@ -583,6 +588,7 @@ impl SymtypesCorpus {
         if file_idx != usize::MAX {
             Self::close_file(
                 path,
+                &lines,
                 file_idx,
                 records,
                 local_override,
@@ -613,6 +619,7 @@ impl SymtypesCorpus {
     /// validating all references, and finally adding the file records to the corpus.
     fn close_file(
         path: &Path,
+        lines: &Vec<String>,
         file_idx: usize,
         mut records: FileRecords,
         local_override: LoadActiveTypes,
@@ -626,6 +633,7 @@ impl SymtypesCorpus {
             // from_line_idx because it is unused.
             Self::complete_file_record(
                 path,
+                lines,
                 usize::MAX,
                 &name,
                 true,
@@ -740,6 +748,7 @@ impl SymtypesCorpus {
     /// implicit types that are referenced from these roots.
     fn complete_file_record(
         path: &Path,
+        lines: &Vec<String>,
         from_line_idx: usize,
         type_name: &str,
         is_explicit: bool,
@@ -762,12 +771,12 @@ impl SymtypesCorpus {
             None => match active_types.get(type_name) {
                 Some(&(ref tokens_rc, line_idx)) => (Arc::clone(tokens_rc), line_idx),
                 None => {
-                    return Err(Error::new_parse(format!(
-                        "{}:{}: Type '{}' is not known",
-                        path.display(),
+                    return Err(Error::new_parse_format(
+                        &format!("Type '{}' is not known", type_name),
+                        path,
                         from_line_idx + 1,
-                        type_name
-                    )));
+                        &lines[from_line_idx],
+                    ));
                 }
             },
         };
@@ -781,6 +790,7 @@ impl SymtypesCorpus {
                 Token::TypeRef(ref_name) => {
                     Self::complete_file_record(
                         path,
+                        lines,
                         line_idx,
                         ref_name,
                         false,
@@ -1256,11 +1266,7 @@ fn parse_type_record(
     let mut words = line.split_ascii_whitespace();
 
     let raw_name = words.next().ok_or_else(|| {
-        Error::new_parse(format!(
-            "{}:{}: Expected a record name",
-            path.display(),
-            line_idx + 1
-        ))
+        Error::new_parse_format("Expected a record name", path, line_idx + 1, line)
     })?;
 
     if is_consolidated {

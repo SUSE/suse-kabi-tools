@@ -594,11 +594,12 @@ impl Filter {
         // Validate the patterns, reject empty ones.
         for (line_idx, line) in lines.iter().enumerate() {
             if line.is_empty() {
-                return Err(Error::new_parse(format!(
-                    "{}:{}: Expected a pattern",
-                    path.display(),
-                    line_idx + 1
-                )));
+                return Err(Error::new_parse_format(
+                    "Expected a pattern",
+                    path,
+                    line_idx + 1,
+                    line,
+                ));
             }
         }
 

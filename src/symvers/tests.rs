@@ -39,7 +39,14 @@ fn read_empty_record() {
             "0x9abcdef0 bar vmlinux EXPORT_SYMBOL_GPL BAR_NS\n", //
         ),
     );
-    assert_parse_err!(result, "test.symvers:2: The export does not specify a CRC");
+    assert_parse_err!(
+        result,
+        concat!(
+            "The export does not specify a CRC\n",
+            " test.symvers:2\n",
+            " | ", //
+        ),
+    );
     assert_eq!(symvers, SymversCorpus::new());
 }
 
@@ -54,7 +61,14 @@ fn read_duplicate_symbol_record() {
             "0x12345678 foo vmlinux EXPORT_SYMBOL_GPL\n", //
         ),
     );
-    assert_parse_err!(result, "test.symvers:2: Duplicate record 'foo'");
+    assert_parse_err!(
+        result,
+        concat!(
+            "Duplicate record 'foo'\n",
+            " test.symvers:2\n",
+            " | 0x12345678 foo vmlinux EXPORT_SYMBOL_GPL", //
+        ),
+    );
 }
 
 #[test]
@@ -69,7 +83,11 @@ fn read_invalid_crc() {
     );
     assert_parse_err!(
         result,
-        "test.symvers:1: Failed to parse the CRC value '0': string does not start with 0x or 0X"
+        concat!(
+            "Failed to parse the CRC value '0': string does not start with 0x or 0X\n",
+            " test.symvers:1\n",
+            " | 0 foo vmlinux EXPORT_SYMBOL", //
+        ),
     );
     assert_eq!(symvers, SymversCorpus::new());
 }
@@ -86,7 +104,11 @@ fn read_invalid_crc2() {
     );
     assert_inexact_parse_err!(
         result,
-        "test.symvers:1: Failed to parse the CRC value '0xabcdefgh': *"
+        concat!(
+            "Failed to parse the CRC value '0xabcdefgh': *\n",
+            " test.symvers:1\n",
+            " | 0xabcdefgh foo vmlinux EXPORT_SYMBOL", //
+        ),
     );
     assert_eq!(symvers, SymversCorpus::new());
 }
@@ -101,7 +123,14 @@ fn read_no_name() {
             "0x12345678\n", //
         ),
     );
-    assert_parse_err!(result, "test.symvers:1: The export does not specify a name");
+    assert_parse_err!(
+        result,
+        concat!(
+            "The export does not specify a name\n",
+            " test.symvers:1\n",
+            " | 0x12345678", //
+        ),
+    );
     assert_eq!(symvers, SymversCorpus::new());
 }
 
@@ -117,7 +146,11 @@ fn read_no_module() {
     );
     assert_parse_err!(
         result,
-        "test.symvers:1: The export does not specify a module"
+        concat!(
+            "The export does not specify a module\n",
+            " test.symvers:1\n",
+            " | 0x12345678 foo", //
+        ),
     );
     assert_eq!(symvers, SymversCorpus::new());
 }
@@ -161,7 +194,14 @@ fn read_no_type() {
             "0x12345678 foo vmlinux\n", //
         ),
     );
-    assert_parse_err!(result, "test.symvers:1: The export does not specify a type");
+    assert_parse_err!(
+        result,
+        concat!(
+            "The export does not specify a type\n",
+            " test.symvers:1\n",
+            " | 0x12345678 foo vmlinux", //
+        ),
+    );
     assert_eq!(symvers, SymversCorpus::new());
 }
 
@@ -177,7 +217,11 @@ fn read_invalid_type() {
     );
     assert_parse_err!(
         result,
-        "test.symvers:1: Invalid export type 'EXPORT_UNUSED_SYMBOL', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL"
+        concat!(
+            "Invalid export type 'EXPORT_UNUSED_SYMBOL', must be either EXPORT_SYMBOL or EXPORT_SYMBOL_GPL\n",
+            " test.symvers:1\n",
+            " | 0x12345678 foo vmlinux EXPORT_UNUSED_SYMBOL", //
+        ),
     );
     assert_eq!(symvers, SymversCorpus::new());
 }
@@ -216,7 +260,11 @@ fn read_extra_data() {
     );
     assert_parse_err!(
         result,
-        "test.symvers:1: Unexpected string 'garbage' found at the end of the export record"
+        concat!(
+            "Unexpected string found at the end of the export record\n",
+            " test.symvers:1\n",
+            " | 0x12345678 foo vmlinux EXPORT_SYMBOL_GPL FOO_NS garbage", //
+        ),
     );
     assert_eq!(symvers, SymversCorpus::new());
 }

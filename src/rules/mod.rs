@@ -203,31 +203,32 @@ fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, 
             "PASS" => Verdict::Pass,
             "FAIL" => Verdict::Fail,
             _ => {
-                return Err(Error::new_parse(format!(
-                    "{}:{}: Invalid verdict '{}', must be either PASS or FAIL",
-                    path.display(),
+                return Err(Error::new_parse_format(
+                    &format!("Invalid verdict '{}', must be either PASS or FAIL", verdict),
+                    path,
                     line_idx + 1,
-                    verdict
-                )));
+                    line,
+                ));
             }
         },
         None => {
-            return Err(Error::new_parse(format!(
-                "{}:{}: The rule does not specify a verdict",
-                path.display(),
-                line_idx + 1
-            )));
+            return Err(Error::new_parse_format(
+                "The rule does not specify a verdict, must be either PASS or FAIL",
+                path,
+                line_idx + 1,
+                line,
+            ));
         }
     };
 
     // Check that nothing else is left on the line.
-    if let Some(word) = get_next_word(&mut chars) {
-        return Err(Error::new_parse(format!(
-            "{}:{}: Unexpected string '{}' found after the verdict",
-            path.display(),
+    if get_next_word(&mut chars).is_some() {
+        return Err(Error::new_parse_format(
+            "Unexpected string found after the verdict",
+            path,
             line_idx + 1,
-            word
-        )));
+            line,
+        ));
     }
 
     Ok(Some(Rule::new(pattern, verdict)))
