@@ -201,7 +201,7 @@ macro_rules! debug {
 /// Asserts that the given string matches the expected shell wildcard pattern.
 #[macro_export]
 macro_rules! assert_inexact {
-    ($actual_desc:expr, $expected_desc:expr) => {{
+    ($actual_desc:expr, $expected_desc:expr $(,)?) => {{
         let actual_desc = $actual_desc;
         let expected_desc = $expected_desc;
         assert!(
@@ -217,7 +217,7 @@ macro_rules! assert_inexact {
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_ok {
-    ($result:expr) => {
+    ($result:expr $(,)?) => {
         match $result {
             Ok(()) => {}
             result => panic!("assertion failed: {:?} is not of type Ok(())", result),
@@ -229,7 +229,7 @@ macro_rules! assert_ok {
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_ok_eq {
-    ($result:expr, $expected_inner:expr) => {
+    ($result:expr, $expected_inner:expr $(,)?) => {
         match $result {
             Ok(actual_inner) => assert_eq!(actual_inner, $expected_inner),
             result => panic!("assertion failed: {:?} is not of type Ok(_)", result),
@@ -242,7 +242,7 @@ macro_rules! assert_ok_eq {
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_parse_err {
-    ($result:expr, $expected_desc:expr) => {
+    ($result:expr, $expected_desc:expr $(,)?) => {
         match $result {
             Err($crate::Error::Parse(actual_desc)) => assert_eq!(actual_desc, $expected_desc),
             result => panic!(
@@ -258,7 +258,7 @@ macro_rules! assert_parse_err {
 #[cfg(any(test, doc))]
 #[macro_export]
 macro_rules! assert_inexact_parse_err {
-    ($result:expr, $expected_desc:expr) => {
+    ($result:expr, $expected_desc:expr $(,)?) => {
         match $result {
             Err($crate::Error::Parse(actual_desc)) => {
                 $crate::assert_inexact!(actual_desc, $expected_desc)
