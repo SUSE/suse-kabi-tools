@@ -1,6 +1,8 @@
 // Copyright (C) 2025 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+//! Utility functions for parsing command-line arguments.
+
 use crate::{Error, init_debug_level};
 
 /// Handles a command-line option with a mandatory value.

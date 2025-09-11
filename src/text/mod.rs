@@ -1,6 +1,8 @@
 // Copyright (C) 2024 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+//! Utility functions for working with text.
+
 use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
@@ -28,10 +30,10 @@ enum Edit {
     InsertB(usize),
 }
 
-/// An edit script which describes how to transform `a` to `b`.
+/// An edit script that describes how to transform one text into another.
 type EditScript = Vec<Edit>;
 
-/// A limited [`Vec`] wrapper which allows indexing by `isize` in range
+/// A limited [`Vec`] wrapper that allows indexing by `isize` in range
 /// `(-self.0.len() / 2)..((self.0.len() + 1) / 2`) instead of `0..self.0.len()`.
 struct IVec<T>(Vec<T>);
 
@@ -65,8 +67,8 @@ struct DiagonalState {
     edit_index: usize,
 }
 
-/// Compares `a` with `b` and returns an edit script describing how to transform the former to the
-/// latter.
+/// Compares two texts and returns an edit script that describes how to transform the former into
+/// the latter.
 fn myers<T: AsRef<str> + PartialEq>(a: &[T], b: &[T]) -> EditScript {
     let max = a.len() + b.len();
     let mut v = IVec(vec![
@@ -156,7 +158,7 @@ fn write_hunk<W: Write>(
     Ok(())
 }
 
-/// Compares `a` with `b` and writes their unified diff to the provided output stream.
+/// Compares two texts and writes their unified diff to the provided output stream.
 pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
     a: &[T],
     b: &[T],
@@ -275,6 +277,7 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
 // https://github.com/richsalz/wildmat
 // Original code has been placed in the public domain.
 
+/// The result of the [`do_match()`] operation.
 #[derive(PartialEq)]
 enum DoMatchResult {
     True,
@@ -382,7 +385,7 @@ pub fn matches_wildcard(text: &str, pattern: &str) -> bool {
     do_match(&text, &pattern) == DoMatchResult::True
 }
 
-/// Reads data from a specified reader and returns its content as a [`Vec`] of [`String`] lines.
+/// Reads data from the specified reader and returns its content as a [`Vec`] of [`String`] lines.
 pub fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
     let reader = BufReader::new(reader);
     let mut lines = Vec::new();
@@ -493,7 +496,7 @@ pub enum DirectoryWriter {
 }
 
 impl DirectoryWriter {
-    /// Creates a new [`DirectoryWriter`] that writes to on-disk files in a specified directory.
+    /// Creates a new [`DirectoryWriter`] that writes to on-disk files in the specified directory.
     pub fn new_file<P: AsRef<Path>>(root: P) -> Self {
         Self::File(root.as_ref().to_path_buf())
     }
@@ -557,7 +560,7 @@ impl Filter {
         }
     }
 
-    /// Loads filter data from a specified file.
+    /// Loads filter data from the specified file.
     ///
     /// New patterns are appended to the already present ones.
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
@@ -570,7 +573,7 @@ impl Filter {
         self.load_buffer(path, file)
     }
 
-    /// Loads filter data from a specified reader.
+    /// Loads filter data from the specified reader.
     ///
     /// The `path` should point to the filter file name, indicating the origin of the data. New
     /// patterns are appended to the already present ones.

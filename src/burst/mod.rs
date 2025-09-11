@@ -1,6 +1,8 @@
 // Copyright (C) 2025 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+//! Support for running multiple tasks in parallel, with each task using own thread.
+
 use crate::Error;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};

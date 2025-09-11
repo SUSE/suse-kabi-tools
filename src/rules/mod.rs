@@ -1,6 +1,8 @@
 // Copyright (C) 2025 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+//! A representation of kABI severity rules and tools for working with the data.
+
 use crate::text::{matches_wildcard, read_lines};
 use crate::{Error, PathFile, debug};
 use std::io::prelude::*;
@@ -68,7 +70,7 @@ impl Rules {
         Self { data: Vec::new() }
     }
 
-    /// Loads rules data from a specified file.
+    /// Loads rules data from the specified file.
     ///
     /// New rules are appended to the already present ones.
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
@@ -81,7 +83,7 @@ impl Rules {
         self.load_buffer(path, file)
     }
 
-    /// Loads rules data from a specified reader.
+    /// Loads rules data from the specified reader.
     ///
     /// The `path` should point to the rules file name, indicating the origin of the data. New rules
     /// are appended to the already present ones.
@@ -141,7 +143,7 @@ impl Rules {
     }
 }
 
-/// Parses the next word from the `chars` iterator, taking into account comments starting with '#'.
+/// Parses the next word from the given iterator, taking into account comments starting with '#'.
 fn get_next_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<String> {
     // Skip over any whitespace.
     while let Some(&c) = chars.peek() {

@@ -1,6 +1,8 @@
 // Copyright (C) 2024 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+//! A representation of a kABI symtypes corpus and tools for working with the data.
+
 use crate::burst;
 use crate::burst::JobSlots;
 use crate::text::{
@@ -291,7 +293,7 @@ impl SymtypesCorpus {
         }
     }
 
-    /// Loads symtypes data from a given location.
+    /// Loads symtypes data from the specified location.
     ///
     /// The `path` can point to a single symtypes file or a directory. In the latter case, the
     /// function recursively collects all symtypes in that directory and loads them.
@@ -460,7 +462,7 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Loads symtypes data from a specified reader.
+    /// Loads symtypes data from the specified reader.
     ///
     /// The `path` should point to a symtypes file name, indicating the origin of the data.
     pub fn load_buffer<P: AsRef<Path>, R: Read, W: Write + Send>(
@@ -479,7 +481,7 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Loads symtypes data from a specified reader.
+    /// Loads symtypes data from the specified reader.
     fn load_inner<R: Read>(
         path: &Path,
         reader: R,
@@ -592,7 +594,7 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Adds a specified file to the corpus.
+    /// Adds the specified file to the corpus.
     ///
     /// Note that in the case of a consolidated file, unlike most load functions, the `path` should
     /// point to the name of the specific symtypes file.
@@ -998,7 +1000,7 @@ impl SymtypesCorpus {
         }
     }
 
-    /// Compares the symbols in `self` and `other_symtypes`.
+    /// Compares the symbols in this corpus with another one.
     ///
     /// Writes reports about any found changes to the specified files, formatted as requested.
     /// Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
@@ -1019,7 +1021,7 @@ impl SymtypesCorpus {
         self.compare_with_buffer(other_symtypes, maybe_filter, &mut writers[..], job_slots)
     }
 
-    /// Compares the symbols in `self` and `other_symtypes`.
+    /// Compares the symbols in this corpus with another one.
     ///
     /// Writes reports about any found changes to the provided output streams, formatted as
     /// requested. Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
@@ -1152,7 +1154,7 @@ impl SymtypesCorpus {
     }
 }
 
-/// Reads words from a given iterator and converts them to `Tokens`.
+/// Reads words from the given iterator and converts them to `Tokens`.
 fn words_into_tokens<'a, I: Iterator<Item = &'a str>>(words: &mut I) -> Tokens {
     let mut tokens = Tokens::new();
     for word in words {

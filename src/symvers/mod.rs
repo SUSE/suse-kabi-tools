@@ -1,6 +1,8 @@
 // Copyright (C) 2025 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+//! A representation of a kABI symvers corpus and tools for working with the data.
+
 use crate::rules::Rules;
 use crate::text::{Filter, Writer, matches_filter, read_lines};
 use crate::{Error, MapIOErr, PathFile, debug};
@@ -95,7 +97,7 @@ impl SymversCorpus {
         }
     }
 
-    /// Loads symvers data from a specified file.
+    /// Loads symvers data from the specified file.
     ///
     /// New symvers records are appended to the already present ones.
     pub fn load<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
@@ -108,7 +110,7 @@ impl SymversCorpus {
         self.load_buffer(path, file)
     }
 
-    /// Loads symvers data from a specified reader.
+    /// Loads symvers data from the specified reader.
     ///
     /// The `path` should point to the symvers file name, indicating the origin of the data. New
     /// symvers records are appended to the already present ones.
@@ -150,7 +152,7 @@ impl SymversCorpus {
         Ok(())
     }
 
-    /// Compares the symbols in `self` and `other_symvers`.
+    /// Compares the symbols in this corpus with another one.
     ///
     /// Writes reports about any found changes to the specified files, formatted as requested.
     /// Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
@@ -171,7 +173,7 @@ impl SymversCorpus {
         self.compare_with_buffer(other_symvers, maybe_filter, maybe_rules, &mut writers[..])
     }
 
-    /// Compares the symbols in `self` and `other_symvers`.
+    /// Compares the symbols in this corpus with another one.
     ///
     /// Writes reports about any found changes to the provided output streams, formatted as
     /// requested. Returns `Ok` containing a `bool` indicating whether the corpuses are the same, or
