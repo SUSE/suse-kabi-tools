@@ -10,7 +10,7 @@ use suse_kabi_tools::text::Filter;
 use suse_kabi_tools::{Error, Timing, debug};
 
 const USAGE_MSG: &str = concat!(
-    "Usage: ksymvers [OPTION...] COMMAND\n",
+    "Usage: ksymvers [OPTION]... COMMAND ...\n",
     "\n",
     "Options:\n",
     "  -d, --debug                   enable debug output\n",
@@ -19,10 +19,13 @@ const USAGE_MSG: &str = concat!(
     "\n",
     "Commands:\n",
     "  compare                       show differences between two symvers files\n",
+    "\n",
+    "See 'ksymvers COMMAND --help' for more information on a specific command.\n",
 );
 
 const COMPARE_USAGE_MSG: &str = concat!(
-    "Usage: ksymvers compare [OPTION...] PATH PATH2\n",
+    "Usage: ksymvers compare [OPTION]... PATH PATH2\n",
+    "\n",
     "Show differences between two symvers files.\n",
     "\n",
     "Options:\n",

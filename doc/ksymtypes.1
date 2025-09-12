@@ -4,7 +4,7 @@
 .SH NAME
 ksymtypes \- a tool to work with Linux\-kernel symtypes files
 .SH SYNOPSIS
-\fBksymtypes\fR [\fIGENERAL\-OPTION\fR...] {\fBconsolidate\fR | \fBsplit\fR | \fBcompare\fR } [\fICOMMAND\-OPTION\fR...] ...
+\fBksymtypes\fR [\fIGENERAL\-OPTION\fR]... {\fBconsolidate\fR | \fBsplit\fR | \fBcompare\fR } [\fICOMMAND\-OPTION\fR]... ...
 .SH DESCRIPTION
 \fBksymtypes\fR is a tool that provides functionality to work with symtypes files. These files
 describe the Application Binary Interface (ABI) of the kernel and its modules. The data is produced
@@ -31,7 +31,7 @@ Display global help information and exit.
 \fB\-\-version\fR
 Output version information and exit.
 .SH CONSOLIDATE COMMAND
-\fBksymtypes\fR \fBconsolidate\fR [\fICONSOLIDATE\-OPTION\fR...] \fIPATH\fR
+\fBksymtypes\fR \fBconsolidate\fR \fb-o\fR \fIFILE\fR [\fICONSOLIDATE\-OPTION\fR]... \fIPATH\fR
 .PP
 The \fBconsolidate\fR command reads symtypes files from the specified path, consolidates their
 contents by merging duplicate types and writes the output to the specified file. The input path
@@ -49,7 +49,7 @@ Use \fINUM\fR workers to perform the operation simultaneously.
 \fB\-o\fR \fIFILE\fR, \fB\-\-output\fR=\fIFILE\fR
 Write the result to \fIFILE\fR. This option is mandatory.
 .SH SPLIT COMMAND
-\fBksymtypes\fR \fBsplit\fR [\fISPLIT\-OPTION\fR...] \fIPATH\fR
+\fBksymtypes\fR \fBsplit\fR \fb-o\fR \fIDIR\fR [\fISPLIT\-OPTION\fR]... \fIPATH\fR
 .PP
 The \fBsplit\fR command reads a consolidated symtypes files from the specified path and divides the
 data into individual symtypes files. This operation is the opposite of the \fBconsolidate\fR
@@ -69,7 +69,7 @@ Use \fINUM\fR workers to perform the operation simultaneously.
 \fB\-o\fR \fIDIR\fR, \fB\-\-output\fR=\fIDIR\fR
 Write the result to \fIDIR\fR. This option is mandatory.
 .SH COMPARE COMMAND
-\fBksymtypes\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR...] \fIPATH\fR \fIPATH2\fR
+\fBksymtypes\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR]... \fIPATH\fR \fIPATH2\fR
 .PP
 The \fBcompare\fR command shows the differences between two symtypes corpuses. A corpus can be
 specified by a directory containing symtypes files or by a consolidated symtypes file. In a typical

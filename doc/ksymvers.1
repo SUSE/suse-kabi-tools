@@ -4,7 +4,7 @@
 .SH NAME
 ksymvers \- a tool to work with Linux\-kernel symvers files
 .SH SYNOPSIS
-\fBksymvers\fR [\fIGENERAL\-OPTION\fR...] { \fBcompare\fR } [\fICOMMAND\-OPTION\fR...] ...
+\fBksymvers\fR [\fIGENERAL\-OPTION\fR]... { \fBcompare\fR } [\fICOMMAND\-OPTION\fR]... ...
 .SH DESCRIPTION
 \fBksymvers\fR is a tool that provides functionality to work with symvers files. These files
 summarize the exported symbols of the kernel and its modules. The data is produced by the
@@ -26,7 +26,7 @@ Display global help information and exit.
 \fB\-\-version\fR
 Output version information and exit.
 .SH COMPARE COMMAND
-\fBksymvers\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR...] \fIFILE\fR \fIFILE2\fR
+\fBksymvers\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR]... \fIFILE\fR \fIFILE2\fR
 .PP
 The \fBcompare\fR command shows the differences between two symvers files. In a typical use case,
 the first input will point to a reference symvers file and the second input will point to a symvers

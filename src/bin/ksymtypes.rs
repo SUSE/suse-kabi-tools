@@ -10,7 +10,7 @@ use suse_kabi_tools::text::Filter;
 use suse_kabi_tools::{Error, Timing, debug};
 
 const USAGE_MSG: &str = concat!(
-    "Usage: ksymtypes [OPTION...] COMMAND\n",
+    "Usage: ksymtypes [OPTION]... COMMAND ...\n",
     "\n",
     "Options:\n",
     "  -d, --debug                   enable debug output\n",
@@ -21,11 +21,14 @@ const USAGE_MSG: &str = concat!(
     "  consolidate                   consolidate symtypes into a single file\n",
     "  split                         split a consolidated symtypes file into\n",
     "                                individual files\n",
-    "  compare                       show differences between two symtypes corpuses\n"
+    "  compare                       show differences between two symtypes corpuses\n",
+    "\n",
+    "See 'ksymtypes COMMAND --help' for more information on a specific command.\n",
 );
 
 const CONSOLIDATE_USAGE_MSG: &str = concat!(
-    "Usage: ksymtypes consolidate [OPTION...] PATH\n",
+    "Usage: ksymtypes consolidate -o FILE [OPTION]... PATH\n",
+    "\n",
     "Consolidate symtypes into a single file.\n",
     "\n",
     "Options:\n",
@@ -35,7 +38,8 @@ const CONSOLIDATE_USAGE_MSG: &str = concat!(
 );
 
 const SPLIT_USAGE_MSG: &str = concat!(
-    "Usage: ksymtypes split [OPTION...] PATH\n",
+    "Usage: ksymtypes split -o DIR [OPTION]... PATH\n",
+    "\n",
     "Split a consolidated symtypes file into individual files.\n",
     "\n",
     "Options:\n",
@@ -45,7 +49,8 @@ const SPLIT_USAGE_MSG: &str = concat!(
 );
 
 const COMPARE_USAGE_MSG: &str = concat!(
-    "Usage: ksymtypes compare [OPTION...] PATH PATH2\n",
+    "Usage: ksymtypes compare [OPTION]... PATH PATH2\n",
+    "\n",
     "Show differences between two symtypes corpuses.\n",
     "\n",
     "Options:\n",
