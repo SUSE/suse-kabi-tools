@@ -125,6 +125,186 @@ fn read_basic_consolidated() {
 }
 
 #[test]
+fn read_second() {
+    // Check that when a second file is read, the content is correctly merged into the corpus
+    // representation.
+
+    // Perform the first read.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test.symtypes",
+        bytes!(
+            "s#foo struct foo { }\n",
+            "bar void bar ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let foo_tokens_rc = Arc::new(vec![
+        Token::new_atom("struct"),
+        Token::new_atom("foo"),
+        Token::new_atom("{"),
+        Token::new_atom("}"),
+    ]);
+    let bar_tokens_rc = Arc::new(vec![
+        Token::new_atom("void"),
+        Token::new_atom("bar"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let mut exp_symtypes = SymtypesCorpus {
+        types: vec![Types::new(); TYPE_BUCKETS_SIZE],
+        exports: HashMap::from([("bar".to_string(), 0)]),
+        files: vec![SymtypesFile {
+            path: PathBuf::from("test.symtypes"),
+            records: HashMap::from([
+                ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+                ("bar".to_string(), Arc::clone(&bar_tokens_rc)),
+            ]),
+        }],
+    };
+    exp_symtypes.types[type_bucket_idx("s#foo")]
+        .insert("s#foo".to_string(), vec![Arc::clone(&foo_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("bar")]
+        .insert("bar".to_string(), vec![Arc::clone(&bar_tokens_rc)]);
+    assert_eq!(symtypes, exp_symtypes);
+
+    // Perform the second read.
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test2.symtypes",
+        bytes!(
+            "s#foo struct foo { }\n",
+            "baz int baz ( )\n",
+            "qux int qux ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let baz_tokens_rc = Arc::new(vec![
+        Token::new_atom("int"),
+        Token::new_atom("baz"),
+        Token::new_atom("("),
+        Token::new_atom(")"),
+    ]);
+    let qux_tokens_rc = Arc::new(vec![
+        Token::new_atom("int"),
+        Token::new_atom("qux"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let mut exp_symtypes = SymtypesCorpus {
+        types: vec![Types::new(); TYPE_BUCKETS_SIZE],
+        exports: HashMap::from([
+            ("bar".to_string(), 0),
+            ("baz".to_string(), 1),
+            ("qux".to_string(), 1),
+        ]),
+        files: vec![
+            SymtypesFile {
+                path: PathBuf::from("test.symtypes"),
+                records: HashMap::from([
+                    ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+                    ("bar".to_string(), Arc::clone(&bar_tokens_rc)),
+                ]),
+            },
+            SymtypesFile {
+                path: PathBuf::from("test2.symtypes"),
+                records: HashMap::from([
+                    ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+                    ("baz".to_string(), Arc::clone(&baz_tokens_rc)),
+                    ("qux".to_string(), Arc::clone(&qux_tokens_rc)),
+                ]),
+            },
+        ],
+    };
+    exp_symtypes.types[type_bucket_idx("s#foo")]
+        .insert("s#foo".to_string(), vec![Arc::clone(&foo_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("bar")]
+        .insert("bar".to_string(), vec![Arc::clone(&bar_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("baz")]
+        .insert("baz".to_string(), vec![Arc::clone(&baz_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("qux")]
+        .insert("qux".to_string(), vec![Arc::clone(&qux_tokens_rc)]);
+    assert_eq!(symtypes, exp_symtypes);
+}
+
+#[test]
+fn read_second_error() {
+    // Check that when a second file is read and rejected due to an error, the existing corpus
+    // representation remains unchanged.
+
+    // Perform the first read.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test.symtypes",
+        bytes!(
+            "s#foo struct foo { }\n",
+            "bar void bar ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let foo_tokens_rc = Arc::new(vec![
+        Token::new_atom("struct"),
+        Token::new_atom("foo"),
+        Token::new_atom("{"),
+        Token::new_atom("}"),
+    ]);
+    let bar_tokens_rc = Arc::new(vec![
+        Token::new_atom("void"),
+        Token::new_atom("bar"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let mut exp_symtypes = SymtypesCorpus {
+        types: vec![Types::new(); TYPE_BUCKETS_SIZE],
+        exports: HashMap::from([("bar".to_string(), 0)]),
+        files: vec![SymtypesFile {
+            path: PathBuf::from("test.symtypes"),
+            records: HashMap::from([
+                ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+                ("bar".to_string(), Arc::clone(&bar_tokens_rc)),
+            ]),
+        }],
+    };
+    exp_symtypes.types[type_bucket_idx("s#foo")]
+        .insert("s#foo".to_string(), vec![Arc::clone(&foo_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("bar")]
+        .insert("bar".to_string(), vec![Arc::clone(&bar_tokens_rc)]);
+    assert_eq!(symtypes, exp_symtypes);
+
+    // Perform the second read.
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test2.symtypes",
+        bytes!(
+            "baz int baz ( )\n",
+            "qux int qux ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_parse_err!(
+        result,
+        concat!(
+            "Type 's#foo' is not known\n",
+            " test2.symtypes:2\n",
+            " | qux int qux ( s#foo )", //
+        ),
+    );
+    assert!(warnings.is_empty());
+    assert_eq!(symtypes, exp_symtypes);
+}
+
+#[test]
 fn read_empty_record_single() {
     // Check that empty records are rejected when reading a single file.
     let mut symtypes = SymtypesCorpus::new();

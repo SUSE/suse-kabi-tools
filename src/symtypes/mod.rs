@@ -15,7 +15,7 @@ use std::io::prelude::*;
 use std::iter::zip;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
-use std::{fs, mem};
+use std::{fs, iter, mem};
 
 #[cfg(test)]
 mod tests;
@@ -194,13 +194,27 @@ enum LoadKind {
     Any,
 }
 
-/// A helper struct to provide synchronized access to all corpus data and a warnings stream during
-/// parallel loading.
+/// A helper structure to provide synchronized access to all corpus data and a warnings stream
+/// during parallel loading.
+///
+/// The structure holds a reference to the existing corpus and separately tracks all new data that
+/// should be added to it if the load succeeds. This ensures the corpus remains unchanged if the
+/// load operation fails and returns an error at any point.
+///
+/// This somewhat complicates the loading process:
+///
+/// * When inserting a new type, the code needs to carefully check both the existing and new data.
+/// * The same consideration applies when inserting a new export.
+/// * When dealing with files, the code refers to a specific file using a `file_idx`. If
+///   `file_idx < symtypes.files.len()`, it points to the `symfiles.files` vector. Otherwise, it
+///   points to the `new_files` vector. In this case, the index must be adjusted before accessing
+///   the vector by using `file_idx - symtypes.files.len()`.
 struct LoadContext<'a> {
     load_kind: LoadKind,
-    types: Vec<RwLock<Types>>,
-    exports: Mutex<Exports>,
-    files: Mutex<SymtypesFiles>,
+    symtypes: &'a SymtypesCorpus,
+    new_types: Vec<RwLock<Types>>,
+    new_exports: Mutex<Exports>,
+    new_files: Mutex<SymtypesFiles>,
     warnings: Mutex<Box<dyn Write + Send + 'a>>,
 }
 
@@ -218,30 +232,32 @@ type CompareFileTypes<'a> = HashSet<&'a str>;
 impl<'a> LoadContext<'a> {
     /// Creates a new load context from a symtypes corpus and a warnings stream.
     fn from<W: Write + Send + 'a>(
-        mut symtypes: SymtypesCorpus,
+        symtypes: &'a SymtypesCorpus,
         load_kind: LoadKind,
         warnings: W,
     ) -> Self {
         Self {
             load_kind,
-            types: symtypes.types.into_iter().map(RwLock::new).collect(),
-            exports: Mutex::new(mem::take(&mut symtypes.exports)),
-            files: Mutex::new(mem::take(&mut symtypes.files)),
+            symtypes,
+            new_types: iter::repeat_with(|| RwLock::new(Types::new()))
+                .take(TYPE_BUCKETS_SIZE)
+                .collect(),
+            new_exports: Mutex::new(Exports::new()),
+            new_files: Mutex::new(SymtypesFiles::new()),
             warnings: Mutex::new(Box::new(warnings)),
         }
     }
 
-    /// Consumes this load context, returning the underlying data.
-    fn into_inner(self) -> SymtypesCorpus {
-        SymtypesCorpus {
-            types: self
-                .types
+    /// Consumes this load context, returning the new data.
+    fn into_inner(self) -> (TypeBuckets, Exports, SymtypesFiles) {
+        (
+            self.new_types
                 .into_iter()
                 .map(|t| t.into_inner().unwrap())
                 .collect(),
-            exports: self.exports.into_inner().unwrap(),
-            files: self.files.into_inner().unwrap(),
-        }
+            self.new_exports.into_inner().unwrap(),
+            self.new_files.into_inner().unwrap(),
+        )
     }
 }
 
@@ -438,7 +454,7 @@ impl SymtypesCorpus {
         warnings: W,
         job_slots: &mut JobSlots,
     ) -> Result<(), Error> {
-        let load_context = LoadContext::from(mem::take(self), load_kind, warnings);
+        let load_context = LoadContext::from(self, load_kind, warnings);
 
         burst::run_jobs(
             |work_idx| {
@@ -457,7 +473,8 @@ impl SymtypesCorpus {
             job_slots,
         )?;
 
-        *self = load_context.into_inner();
+        let (new_types, new_exports, new_files) = load_context.into_inner();
+        self.merge_new(new_types, new_exports, new_files);
 
         Ok(())
     }
@@ -472,13 +489,35 @@ impl SymtypesCorpus {
         warnings: W,
     ) -> Result<(), Error> {
         let path = path.as_ref();
-        let load_context = LoadContext::from(mem::take(self), LoadKind::Any, warnings);
+        let load_context = LoadContext::from(self, LoadKind::Any, warnings);
 
         Self::load_inner(path, reader, &load_context)?;
 
-        *self = load_context.into_inner();
+        let (new_types, new_exports, new_files) = load_context.into_inner();
+        self.merge_new(new_types, new_exports, new_files);
 
         Ok(())
+    }
+
+    /// Completes the loading operation by merging new data into the existing corpus.
+    fn merge_new(
+        &mut self,
+        new_types: TypeBuckets,
+        new_exports: Exports,
+        mut new_files: SymtypesFiles,
+    ) {
+        for (bucket_idx, bucket) in new_types.into_iter().enumerate() {
+            for (type_name, mut variants) in bucket {
+                match self.types[bucket_idx].entry(type_name) {
+                    Occupied(mut types_entry) => types_entry.get_mut().append(&mut variants),
+                    Vacant(type_entry) => {
+                        type_entry.insert(variants);
+                    }
+                }
+            }
+        }
+        self.exports.extend(new_exports);
+        self.files.append(&mut new_files);
     }
 
     /// Loads symtypes data from the specified reader.
@@ -569,7 +608,7 @@ impl SymtypesCorpus {
                 ));
             }
 
-            // Insert the type into the corpus and file records.
+            // Insert the type into the future corpus and file records.
             let tokens_rc = Self::merge_type(&name, tokens, load_context);
             if is_export_name(&name) {
                 Self::insert_export(&name, file_idx, line_idx, load_context)?;
@@ -600,7 +639,7 @@ impl SymtypesCorpus {
         Ok(())
     }
 
-    /// Adds the specified file to the corpus.
+    /// Adds the specified file to the newly loaded data.
     ///
     /// Note that in the case of a consolidated file, unlike most load functions, the `path` should
     /// point to the name of the specific symtypes file.
@@ -610,9 +649,9 @@ impl SymtypesCorpus {
             records: FileRecords::new(),
         };
 
-        let mut files = load_context.files.lock().unwrap();
-        files.push(symfile);
-        files.len() - 1
+        let mut new_files = load_context.new_files.lock().unwrap();
+        new_files.push(symfile);
+        load_context.symtypes.files.len() + new_files.len() - 1
     }
 
     /// Completes loading of the symtypes file specified by `file_idx` by extrapolating its records,
@@ -644,22 +683,31 @@ impl SymtypesCorpus {
         }
 
         // Add the file records to the corpus.
-        let mut files = load_context.files.lock().unwrap();
-        files[file_idx].records = records;
+        let mut new_files = load_context.new_files.lock().unwrap();
+        new_files[file_idx - load_context.symtypes.files.len()].records = records;
 
         Ok(())
     }
 
-    /// Adds the given type definition to the corpus if it's not already present, and returns its
-    /// reference-counted pointer.
+    /// Adds the given type definition to the newly loaded data if it's not already present, and
+    /// returns its reference-counted pointer.
     fn merge_type(type_name: &str, tokens: Tokens, load_context: &LoadContext) -> Arc<Tokens> {
-        // Types are often repeated in different symtypes files. Try to find an existing type only
-        // under the read lock first.
+        let bucket_idx = type_bucket_idx(type_name);
+
+        // Search in the current types.
+        if let Some(variants) = load_context.symtypes.types[bucket_idx].get(type_name) {
+            for variant_rc in variants {
+                if tokens == **variant_rc {
+                    return Arc::clone(variant_rc);
+                }
+            }
+        }
+
+        // Search in the new types. Note that types are often repeated in different symtypes files,
+        // therefore try to find an existing type only under the read lock first.
         {
-            let types = load_context.types[type_bucket_idx(type_name)]
-                .read()
-                .unwrap();
-            if let Some(variants) = types.get(type_name) {
+            let new_types = load_context.new_types[bucket_idx].read().unwrap();
+            if let Some(variants) = new_types.get(type_name) {
                 for variant_rc in variants {
                     if tokens == **variant_rc {
                         return Arc::clone(variant_rc);
@@ -668,10 +716,8 @@ impl SymtypesCorpus {
             }
         }
 
-        let mut types = load_context.types[type_bucket_idx(type_name)]
-            .write()
-            .unwrap();
-        match types.get_mut(type_name) {
+        let mut new_types = load_context.new_types[bucket_idx].write().unwrap();
+        match new_types.get_mut(type_name) {
             Some(variants) => {
                 for variant_rc in variants.iter() {
                     if tokens == **variant_rc {
@@ -684,13 +730,14 @@ impl SymtypesCorpus {
             }
             None => {
                 let tokens_rc = Arc::new(tokens);
-                types.insert(type_name.to_string(), vec![Arc::clone(&tokens_rc)]); // [1]
+                new_types.insert(type_name.to_string(), vec![Arc::clone(&tokens_rc)]); // [1]
                 tokens_rc
             }
         }
     }
 
-    /// Registers the specified export in the corpus and validates that it is not a duplicate.
+    /// Registers the specified export in the newly loaded data and validates that it is not
+    /// a duplicate.
     fn insert_export(
         type_name: &str,
         file_idx: usize,
@@ -699,13 +746,17 @@ impl SymtypesCorpus {
     ) -> Result<(), Error> {
         // Add the export, if it is unique.
         let other_file_idx = {
-            let mut exports = load_context.exports.lock().unwrap();
-            match exports.entry(type_name.to_string()) // [1]
-            {
-                Occupied(export_entry) => *export_entry.get(),
-                Vacant(export_entry) => {
-                    export_entry.insert(file_idx);
-                    return Ok(());
+            if let Some(&other_file_idx) = load_context.symtypes.exports.get(type_name) {
+                other_file_idx
+            } else {
+                let mut new_exports = load_context.new_exports.lock().unwrap();
+                match new_exports.entry(type_name.to_string()) // [1]
+                {
+                    Occupied(export_entry) => *export_entry.get(),
+                    Vacant(export_entry) => {
+                        export_entry.insert(file_idx);
+                        return Ok(());
+                    }
                 }
             }
         };
@@ -718,9 +769,15 @@ impl SymtypesCorpus {
         // However, we want to proceed, especially if this is the compare command, where we want to
         // report actual kABI differences.
         let message = {
-            let files = load_context.files.lock().unwrap();
-            let path = &files[file_idx].path;
-            let other_path = &files[other_file_idx].path;
+            let new_files = load_context.new_files.lock().unwrap();
+            let path = &new_files[file_idx - load_context.symtypes.files.len()].path;
+            let other_path = {
+                if other_file_idx < load_context.symtypes.files.len() {
+                    &load_context.symtypes.files[other_file_idx].path
+                } else {
+                    &new_files[other_file_idx - load_context.symtypes.files.len()].path
+                }
+            };
             format!(
                 "{}:{}: WARNING: Export '{}' is duplicate, previous occurrence found in '{}'",
                 path.display(),
