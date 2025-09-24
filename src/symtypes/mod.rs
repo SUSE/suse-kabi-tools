@@ -989,8 +989,8 @@ impl SymtypesCorpus {
 
         // Look up how the symbol is defined in each file.
         // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-        let tokens = &**file.records.get(name).unwrap();
-        let other_tokens = &**other_file.records.get(name).unwrap();
+        let tokens = file.records.get(name).unwrap().as_ref();
+        let other_tokens = other_file.records.get(name).unwrap().as_ref();
 
         // Compare the immediate tokens.
         let is_equal = tokens.len() == other_tokens.len()
