@@ -89,8 +89,11 @@ struct SymtypesFile {
     records: FileRecords,
 }
 
-/// A collection of symtypes files.
-type SymtypesFiles = Vec<Arc<SymtypesFile>>;
+/// A collection of symtypes files, which also provides fast lookup by a symtypes path.
+///
+/// SAFETY: The `PathBuf` key must match the `path` member of the corresponding `SymtypesFile`
+/// value.
+type SymtypesFiles = HashMap<PathBuf, Arc<SymtypesFile>>;
 
 /// A mapping from a symbol name to a `SymtypesFile`, specifying in which file the symbol is
 /// defined.
@@ -496,7 +499,7 @@ impl SymtypesCorpus {
         &mut self,
         new_types: TypeBuckets,
         new_exports: Exports,
-        mut new_files: SymtypesFiles,
+        new_files: SymtypesFiles,
     ) {
         for (bucket_idx, bucket) in new_types.into_iter().enumerate() {
             for (type_name, mut variants) in bucket {
@@ -509,7 +512,7 @@ impl SymtypesCorpus {
             }
         }
         self.exports.extend(new_exports);
-        self.files.append(&mut new_files);
+        self.files.extend(new_files);
     }
 
     /// Loads symtypes data from the specified reader.
@@ -663,7 +666,7 @@ impl SymtypesCorpus {
 
         {
             let mut new_files = load_context.new_files.lock().unwrap();
-            new_files.push(Arc::clone(&symfile_rc));
+            new_files.insert(symfile_rc.path.clone(), Arc::clone(&symfile_rc));
         }
 
         // Insert all the exports present in the file into the future corpus.
@@ -850,16 +853,16 @@ impl SymtypesCorpus {
         let mut active_types = HashMap::<&String, &Arc<Tokens>>::new();
 
         // Sort all files in the corpus by their path.
-        let mut file_indices = (0..self.files.len()).collect::<Vec<_>>();
-        file_indices.sort_by_key(|&i| &self.files[i].path);
+        let mut sorted_files = self.files.values().collect::<Vec<_>>();
+        sorted_files.sort_by_key(|&symfile_rc| &symfile_rc.path);
 
         // Process the sorted files and add their types to the output.
         let mut add_separator = false;
-        for i in file_indices {
-            let symfile = &self.files[i];
+        for symfile_rc in sorted_files {
+            let symfile = symfile_rc.as_ref();
 
             // Sort all types in the file.
-            let mut sorted_types = self.files[i].records.iter().collect::<Vec<_>>();
+            let mut sorted_types = symfile.records.iter().collect::<Vec<_>>();
             sorted_types.sort_by_cached_key(|&(name, _)| (is_export_name(name), name));
 
             // Add an empty line to separate individual files.
@@ -930,9 +933,11 @@ impl SymtypesCorpus {
         let err_desc = "Failed to write a split record";
         let dir_writer = Mutex::new(dir_writer);
 
+        let works = self.files.values().collect::<Vec<_>>();
+
         burst::run_jobs(
             |work_idx| {
-                let symfile = &self.files[work_idx];
+                let symfile = works[work_idx].as_ref();
 
                 // Sort all types in the file.
                 let mut sorted_types = symfile.records.iter().collect::<Vec<_>>();
@@ -960,7 +965,7 @@ impl SymtypesCorpus {
 
                 Ok(())
             },
-            self.files.len(),
+            works.len(),
             job_slots,
         )
     }

@@ -50,7 +50,7 @@ fn read_basic_single() {
     });
     let mut exp_symtypes = SymtypesCorpus {
         types: vec![Types::new(); TYPE_BUCKETS_SIZE],
-        files: vec![Arc::clone(&test_symfile_rc)],
+        files: HashMap::from([(test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc))]),
         exports: HashMap::from([
             ("bar".to_string(), Arc::clone(&test_symfile_rc)),
             ("baz".to_string(), Arc::clone(&test_symfile_rc)),
@@ -115,7 +115,10 @@ fn read_basic_consolidated() {
     });
     let mut exp_symtypes = SymtypesCorpus {
         types: vec![Types::new(); TYPE_BUCKETS_SIZE],
-        files: vec![Arc::clone(&test_symfile_rc), Arc::clone(&test2_symfile_rc)],
+        files: HashMap::from([
+            (test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc)),
+            (test2_symfile_rc.path.clone(), Arc::clone(&test2_symfile_rc)),
+        ]),
         exports: HashMap::from([
             ("bar".to_string(), Arc::clone(&test_symfile_rc)),
             ("baz".to_string(), Arc::clone(&test2_symfile_rc)),
@@ -170,7 +173,7 @@ fn read_second() {
     });
     let mut exp_symtypes = SymtypesCorpus {
         types: vec![Types::new(); TYPE_BUCKETS_SIZE],
-        files: vec![Arc::clone(&test_symfile_rc)],
+        files: HashMap::from([(test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc))]),
         exports: HashMap::from([("bar".to_string(), Arc::clone(&test_symfile_rc))]),
     };
     exp_symtypes.types[type_bucket_idx("s#foo")]
@@ -215,7 +218,10 @@ fn read_second() {
     });
     let mut exp_symtypes = SymtypesCorpus {
         types: vec![Types::new(); TYPE_BUCKETS_SIZE],
-        files: vec![Arc::clone(&test_symfile_rc), Arc::clone(&test2_symfile_rc)],
+        files: HashMap::from([
+            (test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc)),
+            (test2_symfile_rc.path.clone(), Arc::clone(&test2_symfile_rc)),
+        ]),
         exports: HashMap::from([
             ("bar".to_string(), Arc::clone(&test_symfile_rc)),
             ("baz".to_string(), Arc::clone(&test2_symfile_rc)),
@@ -273,7 +279,7 @@ fn read_second_error() {
     });
     let mut exp_symtypes = SymtypesCorpus {
         types: vec![Types::new(); TYPE_BUCKETS_SIZE],
-        files: vec![Arc::clone(&test_symfile_rc)],
+        files: HashMap::from([(test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc))]),
         exports: HashMap::from([("bar".to_string(), Arc::clone(&test_symfile_rc))]),
     };
     exp_symtypes.types[type_bucket_idx("s#foo")]
