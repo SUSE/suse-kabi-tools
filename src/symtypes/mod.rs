@@ -79,10 +79,6 @@ fn type_bucket_idx(type_name: &str) -> usize {
     (hash(type_name) % TYPE_BUCKETS_SIZE as u64) as usize
 }
 
-/// A mapping from a symbol name to an index in `SymtypesFiles`, specifying in which file the symbol
-/// is defined.
-type Exports = HashMap<String, usize>;
-
 /// A mapping from a type name to `Tokens`, specifying the type in a given file.
 type FileRecords = HashMap<String, Arc<Tokens>>;
 
@@ -94,14 +90,18 @@ struct SymtypesFile {
 }
 
 /// A collection of symtypes files.
-type SymtypesFiles = Vec<SymtypesFile>;
+type SymtypesFiles = Vec<Arc<SymtypesFile>>;
+
+/// A mapping from a symbol name to a `SymtypesFile`, specifying in which file the symbol is
+/// defined.
+type Exports = HashMap<String, Arc<SymtypesFile>>;
 
 /// A representation of a kernel ABI, loaded from symtypes files.
 ///
 /// * The `types` collection stores all types and their variants.
 /// * The `files` collection records types in individual symtypes files.
-/// * The `exports` collection provides all exports in the corpus. Each export uses an index to
-///   reference its origin in `files`.
+/// * The `exports` collection provides all exports in the corpus. Each record points to a file in
+///   which the symbol is defined.
 ///
 /// For instance, consider the following corpus consisting of two files `test_a.symtypes` and
 /// `test_b.symtypes`:
@@ -134,6 +134,20 @@ type SymtypesFiles = Vec<SymtypesFile>;
 /// foo2_tokens = Arc { Tokens[ Atom("struct"), Atom("foo"), Atom("{"), Atom("UNKNOWN"), Atom("}") ] }
 /// bar_tokens = Arc { Tokens[ Atom("int"), Atom("bar"), Atom("("), TypeRef("s#foo"), Atom(")") ] }
 /// baz_tokens = Arc { Tokens[ Atom("int"), Atom("baz"), Atom("("), TypeRef("s#foo"), Atom(")") ] }
+/// test_a_file = Arc { SymtypesFile {
+///     path: PathBuf("test_a.symtypes"),
+///     records: FileRecords {
+///         "s#foo": foo_tokens,
+///         "bar": bar_tokens,
+///     }
+/// } }
+/// test_b_file = Arc { SymtypesFile {
+///     path: PathBuf("test_b.symtypes"),
+///     records: FileRecords {
+///         "s#foo": foo2_tokens,
+///         "baz": baz_tokens,
+///     }
+/// } }
 /// corpus = SymtypesCorpus {
 ///     types: TypeBuckets {
 ///         [0]: Types { },
@@ -147,26 +161,11 @@ type SymtypesFiles = Vec<SymtypesFile>;
 ///         },
 ///         [4..TYPE_BUCKETS_SIZE] = Types { },
 ///     },
+///     files: SymtypesFiles[ test_a_file, test_b_file ],
 ///     exports: Exports {
-///         "bar": 0,
-///         "baz": 1,
+///         "bar": test_a_file,
+///         "baz": test_b_file,
 ///     },
-///     files: SymtypesFiles[
-///         SymtypesFile {
-///             path: PathBuf("test_a.symtypes"),
-///             records: FileRecords {
-///                 "s#foo": foo_tokens,
-///                 "bar": bar_tokens,
-///             }
-///         },
-///         SymtypesFile {
-///             path: PathBuf("test_b.symtypes"),
-///             records: FileRecords {
-///                 "s#foo": foo2_tokens,
-///                 "baz": baz_tokens,
-///             }
-///         },
-///     ],
 /// }
 /// ```
 ///
@@ -179,8 +178,8 @@ type SymtypesFiles = Vec<SymtypesFile>;
 #[derive(Debug, Eq, PartialEq)]
 pub struct SymtypesCorpus {
     types: TypeBuckets,
-    exports: Exports,
     files: SymtypesFiles,
+    exports: Exports,
 }
 
 /// An identifier indicating what kind of symtypes data is expected to be loaded.
@@ -198,17 +197,10 @@ enum LoadKind {
 /// during parallel loading.
 ///
 /// The structure holds a reference to the existing corpus and separately tracks all new data that
-/// should be added to it if the load succeeds. This ensures the corpus remains unchanged if the
-/// load operation fails and returns an error at any point.
-///
-/// This somewhat complicates the loading process:
-///
-/// * When inserting a new type, the code needs to carefully check both the existing and new data.
-/// * The same consideration applies when inserting a new export.
-/// * When dealing with files, the code refers to a specific file using a `file_idx`. If
-///   `file_idx < symtypes.files.len()`, it points to the `symfiles.files` vector. Otherwise, it
-///   points to the `new_files` vector. In this case, the index must be adjusted before accessing
-///   the vector by using `file_idx - symtypes.files.len()`.
+/// should be added to it if the load succeeds. This approach ensures that the corpus remains
+/// unchanged if the load operation fails and returns an error at any point. However, this method
+/// adds some complexity to the loading process, as the code must carefully check both the existing
+/// and new data when inserting new records.
 struct LoadContext<'a> {
     load_kind: LoadKind,
     symtypes: &'a SymtypesCorpus,
@@ -304,8 +296,8 @@ impl SymtypesCorpus {
     pub fn new() -> Self {
         Self {
             types: vec![Types::new(); TYPE_BUCKETS_SIZE],
-            exports: Exports::new(),
             files: SymtypesFiles::new(),
+            exports: Exports::new(),
         }
     }
 
@@ -553,11 +545,8 @@ impl SymtypesCorpus {
             ));
         }
 
-        let mut file_idx = if !is_consolidated {
-            Self::add_file(path, load_context)
-        } else {
-            usize::MAX
-        };
+        // Track the name of the currently processed single (inner) file.
+        let mut maybe_inner_path = if !is_consolidated { Some(path) } else { None };
 
         // Track which records are currently active and all per-file overrides for UNKNOWN
         // definitions if this is a consolidated file.
@@ -575,12 +564,11 @@ impl SymtypesCorpus {
 
             // Handle file headers in consolidated files.
             if is_consolidated && line.starts_with("/* ") && line.ends_with(" */") {
-                // Complete the current file.
-                if file_idx != usize::MAX {
-                    Self::close_file(
-                        path,
+                // Add the current file.
+                if let Some(inner_path) = maybe_inner_path {
+                    Self::add_file(
+                        inner_path,
                         &lines,
-                        file_idx,
                         mem::take(&mut records),
                         mem::take(&mut local_override),
                         &active_types,
@@ -589,7 +577,7 @@ impl SymtypesCorpus {
                 }
 
                 // Open the new file.
-                file_idx = Self::add_file(Path::new(&line[3..line.len() - 3]), load_context);
+                maybe_inner_path = Some(Path::new(&line[3..line.len() - 3]));
 
                 continue;
             }
@@ -610,9 +598,6 @@ impl SymtypesCorpus {
 
             // Insert the type into the future corpus and file records.
             let tokens_rc = Self::merge_type(&name, tokens, load_context);
-            if is_export_name(&name) {
-                Self::insert_export(&name, file_idx, line_idx, load_context)?;
-            }
             records.insert(name.clone(), Arc::clone(&tokens_rc));
 
             // Record the type as currently active.
@@ -624,11 +609,10 @@ impl SymtypesCorpus {
         }
 
         // Complete the file.
-        if file_idx != usize::MAX {
-            Self::close_file(
-                path,
+        if let Some(inner_path) = maybe_inner_path {
+            Self::add_file(
+                inner_path,
                 &lines,
-                file_idx,
                 records,
                 local_override,
                 &active_types,
@@ -643,23 +627,12 @@ impl SymtypesCorpus {
     ///
     /// Note that in the case of a consolidated file, unlike most load functions, the `path` should
     /// point to the name of the specific symtypes file.
-    fn add_file(path: &Path, load_context: &LoadContext) -> usize {
-        let symfile = SymtypesFile {
-            path: path.to_path_buf(),
-            records: FileRecords::new(),
-        };
-
-        let mut new_files = load_context.new_files.lock().unwrap();
-        new_files.push(symfile);
-        load_context.symtypes.files.len() + new_files.len() - 1
-    }
-
-    /// Completes loading of the symtypes file specified by `file_idx` by extrapolating its records,
-    /// validating all references, and finally adding the file records to the corpus.
-    fn close_file(
+    ///
+    /// Completes the loading of a symtypes file by extrapolating its records, validating all
+    /// references, and finally adding the file and its exports to the corpus.
+    fn add_file(
         path: &Path,
         lines: &Vec<String>,
-        file_idx: usize,
         mut records: FileRecords,
         local_override: LoadActiveTypes,
         active_types: &LoadActiveTypes,
@@ -682,9 +655,66 @@ impl SymtypesCorpus {
             )?;
         }
 
-        // Add the file records to the corpus.
-        let mut new_files = load_context.new_files.lock().unwrap();
-        new_files[file_idx - load_context.symtypes.files.len()].records = records;
+        // Add the file to the future corpus.
+        let symfile_rc = Arc::new(SymtypesFile {
+            path: path.to_path_buf(),
+            records,
+        });
+
+        {
+            let mut new_files = load_context.new_files.lock().unwrap();
+            new_files.push(Arc::clone(&symfile_rc));
+        }
+
+        // Insert all the exports present in the file into the future corpus.
+        {
+            let mut new_exports = load_context.new_exports.lock().unwrap();
+
+            for type_name in symfile_rc
+                .records
+                .keys()
+                .filter(|&name| is_export_name(name))
+            {
+                // Add the export, if it is unique.
+                let other_symfile_rc = {
+                    if let Some(other_symfile_rc) =
+                        load_context.symtypes.exports.get(type_name.as_str())
+                    {
+                        Arc::clone(other_symfile_rc)
+                    } else {
+                        match new_exports.entry(type_name.clone()) // [1]
+                        {
+                            Occupied(export_entry) => Arc::clone(export_entry.get()),
+                            Vacant(export_entry) => {
+                                export_entry.insert(Arc::clone(&symfile_rc));
+                                continue;
+                            }
+                        }
+                    }
+                };
+
+                // SAFETY: Each export record is included in the active types.
+                let (_, line_idx) = active_types.get(type_name.as_str()).unwrap();
+
+                // Report the duplicate export as a warning. Although technically an error, some
+                // auxiliary kernel components that are not part of vmlinux/modules may reuse logic
+                // from the rest of the kernel by including its C/assembly files, which may contain
+                // export directives. If these components aren't correctly configured to disable
+                // exports, collecting all symtypes from the build will result in duplicate symbols.
+                // This should be fixed in the kernel. However, we want to proceed, especially if
+                // this is the compare command, where we want to report actual kABI differences.
+                let mut warnings = load_context.warnings.lock().unwrap();
+                writeln!(
+                    warnings,
+                    "{}:{}: WARNING: Export '{}' is duplicate, previous occurrence found in '{}'",
+                    symfile_rc.path.display(),
+                    line_idx + 1,
+                    type_name,
+                    other_symfile_rc.path.display(),
+                )
+                .map_io_err("Failed to write a duplicate-export warning")?;
+            }
+        }
 
         Ok(())
     }
@@ -734,62 +764,6 @@ impl SymtypesCorpus {
                 tokens_rc
             }
         }
-    }
-
-    /// Registers the specified export in the newly loaded data and validates that it is not
-    /// a duplicate.
-    fn insert_export(
-        type_name: &str,
-        file_idx: usize,
-        line_idx: usize,
-        load_context: &LoadContext,
-    ) -> Result<(), Error> {
-        // Add the export, if it is unique.
-        let other_file_idx = {
-            if let Some(&other_file_idx) = load_context.symtypes.exports.get(type_name) {
-                other_file_idx
-            } else {
-                let mut new_exports = load_context.new_exports.lock().unwrap();
-                match new_exports.entry(type_name.to_string()) // [1]
-                {
-                    Occupied(export_entry) => *export_entry.get(),
-                    Vacant(export_entry) => {
-                        export_entry.insert(file_idx);
-                        return Ok(());
-                    }
-                }
-            }
-        };
-
-        // Report the duplicate export as a warning. Although technically an error, some auxiliary
-        // kernel components that are not part of vmlinux/modules may reuse logic from the rest of
-        // the kernel by including its C/assembly files, which may contain export directives. If
-        // these components aren't correctly configured to disable exports, collecting all symtypes
-        // from the build will result in duplicate symbols. This should be fixed in the kernel.
-        // However, we want to proceed, especially if this is the compare command, where we want to
-        // report actual kABI differences.
-        let message = {
-            let new_files = load_context.new_files.lock().unwrap();
-            let path = &new_files[file_idx - load_context.symtypes.files.len()].path;
-            let other_path = {
-                if other_file_idx < load_context.symtypes.files.len() {
-                    &load_context.symtypes.files[other_file_idx].path
-                } else {
-                    &new_files[other_file_idx - load_context.symtypes.files.len()].path
-                }
-            };
-            format!(
-                "{}:{}: WARNING: Export '{}' is duplicate, previous occurrence found in '{}'",
-                path.display(),
-                line_idx + 1,
-                type_name,
-                other_path.display()
-            )
-        };
-        let mut warnings = load_context.warnings.lock().unwrap();
-        writeln!(warnings, "{}", message)
-            .map_io_err("Failed to write a duplicate-export warning")?;
-        Ok(())
     }
 
     /// Completes a type record by validating all its references and, in the case of a consolidated
@@ -1138,13 +1112,18 @@ impl SymtypesCorpus {
 
         burst::run_jobs(
             |work_idx| {
-                let (name, file_idx) = works[work_idx];
+                let (name, symfile_rc) = works[work_idx];
 
-                let file = &self.files[*file_idx];
-                if let Some(other_file_idx) = other_symtypes.exports.get(name) {
-                    let other_file = &other_symtypes.files[*other_file_idx];
+                if let Some(other_symfile_rc) = other_symtypes.exports.get(name) {
                     let mut processed = CompareFileTypes::new();
-                    Self::compare_types(file, other_file, name, name, &changes, &mut processed);
+                    Self::compare_types(
+                        symfile_rc.as_ref(),
+                        other_symfile_rc.as_ref(),
+                        name,
+                        name,
+                        &changes,
+                        &mut processed,
+                    );
                 };
 
                 Ok(())
