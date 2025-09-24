@@ -253,7 +253,7 @@ fn run_jobs_error() {
 
 #[test]
 fn run_jobs_no_work() {
-    // Check that `burst::run_jobs()` terminates when there no work is present.
+    // Check that `burst::run_jobs()` terminates when no work is present.
     let mut job_slots = JobControl::new_simple(8);
 
     let result = run_jobs(|_| Ok(()), 0, &mut job_slots);
