@@ -386,27 +386,22 @@ fn read_duplicate_type_record() {
     assert!(warnings.is_empty());
 }
 
-/*
-TODO FIXME
 #[test]
-fn read_duplicate_file_record() {
-    // Check that file records with duplicate names are rejected when reading a consolidated file.
+fn read_duplicate_file() {
+    // Check that symtypes files with duplicate paths are rejected.
     let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
     let result = symtypes.load_buffer(
         "test_consolidated.symtypes",
         bytes!(
-            "/* test.symtypes */
-\n",
-" /* test.symtypes */
-\n", //
+            "/* test.symtypes */\n",
+            "/* test.symtypes */\n", //
         ),
+        &mut warnings,
     );
-    assert_parse_err!(
-        result,
-        "test.symtypes:2: Duplicate record 'F#test.symtypes'"
-    );
+    assert_parse_err!(result, "Duplicate file path 'test.symtypes'");
+    assert!(warnings.is_empty());
 }
-*/
 
 #[test]
 fn read_invalid_reference() {

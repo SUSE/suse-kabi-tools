@@ -666,6 +666,17 @@ impl SymtypesCorpus {
 
         {
             let mut new_files = load_context.new_files.lock().unwrap();
+
+            // Verify that the file path does not duplicate any existing paths.
+            if load_context.symtypes.files.contains_key(&symfile_rc.path)
+                || new_files.contains_key(&symfile_rc.path)
+            {
+                return Err(Error::new_parse(format!(
+                    "Duplicate file path '{}'",
+                    symfile_rc.path.display()
+                )));
+            }
+
             new_files.insert(symfile_rc.path.clone(), Arc::clone(&symfile_rc));
         }
 
