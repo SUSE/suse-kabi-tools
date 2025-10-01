@@ -1191,8 +1191,20 @@ impl SymtypesCorpus {
                     writeln!(writer).map_io_err(err_desc)?;
 
                     // Output the changed type.
-                    writeln!(writer, "because of a changed '{}':", name).map_io_err(err_desc)?;
-                    write_type_diff(tokens, other_tokens, writer.by_ref())?;
+                    if is_unknown_declaration(name, tokens)
+                        && !is_unknown_declaration(name, other_tokens)
+                    {
+                        writeln!(
+                            writer,
+                            "because '{}' changed from a forward declaration to a definition",
+                            name,
+                        )
+                        .map_io_err(err_desc)?;
+                    } else {
+                        writeln!(writer, "because of a changed '{}':", name)
+                            .map_io_err(err_desc)?;
+                        write_type_diff(tokens, other_tokens, writer.by_ref())?;
+                    }
                 }
             }
             for export in exports {
@@ -1251,6 +1263,22 @@ fn is_export_name(type_name: &str) -> bool {
         Some(ch) => ch != '#',
         None => true,
     }
+}
+
+/// Returns whether the specified type has an UNKNOWN declaration.
+fn is_unknown_declaration(type_name: &str, tokens: &Tokens) -> bool {
+    if tokens.len() != 5 {
+        return false;
+    }
+
+    if let Some((_, expanded_type, base_name)) = split_type_name(type_name, "#") {
+        let unknown = [expanded_type, base_name, "{", "UNKNOWN", "}"];
+        if zip(tokens, unknown).all(|(token, check)| token.as_str() == check) {
+            return true;
+        }
+    }
+
+    false
 }
 
 /// Tries to shorten the specified type if it represents an UNKNOWN declaration.

@@ -1066,6 +1066,53 @@ fn compare_changed_nested_type() {
 }
 
 #[test]
+fn compare_changed_unknown_type() {
+    // Check that the comparison of two corpuses reports changes from a forward declaration to
+    // a definition, without outputting the complete new definition.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "a/test.symtypes",
+        bytes!(
+            "s#foo struct foo { UNKNOWN }\n",
+            "bar int bar ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut symtypes2 = SymtypesCorpus::new();
+    let result = symtypes2.load_buffer(
+        "b/test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a }\n",
+            "bar int bar ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut writer = Writer::new_buffer();
+    let result = symtypes.compare_with_buffer(
+        &symtypes2,
+        None,
+        &mut [(CompareFormat::Pretty, &mut writer)],
+        &mut JobControl::new_simple(1),
+    );
+    let out = writer.into_inner_vec();
+    assert_ok_eq!(result, false);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "The following '1' exports are different:\n",
+            " bar\n",
+            "\n",
+            "because 's#foo' changed from a forward declaration to a definition\n", //
+        )
+    );
+}
+
+#[test]
 fn compare_filter() {
     // Check that the comparison of two corpuses can be restricted to specific exports.
     let mut symtypes = SymtypesCorpus::new();

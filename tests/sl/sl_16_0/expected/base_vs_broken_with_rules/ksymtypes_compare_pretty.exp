@@ -250,26 +250,7 @@ The following '158' exports are different:
  ttm_tt_init
  ttm_tt_populate
 
-because of a changed 's#dma_buf':
-@@ -1,3 +1,17 @@
- struct dma_buf {
--	UNKNOWN
-+	t#size_t size;
-+	s#file * file;
-+	s#list_head attachments;
-+	const s#dma_buf_ops * ops;
-+	unsigned vmapping_counter;
-+	s#iosys_map vmap_ptr;
-+	const char * exp_name;
-+	const char * name;
-+	t#spinlock_t name_lock;
-+	s#module * owner;
-+	s#list_head list_node;
-+	void * priv;
-+	s#dma_resv * resv;
-+	t#wait_queue_head_t poll;
-+	s#dma_buf_poll_cb_t cb_in, cb_out;
- }
+because 's#dma_buf' changed from a forward declaration to a definition
 
 The following '158' exports are different:
  __drm_atomic_helper_disable_plane
@@ -431,20 +412,7 @@ The following '158' exports are different:
  ttm_tt_init
  ttm_tt_populate
 
-because of a changed 's#dma_buf_attachment':
-@@ -1,3 +1,11 @@
- struct dma_buf_attachment {
--	UNKNOWN
-+	s#dma_buf * dmabuf;
-+	s#device * dev;
-+	s#list_head node;
-+	s#sg_table * sgt;
-+	e#dma_data_direction dir;
-+	t#bool peer2peer;
-+	const s#dma_buf_attach_ops * importer_ops;
-+	void * importer_priv;
-+	void * priv;
- }
+because 's#dma_buf_attachment' changed from a forward declaration to a definition
 
 The following '59' exports are different:
  drm_gpuva_find
@@ -507,18 +475,7 @@ The following '59' exports are different:
  drm_sched_wqueue_start
  drm_sched_wqueue_stop
 
-because of a changed 's#fwnode_handle':
-@@ -1,3 +1,9 @@
- struct fwnode_handle {
--	UNKNOWN
-+	s#fwnode_handle * secondary;
-+	const s#fwnode_operations * ops;
-+	s#device * dev;
-+	s#list_head suppliers;
-+	s#list_head consumers;
-+	t#u8 flags;
-+	void * suse_kabi_padding;
- }
+because 's#fwnode_handle' changed from a forward declaration to a definition
 
 The following '85' exports are different:
  __drm_atomic_helper_disable_plane
@@ -607,16 +564,7 @@ The following '85' exports are different:
  drm_syncobj_find_fence
  drm_syncobj_get_handle
 
-because of a changed 's#iosys_map':
-@@ -1,3 +1,7 @@
- struct iosys_map {
--	UNKNOWN
-+	union {
-+		void * vaddr_iomem;
-+		void * vaddr;
-+	};
-+	t#bool is_iomem;
- }
+because 's#iosys_map' changed from a forward declaration to a definition
 
 The following '72' exports are different:
  drm_exec_cleanup
@@ -692,14 +640,7 @@ The following '72' exports are different:
  ttm_range_man_fini_nocheck
  ttm_range_man_init_nocheck
 
-because of a changed 's#sg_table':
-@@ -1,3 +1,5 @@
- struct sg_table {
--	UNKNOWN
-+	s#scatterlist * sgl;
-+	unsigned int nents;
-+	unsigned int orig_nents;
- }
+because 's#sg_table' changed from a forward declaration to a definition
 
 The following '12' exports are different:
  __vlan_find_dev_deep_rcu

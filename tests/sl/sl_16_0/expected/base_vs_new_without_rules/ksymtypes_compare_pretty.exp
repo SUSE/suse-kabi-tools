@@ -213,22 +213,7 @@ The following '9' exports are different:
  mana_gd_send_request
  mana_gd_wq_ring_doorbell
 
-because of a changed 's#device_node':
-@@ -1,3 +1,13 @@
- struct device_node {
--	UNKNOWN
-+	const char * name;
-+	t#phandle t#phandle;
-+	const char * full_name;
-+	s#fwnode_handle fwnode;
-+	s#property * properties;
-+	s#property * deadprops;
-+	s#device_node * parent;
-+	s#device_node * child;
-+	s#device_node * sibling;
-+	unsigned long _flags;
-+	void * data;
- }
+because 's#device_node' changed from a forward declaration to a definition
 
 The following '14' exports are different:
  mana_cfg_vport
@@ -305,32 +290,7 @@ The following '9' exports are different:
  mana_gd_send_request
  mana_gd_wq_ring_doorbell
 
-because of a changed 's#irq_domain':
-@@ -1,3 +1,23 @@
- struct irq_domain {
--	UNKNOWN
-+	s#list_head link;
-+	const char * name;
-+	const s#irq_domain_ops * ops;
-+	void * host_data;
-+	unsigned int flags;
-+	unsigned int mapcount;
-+	s#mutex mutex;
-+	s#irq_domain * root;
-+	s#fwnode_handle * fwnode;
-+	e#irq_domain_bus_token bus_token;
-+	s#irq_domain_chip_generic * gc;
-+	s#device * dev;
-+	s#device * pm_dev;
-+	s#irq_domain * parent;
-+	const s#msi_parent_ops * msi_parent_ops;
-+	void ( * exit ) ( s#irq_domain * );
-+	void * suse_kabi_padding;
-+	t#irq_hw_number_t hwirq_max;
-+	unsigned int revmap_size;
-+	s#xarray revmap_tree;
-+	s#irq_data * revmap [ ];
- }
+because 's#irq_domain' changed from a forward declaration to a definition
 
 The following '4' exports are different:
  mana_cfg_vport
@@ -370,15 +330,7 @@ The following '14' exports are different:
  mana_get_primary_netdev
  mana_uncfg_vport
 
-because of a changed 's#net_shaper_ops':
-@@ -1,3 +1,6 @@
- struct net_shaper_ops {
--	UNKNOWN
-+	int ( * group ) ( s#net_shaper_binding *, int, const s#net_shaper *, const s#net_shaper *, s#netlink_ext_ack * );
-+	int ( * set ) ( s#net_shaper_binding *, const s#net_shaper *, s#netlink_ext_ack * );
-+	int ( * delete ) ( s#net_shaper_binding *, const s#net_shaper_handle *, s#netlink_ext_ack * );
-+	void ( * capabilities ) ( s#net_shaper_binding *, e#net_shaper_scope, unsigned long * );
- }
+because 's#net_shaper_ops' changed from a forward declaration to a definition
 
 The following '3' exports are different:
  __traceiter_smc_rx_recvmsg
