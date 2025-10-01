@@ -6,7 +6,7 @@ use crate::burst::JobControl;
 use crate::{assert_ok, assert_ok_eq, assert_parse_err, bytes};
 
 #[test]
-fn read_basic_single() {
+fn read_single_basic() {
     // Check basic reading of a single file.
     let mut symtypes = SymtypesCorpus::new();
     let mut warnings = Vec::new();
@@ -66,7 +66,7 @@ fn read_basic_single() {
 }
 
 #[test]
-fn read_basic_consolidated() {
+fn read_consolidated_basic() {
     // Check basic reading of a consolidated file.
     let mut symtypes = SymtypesCorpus::new();
     let mut warnings = Vec::new();
@@ -76,6 +76,7 @@ fn read_basic_consolidated() {
             "/* test.symtypes */\n",
             "s#foo struct foo { }\n",
             "bar void bar ( s#foo )\n",
+            "\n",
             "/* test2.symtypes */\n",
             "baz int baz ( )\n", //
         ),
