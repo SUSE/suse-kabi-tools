@@ -135,6 +135,117 @@ fn read_consolidated_basic() {
 }
 
 #[test]
+fn read_consolidated_unknown() {
+    // Check that a structure declaration with UNKNOWN content is correctly parsed when reading from
+    // a consolidated file.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test_consolidated.symtypes",
+        bytes!(
+            "/* test.symtypes */\n",
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n",
+            "\n",
+            "/* test2.symtypes */\n",
+            "s##foo\n",
+            "baz int baz ( s#foo )\n",
+            "\n",
+            "/* test3.symtypes */\n",
+            "qux int qux ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let foo_tokens_rc = Arc::new(vec![
+        Token::new_atom("struct"),
+        Token::new_atom("foo"),
+        Token::new_atom("{"),
+        Token::new_atom("int"),
+        Token::new_atom("a"),
+        Token::new_atom(";"),
+        Token::new_atom("}"),
+    ]);
+    let bar_tokens_rc = Arc::new(vec![
+        Token::new_atom("int"),
+        Token::new_atom("bar"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let foo_unknown_tokens_rc = Arc::new(vec![
+        Token::new_atom("struct"),
+        Token::new_atom("foo"),
+        Token::new_atom("{"),
+        Token::new_atom("UNKNOWN"),
+        Token::new_atom("}"),
+    ]);
+    let baz_tokens_rc = Arc::new(vec![
+        Token::new_atom("int"),
+        Token::new_atom("baz"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let qux_tokens_rc = Arc::new(vec![
+        Token::new_atom("int"),
+        Token::new_atom("qux"),
+        Token::new_atom("("),
+        Token::new_typeref("s#foo"),
+        Token::new_atom(")"),
+    ]);
+    let test_symfile_rc = Arc::new(SymtypesFile {
+        path: PathBuf::from("test.symtypes"),
+        records: HashMap::from([
+            ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+            ("bar".to_string(), Arc::clone(&bar_tokens_rc)),
+        ]),
+    });
+    let test2_symfile_rc = Arc::new(SymtypesFile {
+        path: PathBuf::from("test2.symtypes"),
+        records: HashMap::from([
+            ("s#foo".to_string(), Arc::clone(&foo_unknown_tokens_rc)),
+            ("baz".to_string(), Arc::clone(&baz_tokens_rc)),
+        ]),
+    });
+    let test3_symfile_rc = Arc::new(SymtypesFile {
+        path: PathBuf::from("test3.symtypes"),
+        records: HashMap::from([
+            ("s#foo".to_string(), Arc::clone(&foo_tokens_rc)),
+            ("qux".to_string(), Arc::clone(&qux_tokens_rc)),
+        ]),
+    });
+    let mut exp_symtypes = SymtypesCorpus {
+        types: vec![Types::new(); TYPE_BUCKETS_SIZE],
+        files: HashMap::from([
+            (test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc)),
+            (test2_symfile_rc.path.clone(), Arc::clone(&test2_symfile_rc)),
+            (test3_symfile_rc.path.clone(), Arc::clone(&test3_symfile_rc)),
+        ]),
+        exports: HashMap::from([
+            ("bar".to_string(), Arc::clone(&test_symfile_rc)),
+            ("baz".to_string(), Arc::clone(&test2_symfile_rc)),
+            ("qux".to_string(), Arc::clone(&test3_symfile_rc)),
+        ]),
+    };
+    exp_symtypes.types[type_bucket_idx("s#foo")].insert(
+        "s#foo".to_string(),
+        vec![
+            Arc::clone(&foo_tokens_rc),
+            Arc::clone(&foo_unknown_tokens_rc),
+        ],
+    );
+    exp_symtypes.types[type_bucket_idx("bar")]
+        .insert("bar".to_string(), vec![Arc::clone(&bar_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("baz")]
+        .insert("baz".to_string(), vec![Arc::clone(&baz_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("qux")]
+        .insert("qux".to_string(), vec![Arc::clone(&qux_tokens_rc)]);
+    assert_eq!(symtypes, exp_symtypes);
+}
+
+#[test]
 fn read_second() {
     // Check that when a second file is read, the content is correctly merged into the corpus
     // representation.
@@ -612,6 +723,62 @@ fn read_write_differing_struct() {
             "/* test2.symtypes */\n",
             "s#foo struct foo { long a ; }\n",
             "baz int baz ( s#foo )\n", //
+        )
+    );
+}
+
+#[test]
+fn read_write_differing_struct_unknown() {
+    // Check that a structure declaration with UNKNOWN content appears in the consolidated output as
+    // an ## override.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let result = symtypes.load_buffer(
+        "test2.symtypes",
+        bytes!(
+            "s#foo struct foo { UNKNOWN }\n",
+            "baz int baz ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let result = symtypes.load_buffer(
+        "test3.symtypes",
+        bytes!(
+            "s#foo struct foo { int a ; }\n",
+            "qux int qux ( s#foo )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let mut out = Vec::new();
+    let result = symtypes.write_consolidated_buffer(&mut out);
+    assert_ok!(result);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "/* test.symtypes */\n",
+            "s#foo struct foo { int a ; }\n",
+            "bar int bar ( s#foo )\n",
+            "\n",
+            "/* test2.symtypes */\n",
+            "s##foo\n",
+            "baz int baz ( s#foo )\n",
+            "\n",
+            "/* test3.symtypes */\n",
+            "qux int qux ( s#foo )\n", //
         )
     );
 }
