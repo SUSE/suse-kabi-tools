@@ -644,8 +644,8 @@ impl SymtypesCorpus {
         // Extrapolate all records and validate references.
         let walk_records = records.keys().map(String::clone).collect::<Vec<_>>();
         for name in walk_records {
-            // Note that all explicit types are known, so it is ok to pass usize::MAX as
-            // from_line_idx because it is unused.
+            // Note that all explicit types are known, so it is ok to pass `usize::MAX` as
+            // `from_line_idx` because it is unused.
             Self::complete_file_record(
                 path,
                 lines,
@@ -707,7 +707,7 @@ impl SymtypesCorpus {
                     }
                 };
 
-                // SAFETY: Each export record is included in the active types.
+                // SAFETY: Each export is included in the active types.
                 let (_, line_idx) = active_types.get(type_name.as_str()).unwrap();
 
                 // Report the duplicate export as a warning. Although technically an error, some
