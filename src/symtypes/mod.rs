@@ -994,8 +994,8 @@ impl SymtypesCorpus {
     /// The specified symbol is added to `processed_types`, if it's not already present, and all its
     /// type references get recursively processed in the same way.
     fn compare_types<'a>(
-        file: &'a SymtypesFile,
-        other_file: &'a SymtypesFile,
+        symfile: &'a SymtypesFile,
+        other_symfile: &'a SymtypesFile,
         name: &'a str,
         export: &'a str,
         changes: &Mutex<CompareChangedTypes<'a>>,
@@ -1009,8 +1009,8 @@ impl SymtypesCorpus {
 
         // Look up how the symbol is defined in each file.
         // SAFETY: Each type reference is guaranteed to have a corresponding definition.
-        let tokens = file.records.get(name).unwrap().as_ref();
-        let other_tokens = other_file.records.get(name).unwrap().as_ref();
+        let tokens = symfile.records.get(name).unwrap().as_ref();
+        let other_tokens = other_symfile.records.get(name).unwrap().as_ref();
 
         // Compare the immediate tokens.
         let is_equal = tokens.len() == other_tokens.len()
@@ -1029,8 +1029,8 @@ impl SymtypesCorpus {
             for token in tokens {
                 if let Token::TypeRef(ref_name) = token {
                     Self::compare_types(
-                        file,
-                        other_file,
+                        symfile,
+                        other_symfile,
                         ref_name.as_str(),
                         export,
                         changes,
@@ -1046,8 +1046,8 @@ impl SymtypesCorpus {
                             && ref_name == other_ref_name
                         {
                             Self::compare_types(
-                                file,
-                                other_file,
+                                symfile,
+                                other_symfile,
                                 ref_name.as_str(),
                                 export,
                                 changes,
