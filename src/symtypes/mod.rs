@@ -460,7 +460,7 @@ impl SymtypesCorpus {
                     Error::new_io(format!("Failed to open the file '{}'", path.display()), err)
                 })?;
 
-                Self::load_inner(sub_path, file, &load_context)?;
+                Self::load_inner(&path, sub_path, file, &load_context)?;
 
                 Ok(())
             },
@@ -486,7 +486,7 @@ impl SymtypesCorpus {
         let path = path.as_ref();
         let load_context = LoadContext::from(self, LoadKind::Any, warnings);
 
-        Self::load_inner(path, reader, &load_context)?;
+        Self::load_inner(path, path, reader, &load_context)?;
 
         let (new_types, new_exports, new_files) = load_context.into_inner();
         self.merge_new(new_types, new_exports, new_files);
@@ -518,6 +518,7 @@ impl SymtypesCorpus {
     /// Loads symtypes data from the specified reader.
     fn load_inner<R: Read>(
         path: &Path,
+        sub_path: &Path,
         reader: R,
         load_context: &LoadContext,
     ) -> Result<(), Error> {
@@ -549,7 +550,11 @@ impl SymtypesCorpus {
         }
 
         // Track the name of the currently processed single (inner) file.
-        let mut maybe_single_path = if !is_consolidated { Some(path) } else { None };
+        let mut maybe_sub_path = if !is_consolidated {
+            Some(sub_path)
+        } else {
+            None
+        };
 
         // Track which records are currently active and all per-file overrides for UNKNOWN
         // definitions if this is a consolidated file.
@@ -568,10 +573,10 @@ impl SymtypesCorpus {
             // Handle file headers in consolidated files.
             if is_consolidated && line.starts_with("/* ") && line.ends_with(" */") {
                 // Add the current file.
-                if let Some(single_path) = maybe_single_path {
+                if let Some(sub_path) = maybe_sub_path {
                     Self::add_file(
                         path,
-                        single_path,
+                        sub_path,
                         &lines,
                         mem::take(&mut records),
                         mem::take(&mut local_override),
@@ -581,7 +586,7 @@ impl SymtypesCorpus {
                 }
 
                 // Open the new file.
-                maybe_single_path = Some(Path::new(&line[3..line.len() - 3]));
+                maybe_sub_path = Some(Path::new(&line[3..line.len() - 3]));
 
                 continue;
             }
@@ -613,10 +618,10 @@ impl SymtypesCorpus {
         }
 
         // Complete the file.
-        if let Some(single_path) = maybe_single_path {
+        if let Some(sub_path) = maybe_sub_path {
             Self::add_file(
                 path,
-                single_path,
+                sub_path,
                 &lines,
                 records,
                 local_override,
@@ -633,11 +638,11 @@ impl SymtypesCorpus {
     /// Completes the loading of a symtypes file by extrapolating its records, validating all
     /// references, and finally adding the file and its exports to the corpus.
     ///
-    /// The `path` is the name of an input file, which can be a consolidated file. The `single_path`
-    /// is the name of a specific symtypes file.
+    /// The `path` is the name of an input file, which can be a consolidated file. The `sub_path` is
+    /// the name of a specific symtypes file.
     fn add_file(
         path: &Path,
-        single_path: &Path,
+        sub_path: &Path,
         lines: &Vec<String>,
         mut records: FileRecords,
         local_override: LoadActiveTypes,
@@ -663,7 +668,7 @@ impl SymtypesCorpus {
 
         // Add the file to the future corpus.
         let symfile_rc = Arc::new(SymtypesFile {
-            path: single_path.to_path_buf(),
+            path: sub_path.to_path_buf(),
             records,
         });
 

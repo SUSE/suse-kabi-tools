@@ -103,7 +103,7 @@ fn ksymtypes_consolidate_reject_consolidated() {
         result.stderr,
         concat!(
             "Failed to read symtypes from 'tests/it/ksymtypes/consolidate_reject_consolidated': Expected a plain symtypes file, but found consolidated data\n",
-            " consolidated.symtypes:1\n",
+            " tests/it/ksymtypes/consolidate_reject_consolidated/consolidated.symtypes:1\n",
             " | /* a.symtypes */\n", //
         )
     );
