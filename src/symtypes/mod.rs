@@ -1187,7 +1187,7 @@ impl SymtypesCorpus {
 
                     // Output the changed type.
                     writeln!(writer, "because of a changed '{}':", name).map_io_err(err_desc)?;
-                    write_type_diff(name, tokens, other_tokens, writer.by_ref())?;
+                    write_type_diff(tokens, other_tokens, writer.by_ref())?;
                 }
             }
             for export in exports {
@@ -1342,11 +1342,12 @@ fn parse_type_record(
 
 /// Processes tokens describing a type and produces its pretty-formatted version as a [`Vec`] of
 /// [`String`] lines.
-fn pretty_format_type(type_name: &str, tokens: &Tokens) -> Vec<String> {
+fn pretty_format_type(tokens: &Tokens) -> Vec<String> {
     // Iterate over all tokens and produce the formatted output.
     let mut res = Vec::new();
     let mut indent: usize = 0;
-    let comma_wraps = type_name.starts_with("e#");
+    let comma_wraps = (tokens.len() >= 1 && tokens[0].as_str() == "enum")
+        || (tokens.len() >= 2 && tokens[0].as_str() == "typedef" && tokens[1].as_str() == "enum");
 
     let mut line = String::new();
     for token in tokens {
@@ -1413,12 +1414,11 @@ fn pretty_format_type(type_name: &str, tokens: &Tokens) -> Vec<String> {
 /// Formats a unified diff between two supposedly different types and writes it to the provided
 /// output stream.
 fn write_type_diff<W: Write>(
-    type_name: &str,
     tokens: &Tokens,
     other_tokens: &Tokens,
     writer: W,
 ) -> Result<(), Error> {
-    let pretty = pretty_format_type(type_name, tokens);
-    let other_pretty = pretty_format_type(type_name, other_tokens);
+    let pretty = pretty_format_type(tokens);
+    let other_pretty = pretty_format_type(other_tokens);
     unified_diff(&pretty, &other_pretty, writer)
 }
