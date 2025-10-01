@@ -1340,8 +1340,6 @@ fn parse_type_record(
         }
     }
 
-    // TODO Check that no ## is present in the type name.
-
     // Turn the remaining words into tokens.
     let tokens = words_into_tokens(&mut words);
     Ok((raw_name.to_string(), tokens, false))
