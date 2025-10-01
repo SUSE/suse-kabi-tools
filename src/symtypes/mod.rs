@@ -1328,7 +1328,14 @@ fn parse_type_record(
     if is_consolidated {
         // Check if it is an UNKNOWN override.
         if let Some((name, tokens)) = try_expand_decl(raw_name) {
-            // TODO Check that all words have been exhausted.
+            if words.next().is_some() {
+                return Err(Error::new_parse_format(
+                    "Unexpected string found at the end of the override record",
+                    path,
+                    line_idx + 1,
+                    line,
+                ));
+            }
             return Ok((name, tokens, true));
         }
     }

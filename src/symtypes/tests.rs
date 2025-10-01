@@ -363,6 +363,30 @@ fn read_empty_record_consolidated() {
 }
 
 #[test]
+fn read_override_extra_data() {
+    // Check that any extra data in an override record is rejected.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test_consolidated.symtypes",
+        bytes!(
+            "/* test.symtypes */\n",
+            "s##foo garbage\n", //
+        ),
+        &mut warnings,
+    );
+    assert_parse_err!(
+        result,
+        concat!(
+            "Unexpected string found at the end of the override record\n",
+            " test_consolidated.symtypes:2\n",
+            " | s##foo garbage", //
+        ),
+    );
+    assert!(warnings.is_empty());
+}
+
+#[test]
 fn read_duplicate_type_record() {
     // Check that type records with duplicate names are rejected when reading a symtypes file.
     let mut symtypes = SymtypesCorpus::new();
