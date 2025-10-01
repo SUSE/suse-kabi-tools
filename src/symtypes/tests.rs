@@ -427,8 +427,8 @@ fn read_invalid_reference() {
 }
 
 #[test]
-fn read_duplicate_type_export() {
-    // Check that two exports with the same name in different files produce a warning.
+fn read_duplicate_type_export_single() {
+    // Check that two exports with the same name in two different symtypes files produce a warning.
     let mut symtypes = SymtypesCorpus::new();
     let mut warnings = Vec::new();
     let result = symtypes.load_buffer(
@@ -450,7 +450,31 @@ fn read_duplicate_type_export() {
     assert_ok!(result);
     assert_eq!(
         str::from_utf8(&warnings).unwrap(),
-        "test2.symtypes:1: WARNING: Export 'foo' is duplicate, previous occurrence found in 'test.symtypes'\n"
+        "test2.symtypes:1: WARNING: Export 'foo' defined in 'test2.symtypes' is duplicate, previous occurrence found in 'test.symtypes'\n"
+    );
+}
+
+#[test]
+fn read_duplicate_type_export_consolidated() {
+    // Check that two exports with the same name in two symtypes files within a consolidated file
+    // produce a warning.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test_consolidated.symtypes",
+        bytes!(
+            "/* test.symtypes */\n",
+            "foo int foo ( )\n",
+            "\n",
+            "/* test2.symtypes */\n",
+            "foo int foo ( )", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert_eq!(
+        str::from_utf8(&warnings).unwrap(),
+        "test_consolidated.symtypes:5: WARNING: Export 'foo' defined in 'test2.symtypes' is duplicate, previous occurrence found in 'test.symtypes'\n"
     );
 }
 
