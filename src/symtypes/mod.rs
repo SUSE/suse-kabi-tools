@@ -12,7 +12,7 @@ use crate::{Error, MapIOErr, PathFile, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::prelude::*;
-use std::iter::zip;
+use std::iter::{Peekable, zip};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::{fs, iter, mem};
@@ -1237,25 +1237,6 @@ impl SymtypesCorpus {
     }
 }
 
-/// Reads words from the given iterator and converts them to `Tokens`.
-fn words_into_tokens<'a, I: Iterator<Item = &'a str>>(words: &mut I) -> Tokens {
-    let mut tokens = Tokens::new();
-    for word in words {
-        let mut is_typeref = false;
-        if let Some(ch) = word.chars().nth(1)
-            && ch == '#'
-        {
-            is_typeref = true;
-        }
-        tokens.push(if is_typeref {
-            Token::new_typeref(word)
-        } else {
-            Token::new_atom(word)
-        });
-    }
-    tokens
-}
-
 /// Returns whether the specified type name is an export definition, as opposed to a `<X>#<foo>`
 /// type definition.
 fn is_export_name(type_name: &str) -> bool {
@@ -1345,6 +1326,42 @@ fn split_type_name<'a>(type_name: &'a str, delimiter: &str) -> Option<(&'a str, 
     }
 }
 
+/// Parses the next type word from the given iterator. A type name that includes whitespace and is
+/// formatted as `<short-type>#'<name>'` is considered one word and returned as such.
+fn get_next_type_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<String> {
+    // Skip over any whitespace.
+    while let Some(&c) = chars.peek() {
+        if !c.is_ascii_whitespace() {
+            break;
+        }
+        chars.next();
+    }
+
+    // Read one word.
+    let mut word = String::new();
+    let mut in_quoted = false;
+    while let Some(&c) = chars.peek() {
+        if !in_quoted && c.is_ascii_whitespace() {
+            break;
+        }
+
+        word.push(c);
+
+        if word.len() == 3 && &word[1..] == "#'" {
+            in_quoted = true;
+        } else if in_quoted && c == '\'' {
+            in_quoted = false;
+        }
+
+        chars.next();
+    }
+
+    if word.is_empty() {
+        return None;
+    }
+    Some(word)
+}
+
 /// Parses a single symtypes record.
 fn parse_type_record(
     path: &Path,
@@ -1352,16 +1369,16 @@ fn parse_type_record(
     line: &str,
     is_consolidated: bool,
 ) -> Result<(String, Tokens, bool), Error> {
-    let mut words = line.split_ascii_whitespace();
+    let mut chars = line.chars().peekable();
 
-    let raw_name = words.next().ok_or_else(|| {
+    let raw_name = get_next_type_word(&mut chars).ok_or_else(|| {
         Error::new_parse_format("Expected a record name", path, line_idx + 1, line)
     })?;
 
     if is_consolidated {
         // Check if it is an UNKNOWN override.
-        if let Some((name, tokens)) = try_expand_decl(raw_name) {
-            if words.next().is_some() {
+        if let Some((name, tokens)) = try_expand_decl(&raw_name) {
+            if get_next_type_word(&mut chars).is_some() {
                 return Err(Error::new_parse_format(
                     "Unexpected string found at the end of the override record",
                     path,
@@ -1373,9 +1390,23 @@ fn parse_type_record(
         }
     }
 
-    // Turn the remaining words into tokens.
-    let tokens = words_into_tokens(&mut words);
-    Ok((raw_name.to_string(), tokens, false))
+    // Read all remaining tokens on the line that form the type declaration.
+    let mut tokens = Tokens::new();
+    while let Some(word) = get_next_type_word(&mut chars) {
+        let mut is_typeref = false;
+        if let Some(ch) = word.chars().nth(1)
+            && ch == '#'
+        {
+            is_typeref = true;
+        }
+        tokens.push(if is_typeref {
+            Token::new_typeref(word)
+        } else {
+            Token::new_atom(word)
+        });
+    }
+
+    Ok((raw_name, tokens, false))
 }
 
 /// Processes tokens describing a type and produces its pretty-formatted version as a [`Vec`] of

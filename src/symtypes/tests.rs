@@ -423,6 +423,55 @@ fn read_second_error() {
 }
 
 #[test]
+fn read_quoted_type() {
+    // Check reading of a quoted type name.
+    let mut symtypes = SymtypesCorpus::new();
+    let mut warnings = Vec::new();
+    let result = symtypes.load_buffer(
+        "test.symtypes",
+        bytes!(
+            "s#'foo foo' struct foo { }\n",
+            "bar void bar ( s#'foo foo' )\n", //
+        ),
+        &mut warnings,
+    );
+    assert_ok!(result);
+    assert!(warnings.is_empty());
+    let foo_tokens_rc = Arc::new(vec![
+        Token::new_atom("struct"),
+        Token::new_atom("foo"),
+        Token::new_atom("{"),
+        Token::new_atom("}"),
+    ]);
+    let bar_tokens_rc = Arc::new(vec![
+        Token::new_atom("void"),
+        Token::new_atom("bar"),
+        Token::new_atom("("),
+        Token::new_typeref("s#'foo foo'"),
+        Token::new_atom(")"),
+    ]);
+    let test_symfile_rc = Arc::new(SymtypesFile {
+        path: PathBuf::from("test.symtypes"),
+        records: HashMap::from([
+            ("s#'foo foo'".to_string(), Arc::clone(&foo_tokens_rc)),
+            ("bar".to_string(), Arc::clone(&bar_tokens_rc)),
+        ]),
+    });
+    let mut exp_symtypes = SymtypesCorpus {
+        types: vec![Types::new(); TYPE_BUCKETS_SIZE],
+        files: HashMap::from([(test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc))]),
+        exports: HashMap::from([
+            ("bar".to_string(), Arc::clone(&test_symfile_rc)),
+        ]),
+    };
+    exp_symtypes.types[type_bucket_idx("s#'foo foo'")]
+        .insert("s#'foo foo'".to_string(), vec![Arc::clone(&foo_tokens_rc)]);
+    exp_symtypes.types[type_bucket_idx("bar")]
+        .insert("bar".to_string(), vec![Arc::clone(&bar_tokens_rc)]);
+    assert_eq!(symtypes, exp_symtypes);
+}
+
+#[test]
 fn read_empty_record_single() {
     // Check that empty records are rejected when reading a single file.
     let mut symtypes = SymtypesCorpus::new();
