@@ -143,8 +143,9 @@ impl Rules {
     }
 }
 
-/// Parses the next word from the given iterator, taking into account comments starting with '#'.
-fn get_next_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<String> {
+/// Parses the next rule word from the given iterator, taking into account comments starting with
+/// '#'.
+fn get_next_rule_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Option<String> {
     // Skip over any whitespace.
     while let Some(&c) = chars.peek() {
         if !c.is_ascii_whitespace() {
@@ -181,7 +182,7 @@ fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, 
     let mut chars = line.chars().peekable();
 
     // Parse the pattern.
-    let pattern = match get_next_word(&mut chars) {
+    let pattern = match get_next_rule_word(&mut chars) {
         Some(pattern) => {
             if pattern.contains('/') || pattern == "vmlinux" {
                 Pattern::new_module(pattern)
@@ -198,7 +199,7 @@ fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, 
     };
 
     // Parse the verdict.
-    let verdict = match get_next_word(&mut chars) {
+    let verdict = match get_next_rule_word(&mut chars) {
         Some(verdict) => match verdict.as_str() {
             "PASS" => Verdict::Pass,
             "FAIL" => Verdict::Fail,
@@ -222,7 +223,7 @@ fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, 
     };
 
     // Check that nothing else is left on the line.
-    if get_next_word(&mut chars).is_some() {
+    if get_next_rule_word(&mut chars).is_some() {
         return Err(Error::new_parse_format(
             "Unexpected string found after the verdict",
             path,
