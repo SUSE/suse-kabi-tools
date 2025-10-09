@@ -6,12 +6,12 @@ suse-kabi-tools is a set of Application Binary Interface (ABI) tools for the Lin
 
 The project contains the following utilities:
 
-* ksymtypes &ndash; a tool to work with symtypes files, which are produced by
-  [genksyms][genksyms] during the Linux kernel build. It allows you to consolidate multiple symtypes
-  files into a single file and to compare symtypes data.
-* ksymvers &ndash; a tool to work with symvers files, which are produced by [modpost][modpost]
-  during the Linux kernel build. It allows you to compare symvers data, taking into account specific
-  severity rules.
+* ksymtypes – a tool to work with symtypes files, which are produced by [genksyms][genksyms] during
+  the Linux kernel build. It allows you to consolidate multiple symtypes files into a single file
+  and to compare symtypes data.
+* ksymvers – a tool to work with symvers files, which are produced by [modpost][modpost] during the
+  Linux kernel build. It allows you to compare symvers data, taking into account specific severity
+  rules.
 
 The tools aim to provide fast and detailed kABI comparison. The most time-consuming operations can
 utilize multiple threads running in parallel.
@@ -49,15 +49,15 @@ A typical package build recipe that utilizes suse-kabi-tools looks as follows:
               --format=short kabi/symtypes-default symtypes-default
     ➒ fi
 
-Lines 1--2 change the current working directory to the Linux source directory and perform a standard
+Lines 1–2 change the current working directory to the Linux source directory and perform a standard
 build.
 
-Lines 3--4 collect symvers and symtypes data from the build, which describe the kernel ABI. The
+Lines 3–4 collect symvers and symtypes data from the build, which describe the kernel ABI. The
 symvers data are contained in a single file that can be copied using the `cp` command. The symtypes
 data are distributed across multiple files and are consolidated into a single file by the `ksymtypes
 consolidate` command.
 
-Lines 5--9 compare the new kABI data with the reference stored in the `kabi/` directory. First, the
+Lines 5–9 compare the new kABI data with the reference stored in the `kabi/` directory. First, the
 `ksymvers compare` command is used to compare the resulting symbol CRCs with the reference in
 `kabi/kernel.symvers`. The reference file should originate from a specific base build when the kABI
 was frozen. The comparison takes into account the kABI severity rules specified in the
