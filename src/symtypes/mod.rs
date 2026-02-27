@@ -800,6 +800,7 @@ impl SymtypesCorpus {
     /// a file entry and then call this function on each of those types. These root calls should be
     /// invoked with `is_explicit` set to `true`. The function then recursively adds all needed
     /// implicit types that are referenced from these roots.
+    #[allow(clippy::too_many_arguments)]
     fn complete_file_record(
         path: &Path,
         lines: &Vec<String>,
@@ -1415,6 +1416,8 @@ fn pretty_format_type(tokens: &Tokens) -> Vec<String> {
     // Iterate over all tokens and produce the formatted output.
     let mut res = Vec::new();
     let mut indent: usize = 0;
+
+    #[allow(clippy::len_zero)]
     let comma_wraps = (tokens.len() >= 1 && tokens[0].as_str() == "enum")
         || (tokens.len() >= 2 && tokens[0].as_str() == "typedef" && tokens[1].as_str() == "enum");
 
