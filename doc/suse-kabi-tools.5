@@ -136,38 +136,53 @@ qux void qux ( s#foo a1 , u#bar * a2 )
 .SS DESCRIPTION
 A kABI severity file provides rules to be used in the comparison of symvers data.
 .SS FORMAT
-A kABI severity file consists of rules, one per line. Each rule is comprised of a pattern
-and an associated verdict, separated by whitespace.
+A kABI severity file consists of rules, one per line. Each rule is comprised of an optional type, a
+pattern and an associated verdict, all separated by whitespace.
 .PP
-A pattern can be one of the following:
+A type is normally omitted and inferred directly from the pattern. When specified explicitly,
+the type can be one of the following:
 .RS
 .IP \[bu] 2
-<module-name> \(en a module name, indicated by the presence of the character "/" in the name, or by
-the name being literally "vmlinux",
+MODULE \(en the rule matches a module name,
+.IP \[bu] 2
+NAMESPACE \(en the rule matches a namespace identifier,
+.IP \[bu] 2
+SYMBOL \(en the rule matches a symbol name.
+.RE
+.PP
+A pattern specifies what the rule should match and can include the shell wildcards "*" and "?", with
+their usual meaning.
+.PP
+If a rule does not explicitly specify a type, the pattern itself implies the type and can be one of
+the following:
+.RS
+.IP \[bu] 2
+<module-name> \(en a module name, indicated by the presence of the character "/" in the name or by
+the name being exactly "vmlinux",
 .IP \[bu] 2
 <namespace-identifier> \(en a namespace identifier, indicated by all letters being capital,
 .IP \[bu] 2
 <symbol-name> \(en a symbol name, the default case.
 .RE
 .PP
-A pattern can contain the shell wildcards "*" and "?", with their usual meaning.
-.PP
 A verdict can be either "PASS" or "FAIL".
 .PP
 The file can contain comments beginning with "#", which extend to the end of the line. Rules are
 ordered, and the first match takes effect.
 .SS EXAMPLES
-The following example shows the file \fIseverity.rules\fR, which defines three rules. The first rule
-is a module rule that indicates all changes in modules matching "lib/important*" should result in a
-failure. The second rule is a namespace rule that indicates all changes in the namespace
-"TEST_IMPORTANT" should result in a failure. The last rule is a symbol rule that indicates all
-changes to symbols matching "*not_stable*" can be ignored.
+The following example shows the file \fIseverity.rules\fR, which defines four rules. The first rule
+is a module rule specifying that all changes in modules matching "lib/important*" should result in a
+failure. The second rule is a namespace rule stating that all changes in the "TEST_IMPORTANT"
+namespace should result in a failure. The third rule is a symbol rule indicating that all changes to
+symbols matching "*not_stable*" can be ignored. The final rule is an explicit namespace rule
+specifying that all changes in the "local" namespace can be ignored.
 .IP
 .EX
 $ cat severity.rules
-lib/important* FAIL
-TEST_IMPORTANT FAIL
-*not_stable*   PASS
+lib/important*  FAIL
+TEST_IMPORTANT  FAIL
+*not_stable*    PASS
+NAMESPACE local PASS
 .EE
 .SH SEE ALSO
 \fBksymtypes\fR(1), \fBksymvers\fR(1)

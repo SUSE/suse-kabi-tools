@@ -5,7 +5,7 @@ use super::*;
 use crate::{assert_ok, assert_parse_err, bytes};
 
 #[test]
-fn read_module_rule() {
+fn read_classic_module_rule() {
     // Check that a pattern containing '/' or equal to "vmlinux" is considered as a module.
     let mut rules = Rules::new();
     let result = rules.load_buffer(
@@ -20,15 +20,15 @@ fn read_module_rule() {
         rules,
         Rules {
             data: vec![
-                Rule::new(Pattern::new_module("lib/test_module.ko"), Verdict::Pass),
-                Rule::new(Pattern::new_module("vmlinux"), Verdict::Pass),
+                Rule::new(RuleType::Module, "lib/test_module.ko", Verdict::Pass),
+                Rule::new(RuleType::Module, "vmlinux", Verdict::Pass),
             ]
         }
     );
 }
 
 #[test]
-fn read_namespace_rule() {
+fn read_classic_namespace_rule() {
     // Check that a pattern consisting of only uppercase letter is considered as a namespace.
     let mut rules = Rules::new();
     let result = rules.load_buffer(
@@ -42,7 +42,8 @@ fn read_namespace_rule() {
         rules,
         Rules {
             data: vec![Rule::new(
-                Pattern::new_namespace("TEST_NAMESPACE"),
+                RuleType::Namespace,
+                "TEST_NAMESPACE",
                 Verdict::Pass
             ),]
         }
@@ -50,7 +51,7 @@ fn read_namespace_rule() {
 }
 
 #[test]
-fn read_symbol_rule() {
+fn read_classic_symbol_rule() {
     // Check that a pattern which isn't recognized as a module or a namespace is considered as
     // a symbol.
     let mut rules = Rules::new();
@@ -68,13 +69,99 @@ fn read_symbol_rule() {
         rules,
         Rules {
             data: vec![
-                Rule::new(Pattern::new_symbol("symbol_name"), Verdict::Pass),
-                Rule::new(Pattern::new_symbol("test_module.ko"), Verdict::Pass),
-                Rule::new(Pattern::new_symbol("vmlinux2"), Verdict::Pass),
-                Rule::new(Pattern::new_symbol("test_namespace"), Verdict::Pass),
+                Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass),
+                Rule::new(RuleType::Symbol, "test_module.ko", Verdict::Pass),
+                Rule::new(RuleType::Symbol, "vmlinux2", Verdict::Pass),
+                Rule::new(RuleType::Symbol, "test_namespace", Verdict::Pass),
             ]
         }
     );
+}
+
+#[test]
+fn read_typed_module_rule() {
+    // Check that explicitly typed MODULE rules are parsed as such.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "MODULE lib/test_module.ko PASS\n", //
+        ),
+    );
+    assert_ok!(result);
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![Rule::new(
+                RuleType::Module,
+                "lib/test_module.ko",
+                Verdict::Pass
+            ),]
+        }
+    );
+}
+
+#[test]
+fn read_typed_namespace_rule() {
+    // Check that explicitly typed NAMESPACE rules are parsed as such.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "NAMESPACE TEST_NAMESPACE PASS\n", //
+        ),
+    );
+    assert_ok!(result);
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![Rule::new(
+                RuleType::Namespace,
+                "TEST_NAMESPACE",
+                Verdict::Pass
+            ),]
+        }
+    );
+}
+
+#[test]
+fn read_typed_symbol_rule() {
+    // Check that explicitly typed NAMESPACE rules are parsed as such.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "SYMBOL symbol_name PASS\n", //
+        ),
+    );
+    assert_ok!(result);
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass),]
+        }
+    );
+}
+
+#[test]
+fn read_typed_invalid_type() {
+    // Check that an explicitly typed rule with an invalid type is rejected.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "MOD lib/test_module.ko PASS\n", //
+        ),
+    );
+    assert_parse_err!(
+        result,
+        concat!(
+            "Invalid rule type 'MOD', must be either MODULE, NAMESPACE or SYMBOL\n",
+            " test.severities:1\n",
+            " | MOD lib/test_module.ko PASS", //
+        ),
+    );
+    assert_eq!(rules, Rules { data: vec![] });
 }
 
 #[test]
@@ -93,16 +180,16 @@ fn read_pass_fail_rule() {
         rules,
         Rules {
             data: vec![
-                Rule::new(Pattern::new_symbol("symbol_name"), Verdict::Pass),
-                Rule::new(Pattern::new_symbol("symbol_name2"), Verdict::Fail),
+                Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass),
+                Rule::new(RuleType::Symbol, "symbol_name2", Verdict::Fail),
             ]
         }
     );
 }
 
 #[test]
-fn read_no_verdict() {
-    // Check that a rule without a verdict is rejected.
+fn read_incomplete_rule() {
+    // Check that an incomplete rule is rejected.
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
@@ -113,7 +200,7 @@ fn read_no_verdict() {
     assert_parse_err!(
         result,
         concat!(
-            "The rule does not specify a verdict, must be either PASS or FAIL\n",
+            "The rule is incomplete, must be in the form '[type] <pattern> <verdict>'\n",
             " test.severities:1\n",
             " | symbol_name", //
         ),
@@ -149,7 +236,7 @@ fn read_extra_data() {
     let result = rules.load_buffer(
         "test.severities",
         bytes!(
-            "symbol_name PASS garbage\n", //
+            "SYMBOL symbol_name PASS garbage\n", //
         ),
     );
     assert_parse_err!(
@@ -157,7 +244,7 @@ fn read_extra_data() {
         concat!(
             "Unexpected string found after the verdict\n",
             " test.severities:1\n",
-            " | symbol_name PASS garbage", //
+            " | SYMBOL symbol_name PASS garbage", //
         ),
     );
     assert_eq!(rules, Rules { data: vec![] });
@@ -194,8 +281,8 @@ fn read_comments() {
         rules,
         Rules {
             data: vec![
-                Rule::new(Pattern::new_module("lib/test_module.ko"), Verdict::Pass),
-                Rule::new(Pattern::new_module("lib/test_module2.ko"), Verdict::Fail),
+                Rule::new(RuleType::Module, "lib/test_module.ko", Verdict::Pass),
+                Rule::new(RuleType::Module, "lib/test_module2.ko", Verdict::Fail),
             ]
         }
     );

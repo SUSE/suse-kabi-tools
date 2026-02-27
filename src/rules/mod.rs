@@ -12,29 +12,12 @@ use std::path::Path;
 #[cfg(test)]
 mod tests;
 
-/// A pattern used in the specification of a severity rule.
+/// A type used in the specification of a severity rule.
 #[derive(Debug, PartialEq)]
-enum Pattern {
-    Module(String),
-    Namespace(String),
-    Symbol(String),
-}
-
-impl Pattern {
-    /// Creates a new `Pattern::Module`.
-    pub fn new_module<S: Into<String>>(name: S) -> Self {
-        Pattern::Module(name.into())
-    }
-
-    /// Creates a new `Pattern::Namespace`.
-    pub fn new_namespace<S: Into<String>>(name: S) -> Self {
-        Pattern::Namespace(name.into())
-    }
-
-    /// Creates a new `Pattern::Symbol`.
-    pub fn new_symbol<S: Into<String>>(name: S) -> Self {
-        Pattern::Symbol(name.into())
-    }
+enum RuleType {
+    Module,
+    Namespace,
+    Symbol,
 }
 
 /// A verdict used in the specification of a severity rule.
@@ -47,14 +30,19 @@ enum Verdict {
 /// A severity rule.
 #[derive(Debug, PartialEq)]
 struct Rule {
-    pattern: Pattern,
+    rule_type: RuleType,
+    pattern: String,
     verdict: Verdict,
 }
 
 impl Rule {
     /// Creates a new severity rule.
-    pub fn new(pattern: Pattern, verdict: Verdict) -> Self {
-        Rule { pattern, verdict }
+    pub fn new<S: Into<String>>(rule_type: RuleType, pattern: S, verdict: Verdict) -> Self {
+        Rule {
+            rule_type,
+            pattern: pattern.into(),
+            verdict,
+        }
     }
 }
 
@@ -119,21 +107,21 @@ impl Rules {
     /// verdict on whether changes to the symbol should be tolerated. Otherwise, returns false.
     pub fn is_tolerated(&self, symbol: &str, module: &str, maybe_namespace: Option<&str>) -> bool {
         for rule in &self.data {
-            match &rule.pattern {
-                Pattern::Module(rule_module) => {
-                    if matches_wildcard(module, rule_module) {
+            match rule.rule_type {
+                RuleType::Module => {
+                    if matches_wildcard(module, &rule.pattern) {
                         return rule.verdict == Verdict::Pass;
                     }
                 }
-                Pattern::Namespace(rule_namespace) => {
+                RuleType::Namespace => {
                     if let Some(namespace) = maybe_namespace
-                        && matches_wildcard(namespace, rule_namespace)
+                        && matches_wildcard(namespace, &rule.pattern)
                     {
                         return rule.verdict == Verdict::Pass;
                     }
                 }
-                Pattern::Symbol(rule_symbol) => {
-                    if matches_wildcard(symbol, rule_symbol) {
+                RuleType::Symbol => {
+                    if matches_wildcard(symbol, &rule.pattern) {
                         return rule.verdict == Verdict::Pass;
                     }
                 }
@@ -181,40 +169,19 @@ fn get_next_rule_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Opti
 fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, Error> {
     let mut chars = line.chars().peekable();
 
-    // Parse the pattern.
-    let pattern = match get_next_rule_word(&mut chars) {
-        Some(pattern) => {
-            if pattern.contains('/') || pattern == "vmlinux" {
-                Pattern::new_module(pattern)
-            } else if pattern == pattern.to_uppercase() {
-                Pattern::new_namespace(pattern)
-            } else {
-                Pattern::new_symbol(pattern)
-            }
-        }
+    // Parse the first two words blindly.
+    let word0 = match get_next_rule_word(&mut chars) {
+        Some(word) => word,
         None => {
             // The line doesn't contain any rule.
             return Ok(None);
         }
     };
-
-    // Parse the verdict.
-    let verdict = match get_next_rule_word(&mut chars) {
-        Some(verdict) => match verdict.as_str() {
-            "PASS" => Verdict::Pass,
-            "FAIL" => Verdict::Fail,
-            _ => {
-                return Err(Error::new_parse_format(
-                    &format!("Invalid verdict '{}', must be either PASS or FAIL", verdict),
-                    path,
-                    line_idx + 1,
-                    line,
-                ));
-            }
-        },
+    let word1 = match get_next_rule_word(&mut chars) {
+        Some(word) => word,
         None => {
             return Err(Error::new_parse_format(
-                "The rule does not specify a verdict, must be either PASS or FAIL",
+                "The rule is incomplete, must be in the form '[type] <pattern> <verdict>'",
                 path,
                 line_idx + 1,
                 line,
@@ -222,15 +189,68 @@ fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, 
         }
     };
 
-    // Check that nothing else is left on the line.
-    if get_next_rule_word(&mut chars).is_some() {
-        return Err(Error::new_parse_format(
-            "Unexpected string found after the verdict",
-            path,
-            line_idx + 1,
-            line,
-        ));
-    }
+    // Parse the type, pattern and partically verdict.
+    //
+    // The style of a rule is determined by the number of words. Classic rules are in the form
+    // `<pattern> <verdict>`. Rules with an explicit type are in the form
+    // `<type> <pattern> <verdict>`.
+    let (rule_type, pattern, verdict) = match get_next_rule_word(&mut chars) {
+        Some(word2) => {
+            let rule_type = match word0.as_str() {
+                "MODULE" => RuleType::Module,
+                "NAMESPACE" => RuleType::Namespace,
+                "SYMBOL" => RuleType::Symbol,
+                _ => {
+                    return Err(Error::new_parse_format(
+                        &format!(
+                            "Invalid rule type '{}', must be either MODULE, NAMESPACE or SYMBOL",
+                            word0
+                        ),
+                        path,
+                        line_idx + 1,
+                        line,
+                    ));
+                }
+            };
 
-    Ok(Some(Rule::new(pattern, verdict)))
+            // Check that nothing else is left on the line.
+            if get_next_rule_word(&mut chars).is_some() {
+                return Err(Error::new_parse_format(
+                    "Unexpected string found after the verdict",
+                    path,
+                    line_idx + 1,
+                    line,
+                ));
+            }
+
+            (rule_type, word1, word2)
+        }
+        None => {
+            let rule_type = if word0.contains('/') || word0 == "vmlinux" {
+                RuleType::Module
+            } else if word0 == word0.to_uppercase() {
+                RuleType::Namespace
+            } else {
+                RuleType::Symbol
+            };
+
+            (rule_type, word0, word1)
+        }
+    };
+
+    // Parse the verdict.
+    let verdict = match verdict.as_str() {
+        "PASS" => Verdict::Pass,
+        "FAIL" => Verdict::Fail,
+        _ => {
+            return Err(Error::new_parse_format(
+                &format!("Invalid verdict '{}', must be either PASS or FAIL", verdict),
+                path,
+                line_idx + 1,
+                line,
+            ));
+        }
+    };
+
+    Ok(Some(Rule::new(rule_type, pattern, verdict)))
 }
