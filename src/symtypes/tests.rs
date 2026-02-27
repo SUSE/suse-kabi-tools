@@ -460,9 +460,7 @@ fn read_quoted_type() {
     let mut exp_symtypes = SymtypesCorpus {
         types: vec![Types::new(); TYPE_BUCKETS_SIZE],
         files: HashMap::from([(test_symfile_rc.path.clone(), Arc::clone(&test_symfile_rc))]),
-        exports: HashMap::from([
-            ("bar".to_string(), Arc::clone(&test_symfile_rc)),
-        ]),
+        exports: HashMap::from([("bar".to_string(), Arc::clone(&test_symfile_rc))]),
     };
     exp_symtypes.types[type_bucket_idx("s#'foo foo'")]
         .insert("s#'foo foo'".to_string(), vec![Arc::clone(&foo_tokens_rc)]);
