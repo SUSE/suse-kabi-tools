@@ -199,7 +199,7 @@ pub fn init_debug_level(level: usize) {
     DEBUG_LEVEL.get_or_init(|| level);
 }
 
-/// Prints a formatted message to the standard error if debugging is enabled.
+/// Prints a formatted message to the standard error output if debugging is enabled.
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {
