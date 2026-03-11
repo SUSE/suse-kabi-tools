@@ -7,7 +7,7 @@ use suse_kabi_tools::burst::JobControl;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::symtypes::{CompareFormat, SymtypesCorpus};
 use suse_kabi_tools::text::Filter;
-use suse_kabi_tools::{Error, Timing, debug};
+use suse_kabi_tools::{Error, Timing};
 
 const USAGE_MSG: &str = concat!(
     "Usage: ksymtypes [OPTION]... COMMAND ...\n",
@@ -325,8 +325,6 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let path2 =
         maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
 
-    // Do the comparison.
-    debug!("Compare '{}' and '{}'", path, path2);
 
     let job_control_rc = JobControl::new(num_workers);
     let job_slots = JobControl::new_slots(&job_control_rc, 1);

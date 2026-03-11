@@ -7,7 +7,7 @@ use suse_kabi_tools::cli::{handle_value_option, process_global_args};
 use suse_kabi_tools::rules::Rules;
 use suse_kabi_tools::symvers::{CompareFormat, SymversCorpus};
 use suse_kabi_tools::text::Filter;
-use suse_kabi_tools::{Error, Timing, debug};
+use suse_kabi_tools::{Error, Timing};
 
 const USAGE_MSG: &str = concat!(
     "Usage: ksymvers [OPTION]... COMMAND ...\n",
@@ -101,9 +101,6 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let path = maybe_path.ok_or_else(|| Error::new_cli("The first compare source is missing"))?;
     let path2 =
         maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
-
-    // Do the comparison.
-    debug!("Compare '{}' and '{}'", path, path2);
 
     let symvers = {
         let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
