@@ -167,8 +167,8 @@ the name being exactly "vmlinux",
 .PP
 A verdict can be either "PASS" or "FAIL".
 .PP
-The file can contain comments beginning with "#", which extend to the end of the line. Rules are
-ordered, and the first match takes effect.
+The file can contain comments beginning with "#", which extend to the end of the line. The rules are
+ordered by their appearance in the file, and the first match takes effect.
 .SS EXAMPLES
 The following example shows the file \fIseverity.rules\fR, which defines four rules. The first rule
 is a module rule specifying that all changes in modules matching "lib/important*" should result in a

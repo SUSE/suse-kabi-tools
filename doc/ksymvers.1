@@ -4,7 +4,7 @@
 .SH NAME
 ksymvers \- a tool to work with Linux\-kernel symvers files
 .SH SYNOPSIS
-\fBksymvers\fR [\fIGENERAL\-OPTION\fR]... { \fBcompare\fR } [\fICOMMAND\-OPTION\fR]... ...
+\fBksymvers\fR [\fIGENERAL\-OPTION\fR]... { \fBcompare\fR | \fBunused\-rules\fR } [\fICOMMAND\-OPTION\fR]... ...
 .SH DESCRIPTION
 \fBksymvers\fR is a tool that provides functionality to work with symvers files. These files
 summarize the exported symbols of the kernel and its modules. The data is produced by the
@@ -13,8 +13,10 @@ summarize the exported symbols of the kernel and its modules. The data is produc
 The tool primarily operates with a final symvers file, typically called \fIModule.symvers\fR, as it
 is produced during a single build of the Linux kernel.
 .PP
-The provided functionality is divided into integrated commands. The only currently available
-command is \fBcompare\fR, which shows the differences between two symvers files.
+The provided functionality is divided into integrated commands. The currently available commands are
+\fBcompare\fR and \fBunused\-rules\fR. The \fBcompare\fR command shows the differences between two
+symvers files. The \fBunused\-rules\fR command takes a file with severity rules along with a set of
+symvers files and reports all rules that do not match any symvers record.
 .SH GENERAL OPTIONS
 .TP
 \fB\-d\fR, \fB\-\-debug\fR
@@ -61,6 +63,20 @@ modified,
 \fImod-symbols\fR \(en shows only the names of exported symbols that have been modified; any
 additions or removals are omitted.
 .RE
+.SH UNUSED-RULES COMMAND
+\fBksymvers\fR \fBunused\-rules\fR [\fIUNUSED\-RULES\-OPTION\fR]... \fIFILE\fR...
+.PP
+The \fBunused\-rules\fR command detects severity rules not matching any symbol records in the
+specified symvers files. The rules are ordered by their appearance in the file, and the first match
+takes effect.
+.PP
+Available options:
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help information for the command and exit.
+.TP
+\fB-r\fR \fIFILE\fR, \fB\-\-rules\fR=\fIFILE\fR
+Load kABI severity rules from \fIFILE\fR. This option is mandatory.
 .SH EXIT STATUS
 The exit status is 0 on success and 2 if an error occurs. The compare command returns 0 if there are
 no differences and 1 if there are any (non-tolerated) changes.
