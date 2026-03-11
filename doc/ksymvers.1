@@ -27,6 +27,10 @@ Display global help information and exit.
 .TP
 \fB\-\-version\fR
 Output version information and exit.
+.SH UNIVERSAL COMMAND OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help information for the command and exit.
 .SH COMPARE COMMAND
 \fBksymvers\fR \fBcompare\fR [\fICOMPARE\-OPTION\fR]... \fIFILE\fR \fIFILE2\fR
 .PP
@@ -35,9 +39,6 @@ the first input will point to a reference symvers file and the second input will
 file from a new build of the Linux kernel.
 .PP
 Available options:
-.TP
-\fB\-h\fR, \fB\-\-help\fR
-Display help information for the command and exit.
 .TP
 \fB\-\-filter\-symbol\-list\fR=\fIFILE\fR
 Consider only symbols that match the patterns in \fIFILE\fR.
@@ -71,9 +72,6 @@ specified symvers files. The rules are ordered by their appearance in the file, 
 takes effect.
 .PP
 Available options:
-.TP
-\fB\-h\fR, \fB\-\-help\fR
-Display help information for the command and exit.
 .TP
 \fB-r\fR \fIFILE\fR, \fB\-\-rules\fR=\fIFILE\fR
 Load kABI severity rules from \fIFILE\fR. This option is mandatory.
