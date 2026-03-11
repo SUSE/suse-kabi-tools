@@ -25,7 +25,7 @@ const USAGE_MSG: &str = concat!(
 );
 
 const COMPARE_USAGE_MSG: &str = concat!(
-    "Usage: ksymvers compare [OPTION]... PATH PATH2\n",
+    "Usage: ksymvers compare [OPTION]... FILE FILE2\n",
     "\n",
     "Show differences between two symvers files.\n",
     "\n",
@@ -39,7 +39,7 @@ const COMPARE_USAGE_MSG: &str = concat!(
 );
 
 const UNUSED_RULES_USAGE_MSG: &str = concat!(
-    "Usage: ksymvers unused-rules [OPTION]... PATH...\n",
+    "Usage: ksymvers unused-rules [OPTION]... FILE...\n",
     "\n",
     "Detect severity rules not matching any records in the specified symvers files.\n",
     "\n",
