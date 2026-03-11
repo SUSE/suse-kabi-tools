@@ -5,6 +5,7 @@
 
 use crate::text::{matches_wildcard, read_lines};
 use crate::{Error, PathFile, debug};
+use std::fmt::{self, Display, Formatter};
 use std::io::prelude::*;
 use std::iter::Peekable;
 use std::path::{Path, PathBuf};
@@ -20,11 +21,30 @@ enum RuleType {
     Symbol,
 }
 
+impl Display for RuleType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::Module => write!(f, "MODULE"),
+            Self::Namespace => write!(f, "NAMESPACE"),
+            Self::Symbol => write!(f, "SYMBOL"),
+        }
+    }
+}
+
 /// A verdict used in the specification of a severity rule.
 #[derive(Debug, PartialEq)]
 enum Verdict {
     Pass,
     Fail,
+}
+
+impl Display for Verdict {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::Pass => write!(f, "PASS"),
+            Self::Fail => write!(f, "FAIL"),
+        }
+    }
 }
 
 /// A severity rule.
