@@ -1,10 +1,10 @@
 // Copyright (C) 2025 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::env;
 use std::process::ExitCode;
+use std::{env, io};
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
-use suse_kabi_tools::rules::Rules;
+use suse_kabi_tools::rules::{Rules, UsedRules};
 use suse_kabi_tools::symvers::{CompareFormat, SymversCorpus};
 use suse_kabi_tools::text::Filter;
 use suse_kabi_tools::{Error, Timing};
@@ -19,6 +19,7 @@ const USAGE_MSG: &str = concat!(
     "\n",
     "Commands:\n",
     "  compare                       show differences between two symvers files\n",
+    "  unused-rules                  detect unused severity rules\n",
     "\n",
     "See 'ksymvers COMMAND --help' for more information on a specific command.\n",
 );
@@ -35,6 +36,16 @@ const COMPARE_USAGE_MSG: &str = concat!(
     "  -f TYPE[:FILE], --format=TYPE[:FILE]\n",
     "                                change the output format to TYPE, or write the\n",
     "                                TYPE-formatted output to FILE\n",
+);
+
+const UNUSED_RULES_USAGE_MSG: &str = concat!(
+    "Usage: ksymvers unused-rules [OPTION]... PATH...\n",
+    "\n",
+    "Detect severity rules not matching any records in the specified symvers files.\n",
+    "\n",
+    "Options:\n",
+    "  -h, --help                    display this help and exit\n",
+    "  -r FILE, --rules=FILE         load severity rules from FILE\n",
 );
 
 /// Handles the `compare` command which shows differences between two symvers files.
@@ -184,6 +195,95 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     Ok(ExitCode::from(if is_equal { 0 } else { 1 }))
 }
 
+/// Handles the `unused-rules` command which detects unused severity rules.
+fn do_unused_rules<I: IntoIterator<Item = String>>(
+    do_timing: bool,
+    args: I,
+) -> Result<ExitCode, Error> {
+    // Parse specific command options.
+    let mut args = args.into_iter();
+    let mut maybe_rules_path = None;
+    let mut past_dash_dash = false;
+    let mut paths = Vec::new();
+
+    while let Some(arg) = args.next() {
+        if !past_dash_dash {
+            if let Some(value) = handle_value_option(&arg, &mut args, "-r", "--rules")? {
+                maybe_rules_path = Some(value);
+                continue;
+            }
+            if arg == "-h" || arg == "--help" {
+                print!("{}", UNUSED_RULES_USAGE_MSG);
+                return Ok(ExitCode::from(0));
+            }
+            if arg == "--" {
+                past_dash_dash = true;
+                continue;
+            }
+            if arg.starts_with('-') || arg.starts_with("--") {
+                return Err(Error::new_cli(format!(
+                    "Unrecognized compare option '{}'",
+                    arg
+                )));
+            }
+        }
+
+        paths.push(arg);
+    }
+
+    let rules_path = maybe_rules_path.ok_or_else(|| Error::new_cli("The rules file is missing"))?;
+    if paths.is_empty() {
+        return Err(Error::new_cli("No symvers file is specified"));
+    }
+
+    let rules = {
+        let _timing = Timing::new(
+            do_timing,
+            &format!("Reading severity rules from '{}'", rules_path),
+        );
+
+        let mut rules = Rules::new();
+        rules.load(&rules_path).map_err(|err| {
+            Error::new_context(
+                format!("Failed to read severity rules from '{}'", rules_path),
+                err,
+            )
+        })?;
+        rules
+    };
+
+    let mut used_rules = UsedRules::new();
+    for path in paths {
+        let symvers = {
+            let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
+
+            let mut symvers = SymversCorpus::new();
+            symvers.load(&path).map_err(|err| {
+                Error::new_context(format!("Failed to read symvers from '{}'", path), err)
+            })?;
+            symvers
+        };
+
+        let _timing = Timing::new(do_timing, &format!("Matching records in '{}'", path));
+        symvers.mark_used_rules(&rules, &mut used_rules);
+    }
+
+    {
+        let _timing = Timing::new(do_timing, "Reporting unused rules");
+
+        rules
+            .write_unused_rules_buffer(&used_rules, io::stdout())
+            .map_err(|err| {
+                Error::new_context(
+                    format!("Failed to report unused rules in '{}'", rules_path),
+                    err,
+                )
+            })?;
+    }
+
+    Ok(ExitCode::from(0))
+}
+
 fn main() -> ExitCode {
     // Process global arguments.
     let mut args = env::args();
@@ -207,6 +307,7 @@ fn main() -> ExitCode {
     // Process the specified command.
     let result = match command.as_str() {
         "compare" => do_compare(do_timing, args),
+        "unused-rules" => do_unused_rules(do_timing, args),
         _ => Err(Error::new_cli(format!(
             "Unrecognized command '{}'",
             command

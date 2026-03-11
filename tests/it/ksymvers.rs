@@ -97,6 +97,25 @@ fn ksymvers_compare_rules() {
 }
 
 #[test]
+fn ksymvers_compare_warn_unused_rules() {
+    // Check that the unused-rules subcommand reports all unused severity rules.
+    let result = ksymvers_run([
+        "unused-rules",
+        "--rules=tests/it/ksymvers/unused_rules/severities.txt",
+        "tests/it/ksymvers/unused_rules/a.symvers",
+        "tests/it/ksymvers/unused_rules/b.symvers",
+    ]);
+    assert_eq!(result.status.code().unwrap(), 0);
+    assert_eq!(
+        result.stdout,
+        concat!(
+            "tests/it/ksymvers/unused_rules/severities.txt:2: WARNING: Severity rule 'SYMBOL bar FAIL' is unused\n", //
+        )
+    );
+    assert_eq!(result.stderr, "");
+}
+
+#[test]
 fn ksymvers_compare_format() {
     // Check that the comparison allows specifying the output format.
     //
