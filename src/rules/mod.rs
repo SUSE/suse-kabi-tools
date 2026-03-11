@@ -140,31 +140,47 @@ impl Rules {
         Ok(())
     }
 
-    /// Looks for the first rule that matches the specified symbol and, if found, returns its
-    /// verdict on whether changes to the symbol should be tolerated. Otherwise, returns false.
-    pub fn is_tolerated(&self, symbol: &str, module: &str, maybe_namespace: Option<&str>) -> bool {
-        for rule in &self.data {
+    /// Searches for the first rule that matches the specified symbol. If a match is found, it
+    /// returns the index of the rule. Otherwise, returns None.
+    fn find_matching_rule(
+        &self,
+        symbol: &str,
+        module: &str,
+        maybe_namespace: Option<&str>,
+    ) -> Option<usize> {
+        for (rule_idx, rule) in self.data.iter().enumerate() {
             match rule.rule_type {
                 RuleType::Module => {
                     if matches_wildcard(module, &rule.pattern) {
-                        return rule.verdict == Verdict::Pass;
+                        return Some(rule_idx);
                     }
                 }
                 RuleType::Namespace => {
                     if let Some(namespace) = maybe_namespace
                         && matches_wildcard(namespace, &rule.pattern)
                     {
-                        return rule.verdict == Verdict::Pass;
+                        return Some(rule_idx);
                     }
                 }
                 RuleType::Symbol => {
                     if matches_wildcard(symbol, &rule.pattern) {
-                        return rule.verdict == Verdict::Pass;
+                        return Some(rule_idx);
                     }
                 }
             }
         }
-        false
+        None
+    }
+
+    /// Searches for the first rule that matches the specified symbol. If a match is found, it
+    /// returns its verdict on whether changes to the symbol should be tolerated. Otherwise, returns
+    /// false.
+    pub fn is_tolerated(&self, symbol: &str, module: &str, maybe_namespace: Option<&str>) -> bool {
+        if let Some(rule_idx) = self.find_matching_rule(symbol, module, maybe_namespace) {
+            self.data[rule_idx].verdict == Verdict::Pass
+        } else {
+            false
+        }
     }
 }
 
