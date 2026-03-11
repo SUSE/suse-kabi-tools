@@ -20,9 +20,10 @@ fn read_classic_module_rule() {
         rules,
         Rules {
             data: vec![
-                Rule::new(RuleType::Module, "lib/test_module.ko", Verdict::Pass),
-                Rule::new(RuleType::Module, "vmlinux", Verdict::Pass),
-            ]
+                Rule::new(RuleType::Module, "lib/test_module.ko", Verdict::Pass, 0, 0),
+                Rule::new(RuleType::Module, "vmlinux", Verdict::Pass, 0, 1),
+            ],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }
@@ -44,8 +45,11 @@ fn read_classic_namespace_rule() {
             data: vec![Rule::new(
                 RuleType::Namespace,
                 "TEST_NAMESPACE",
-                Verdict::Pass
-            ),]
+                Verdict::Pass,
+                0,
+                0
+            )],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }
@@ -69,11 +73,12 @@ fn read_classic_symbol_rule() {
         rules,
         Rules {
             data: vec![
-                Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass),
-                Rule::new(RuleType::Symbol, "test_module.ko", Verdict::Pass),
-                Rule::new(RuleType::Symbol, "vmlinux2", Verdict::Pass),
-                Rule::new(RuleType::Symbol, "test_namespace", Verdict::Pass),
-            ]
+                Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass, 0, 0),
+                Rule::new(RuleType::Symbol, "test_module.ko", Verdict::Pass, 0, 1),
+                Rule::new(RuleType::Symbol, "vmlinux2", Verdict::Pass, 0, 2),
+                Rule::new(RuleType::Symbol, "test_namespace", Verdict::Pass, 0, 3),
+            ],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }
@@ -95,8 +100,11 @@ fn read_typed_module_rule() {
             data: vec![Rule::new(
                 RuleType::Module,
                 "lib/test_module.ko",
-                Verdict::Pass
-            ),]
+                Verdict::Pass,
+                0,
+                0
+            )],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }
@@ -118,8 +126,11 @@ fn read_typed_namespace_rule() {
             data: vec![Rule::new(
                 RuleType::Namespace,
                 "TEST_NAMESPACE",
-                Verdict::Pass
-            ),]
+                Verdict::Pass,
+                0,
+                0
+            )],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }
@@ -138,7 +149,14 @@ fn read_typed_symbol_rule() {
     assert_eq!(
         rules,
         Rules {
-            data: vec![Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass),]
+            data: vec![Rule::new(
+                RuleType::Symbol,
+                "symbol_name",
+                Verdict::Pass,
+                0,
+                0
+            )],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }
@@ -161,7 +179,13 @@ fn read_typed_invalid_type() {
             " | MOD lib/test_module.ko PASS", //
         ),
     );
-    assert_eq!(rules, Rules { data: vec![] });
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![],
+            files: vec![]
+        }
+    );
 }
 
 #[test]
@@ -180,9 +204,10 @@ fn read_pass_fail_rule() {
         rules,
         Rules {
             data: vec![
-                Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass),
-                Rule::new(RuleType::Symbol, "symbol_name2", Verdict::Fail),
-            ]
+                Rule::new(RuleType::Symbol, "symbol_name", Verdict::Pass, 0, 0),
+                Rule::new(RuleType::Symbol, "symbol_name2", Verdict::Fail, 0, 1),
+            ],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }
@@ -205,7 +230,13 @@ fn read_incomplete_rule() {
             " | symbol_name", //
         ),
     );
-    assert_eq!(rules, Rules { data: vec![] });
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![],
+            files: vec![]
+        }
+    );
 }
 
 #[test]
@@ -226,7 +257,13 @@ fn read_invalid_verdict() {
             " | symbol_name OK", //
         ),
     );
-    assert_eq!(rules, Rules { data: vec![] });
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![],
+            files: vec![]
+        }
+    );
 }
 
 #[test]
@@ -247,7 +284,13 @@ fn read_extra_data() {
             " | SYMBOL symbol_name PASS garbage", //
         ),
     );
-    assert_eq!(rules, Rules { data: vec![] });
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![],
+            files: vec![]
+        }
+    );
 }
 
 #[test]
@@ -261,7 +304,13 @@ fn read_empty_record() {
         ),
     );
     assert_ok!(result);
-    assert_eq!(rules, Rules { data: vec![] });
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![],
+            files: vec![PathBuf::from("test.severities")]
+        }
+    );
 }
 
 #[test]
@@ -281,9 +330,10 @@ fn read_comments() {
         rules,
         Rules {
             data: vec![
-                Rule::new(RuleType::Module, "lib/test_module.ko", Verdict::Pass),
-                Rule::new(RuleType::Module, "lib/test_module2.ko", Verdict::Fail),
-            ]
+                Rule::new(RuleType::Module, "lib/test_module.ko", Verdict::Pass, 0, 1),
+                Rule::new(RuleType::Module, "lib/test_module2.ko", Verdict::Fail, 0, 2),
+            ],
+            files: vec![PathBuf::from("test.severities")]
         }
     );
 }

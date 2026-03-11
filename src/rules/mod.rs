@@ -7,7 +7,7 @@ use crate::text::{matches_wildcard, read_lines};
 use crate::{Error, PathFile, debug};
 use std::io::prelude::*;
 use std::iter::Peekable;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 mod tests;
@@ -33,15 +33,26 @@ struct Rule {
     rule_type: RuleType,
     pattern: String,
     verdict: Verdict,
+
+    source_file_idx: usize, // Index into `Rules.files`.
+    source_line_idx: usize,
 }
 
 impl Rule {
     /// Creates a new severity rule.
-    pub fn new<S: Into<String>>(rule_type: RuleType, pattern: S, verdict: Verdict) -> Self {
+    pub fn new<S: Into<String>>(
+        rule_type: RuleType,
+        pattern: S,
+        verdict: Verdict,
+        source_file_idx: usize,
+        source_line_idx: usize,
+    ) -> Self {
         Rule {
             rule_type,
             pattern: pattern.into(),
             verdict,
+            source_file_idx,
+            source_line_idx,
         }
     }
 }
@@ -50,12 +61,16 @@ impl Rule {
 #[derive(Debug, Default, PartialEq)]
 pub struct Rules {
     data: Vec<Rule>,
+    files: Vec<PathBuf>,
 }
 
 impl Rules {
     /// Creates a new empty `Rules` object.
     pub fn new() -> Self {
-        Self { data: Vec::new() }
+        Self {
+            data: Vec::new(),
+            files: Vec::new(),
+        }
     }
 
     /// Loads rules data from the specified file.
@@ -90,14 +105,16 @@ impl Rules {
         };
 
         // Parse all rules.
+        let file_idx = self.data.len();
         let mut new_rules = Vec::new();
         for (line_idx, line) in lines.iter().enumerate() {
-            if let Some(rule) = parse_rule(path, line_idx, line)? {
+            if let Some(rule) = parse_rule(path, file_idx, line_idx, line)? {
                 new_rules.push(rule);
             }
         }
 
         // Add the new rules.
+        self.files.push(path.to_path_buf());
         self.data.append(&mut new_rules);
 
         Ok(())
@@ -166,7 +183,12 @@ fn get_next_rule_word<I: Iterator<Item = char>>(chars: &mut Peekable<I>) -> Opti
 }
 
 /// Parses a single severity rule.
-fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, Error> {
+fn parse_rule(
+    path: &Path,
+    file_idx: usize,
+    line_idx: usize,
+    line: &str,
+) -> Result<Option<Rule>, Error> {
     let mut chars = line.chars().peekable();
 
     // Parse the first two words blindly.
@@ -252,5 +274,7 @@ fn parse_rule(path: &Path, line_idx: usize, line: &str) -> Result<Option<Rule>, 
         }
     };
 
-    Ok(Some(Rule::new(rule_type, pattern, verdict)))
+    Ok(Some(Rule::new(
+        rule_type, pattern, verdict, file_idx, line_idx,
+    )))
 }
