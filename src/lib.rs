@@ -1,14 +1,14 @@
 // Copyright (C) 2024 SUSE LLC
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use std::fmt::{Display, Formatter};
+use std::error;
+use std::fmt::{self, Display, Formatter};
 use std::fs::File;
-use std::hash::{DefaultHasher, Hash, Hasher};
-use std::io::prelude::*;
+use std::hash::{self, DefaultHasher, Hash, Hasher};
+use std::io::{self, prelude::*};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::time::Instant;
-use std::{error, fmt, hash, io};
 
 pub mod burst;
 pub mod cli;

@@ -12,10 +12,10 @@ use crate::{Error, MapIOErr, PathFile, debug, hash};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::io::prelude::*;
-use std::iter::{Peekable, zip};
+use std::iter::{self, Peekable, zip};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
-use std::{fs, iter, mem};
+use std::{fs, mem};
 
 #[cfg(test)]
 mod tests;

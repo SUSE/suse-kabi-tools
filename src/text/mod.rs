@@ -6,10 +6,10 @@
 use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
-use std::io::{BufReader, BufWriter, prelude::*};
+use std::io::{self, BufReader, BufWriter, prelude::*};
 use std::ops::{Index, IndexMut};
 use std::path::{Path, PathBuf};
-use std::{cmp, fs, io};
+use std::{cmp, fs};
 
 #[cfg(test)]
 mod tests_diff;
