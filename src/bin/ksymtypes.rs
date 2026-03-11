@@ -325,6 +325,27 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let path2 =
         maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
 
+    let maybe_symbol_filter = match maybe_symbol_filter_path {
+        Some(symbol_filter_path) => {
+            let _timing = Timing::new(
+                do_timing,
+                &format!("Reading symbol filters from '{}'", symbol_filter_path),
+            );
+
+            let mut symbol_filter = Filter::new();
+            symbol_filter.load(&symbol_filter_path).map_err(|err| {
+                Error::new_context(
+                    format!(
+                        "Failed to read symbol filters from '{}'",
+                        symbol_filter_path
+                    ),
+                    err,
+                )
+            })?;
+            Some(symbol_filter)
+        }
+        None => None,
+    };
 
     let job_control_rc = JobControl::new(num_workers);
     let job_slots = JobControl::new_slots(&job_control_rc, 1);
@@ -366,28 +387,6 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
 
         Ok((symtypes, symtypes2))
     })?;
-
-    let maybe_symbol_filter = match maybe_symbol_filter_path {
-        Some(symbol_filter_path) => {
-            let _timing = Timing::new(
-                do_timing,
-                &format!("Reading symbol filters from '{}'", symbol_filter_path),
-            );
-
-            let mut symbol_filter = Filter::new();
-            symbol_filter.load(&symbol_filter_path).map_err(|err| {
-                Error::new_context(
-                    format!(
-                        "Failed to read symbol filters from '{}'",
-                        symbol_filter_path
-                    ),
-                    err,
-                )
-            })?;
-            Some(symbol_filter)
-        }
-        None => None,
-    };
 
     let is_equal = {
         let _timing = Timing::new(do_timing, "Comparison");

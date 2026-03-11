@@ -102,26 +102,6 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     let path2 =
         maybe_path2.ok_or_else(|| Error::new_cli("The second compare source is missing"))?;
 
-    let symvers = {
-        let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
-
-        let mut symvers = SymversCorpus::new();
-        symvers.load(&path).map_err(|err| {
-            Error::new_context(format!("Failed to read symvers from '{}'", path), err)
-        })?;
-        symvers
-    };
-
-    let symvers2 = {
-        let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path2));
-
-        let mut symvers2 = SymversCorpus::new();
-        symvers2.load(&path2).map_err(|err| {
-            Error::new_context(format!("Failed to read symvers from '{}'", path2), err)
-        })?;
-        symvers2
-    };
-
     let maybe_symbol_filter = match maybe_symbol_filter_path {
         Some(symbol_filter_path) => {
             let _timing = Timing::new(
@@ -161,6 +141,26 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             Some(rules)
         }
         None => None,
+    };
+
+    let symvers = {
+        let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
+
+        let mut symvers = SymversCorpus::new();
+        symvers.load(&path).map_err(|err| {
+            Error::new_context(format!("Failed to read symvers from '{}'", path), err)
+        })?;
+        symvers
+    };
+
+    let symvers2 = {
+        let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path2));
+
+        let mut symvers2 = SymversCorpus::new();
+        symvers2.load(&path2).map_err(|err| {
+            Error::new_context(format!("Failed to read symvers from '{}'", path2), err)
+        })?;
+        symvers2
     };
 
     let is_equal = {
