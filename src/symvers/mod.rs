@@ -3,7 +3,7 @@
 
 //! A representation of a kABI symvers corpus and tools for working with the data.
 
-use crate::rules::Rules;
+use crate::rules::{Rules, UsedRules};
 use crate::text::{Filter, Writer, matches_filter, read_lines};
 use crate::{Error, MapIOErr, PathFile, debug};
 use std::collections::HashMap;
@@ -405,6 +405,13 @@ impl SymversCorpus {
         }
 
         Ok(output_symbols.is_empty())
+    }
+
+    /// Iterates over all symbols in the corpus and adds indexes of matched rules to `used_rules`.
+    pub fn mark_used_rules(&self, rules: &Rules, used_rules: &mut UsedRules) {
+        for (name, info) in &self.exports {
+            rules.mark_used_rule(name, &info.module, info.namespace.as_deref(), used_rules)
+        }
     }
 }
 

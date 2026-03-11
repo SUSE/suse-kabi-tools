@@ -4,7 +4,8 @@
 //! A representation of kABI severity rules and tools for working with the data.
 
 use crate::text::{matches_wildcard, read_lines};
-use crate::{Error, PathFile, debug};
+use crate::{Error, MapIOErr, PathFile, debug};
+use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
 use std::io::prelude::*;
 use std::iter::Peekable;
@@ -83,6 +84,9 @@ pub struct Rules {
     data: Vec<Rule>,
     files: Vec<PathBuf>,
 }
+
+/// Indexes of all rules in [`Rules`] that were matched by any symvers record.
+pub type UsedRules = HashSet<usize>;
 
 impl Rules {
     /// Creates a new empty `Rules` object.
@@ -181,6 +185,48 @@ impl Rules {
         } else {
             false
         }
+    }
+
+    /// Searches for the first rule that matches the specified symbol. If a match is found, the
+    /// index of the rule is added to `used_rules`.
+    pub fn mark_used_rule(
+        &self,
+        symbol: &str,
+        module: &str,
+        maybe_namespace: Option<&str>,
+        used_rules: &mut UsedRules,
+    ) {
+        if let Some(rule_idx) = self.find_matching_rule(symbol, module, maybe_namespace) {
+            used_rules.insert(rule_idx);
+        }
+    }
+
+    /// Writes information about all unused rules to the provided output stream.
+    pub fn write_unused_rules_buffer<W: Write>(
+        &self,
+        used_rules: &UsedRules,
+        mut writer: W,
+    ) -> Result<(), Error> {
+        let err_desc = "Failed to write information about an unused rule";
+
+        for (rule_idx, rule) in self.data.iter().enumerate() {
+            if !used_rules.contains(&rule_idx) {
+                writeln!(
+                    writer,
+                    "{}:{}: WARNING: Severity rule '{} {} {}' is unused",
+                    self.files[rule.source_file_idx].display(),
+                    rule.source_line_idx + 1,
+                    rule.rule_type,
+                    rule.pattern,
+                    rule.verdict
+                )
+                .map_io_err(err_desc)?;
+            }
+        }
+
+        writer.flush().map_io_err(err_desc)?;
+
+        Ok(())
     }
 }
 

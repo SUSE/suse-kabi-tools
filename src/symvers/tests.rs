@@ -777,3 +777,31 @@ fn compare_format_short() {
         )
     );
 }
+
+#[test]
+fn mark_used_rules() {
+    // Check that used rules are properly marked.
+    let mut symvers = SymversCorpus::new();
+    let result = symvers.load_buffer(
+        "a/test.symvers",
+        bytes!(
+            "0x12345678 foobar lib/test_module.ko EXPORT_SYMBOL\n",
+            "0x23456789 baz lib/test_module_ko EXPORT_SYMBOL BAZ_NS\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "foo* PASS\n",
+            "foobar FAIL\n",
+            "MODULE lib/qux.ko FAIL\n",
+            "NAMESPACE BAZ_NS FAIL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut used_rules = UsedRules::new();
+    symvers.mark_used_rules(&rules, &mut used_rules);
+    assert_eq!(used_rules, UsedRules::from([0, 3]));
+}

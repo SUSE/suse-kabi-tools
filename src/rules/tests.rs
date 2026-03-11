@@ -413,3 +413,51 @@ fn tolerate_order() {
     assert_ok!(result);
     assert!(rules.is_tolerated("foobar", "lib/test_module.ko", None));
 }
+
+#[test]
+fn mark_used_rules() {
+    // Check that used rules are properly marked.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "foo* PASS\n",
+            "foobar FAIL\n",
+            "MODULE lib/qux.ko FAIL\n",
+            "NAMESPACE BAZ_NS FAIL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let mut used_rules = UsedRules::new();
+    rules.mark_used_rule("foobar", "lib/test_module.ko", None, &mut used_rules);
+    assert_eq!(used_rules, UsedRules::from([0]));
+    rules.mark_used_rule("baz", "lib/test_module.ko", Some("BAZ_NS"), &mut used_rules);
+    assert_eq!(used_rules, UsedRules::from([0, 3]));
+}
+
+#[test]
+fn write_unused_rules() {
+    // Check that unused rules are reported as such.
+    let mut rules = Rules::new();
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "foo* PASS\n",
+            "foobar FAIL\n",
+            "MODULE lib/qux.ko FAIL\n",
+            "NAMESPACE BAZ_NS FAIL\n", //
+        ),
+    );
+    assert_ok!(result);
+    let used_rules = UsedRules::from([0, 3]);
+    let mut out = Vec::new();
+    let result = rules.write_unused_rules_buffer(&used_rules, &mut out);
+    assert_ok!(result);
+    assert_eq!(
+        str::from_utf8(&out).unwrap(),
+        concat!(
+            "test.severities:2: WARNING: Severity rule 'SYMBOL foobar FAIL' is unused\n",
+            "test.severities:3: WARNING: Severity rule 'MODULE lib/qux.ko FAIL' is unused\n", //
+        )
+    );
+}
