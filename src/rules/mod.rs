@@ -129,7 +129,7 @@ impl Rules {
         };
 
         // Parse all rules.
-        let file_idx = self.data.len();
+        let file_idx = self.files.len();
         let mut new_rules = Vec::new();
         for (line_idx, line) in lines.iter().enumerate() {
             if let Some(rule) = parse_rule(path, file_idx, line_idx, line)? {
