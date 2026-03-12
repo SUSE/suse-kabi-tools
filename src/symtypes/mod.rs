@@ -1192,13 +1192,14 @@ impl SymtypesCorpus {
                     writeln!(writer).map_io_err(err_desc)?;
 
                     // Output the changed type.
-                    if is_unknown_declaration(name, tokens)
-                        && !is_unknown_declaration(name, other_tokens)
-                    {
+                    let is_unknown = is_unknown_declaration(name, tokens);
+                    let is_other_unknown = is_unknown_declaration(name, other_tokens);
+                    if is_unknown != is_other_unknown {
+                        let forms = ["a definition", "a forward declaration"];
                         writeln!(
                             writer,
-                            "because '{}' changed from a forward declaration to a definition",
-                            name,
+                            "because '{}' changed from {} to {}",
+                            name, forms[is_unknown as usize], forms[is_other_unknown as usize],
                         )
                         .map_io_err(err_desc)?;
                     } else {

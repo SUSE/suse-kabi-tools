@@ -1122,7 +1122,8 @@ fn compare_changed_unknown_type() {
         "a/test.symtypes",
         bytes!(
             "s#foo struct foo { UNKNOWN }\n",
-            "bar int bar ( s#foo )\n", //
+            "s#bar struct bar { long a }\n",
+            "baz int baz ( s#foo , s#bar )\n", //
         ),
         &mut warnings,
     );
@@ -1133,7 +1134,8 @@ fn compare_changed_unknown_type() {
         "b/test.symtypes",
         bytes!(
             "s#foo struct foo { int a }\n",
-            "bar int bar ( s#foo )\n", //
+            "s#bar struct bar { UNKNOWN }\n",
+            "baz int baz ( s#foo , s#bar )\n", //
         ),
         &mut warnings,
     );
@@ -1152,7 +1154,12 @@ fn compare_changed_unknown_type() {
         str::from_utf8(&out).unwrap(),
         concat!(
             "The following '1' exports are different:\n",
-            " bar\n",
+            " baz\n",
+            "\n",
+            "because 's#bar' changed from a definition to a forward declaration\n",
+            "\n",
+            "The following '1' exports are different:\n",
+            " baz\n",
             "\n",
             "because 's#foo' changed from a forward declaration to a definition\n", //
         )
