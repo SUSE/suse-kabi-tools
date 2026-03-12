@@ -59,12 +59,12 @@ consolidate` command.
 
 Lines 5–9 compare the new kABI data with the reference stored in the `kabi/` directory. First, the
 `ksymvers compare` command is used to compare the resulting symbol CRCs with the reference in
-`kabi/kernel.symvers`. The reference file should originate from a specific base build when the kABI
+`kabi/symvers-default`. The reference file should originate from a specific base build when the kABI
 was frozen. The comparison takes into account the kABI severity rules specified in the
 `kabi/severities` file. The command outputs a brief report of all changes to the standard output and
-saves the names of all modified symbols in the `changes-exports` file. If any differences are found,
+saves the names of all modified symbols in the `changed-exports` file. If any differences are found,
 the `ksymtypes compare` command is executed to compare the symtypes data from the current build with
-the reference in `kabi/kernel.symvers`. This comparison provides detailed information about the
+the reference in `kabi/symtypes-default`. This comparison provides detailed information about the
 underlying types that have changed.
 
 Example output of the comparison commands:
