@@ -222,7 +222,7 @@ fn do_unused_rules<I: IntoIterator<Item = String>>(
             }
             if arg.starts_with('-') || arg.starts_with("--") {
                 return Err(Error::new_cli(format!(
-                    "Unrecognized compare option '{}'",
+                    "Unrecognized unused-rules option '{}'",
                     arg
                 )));
             }
