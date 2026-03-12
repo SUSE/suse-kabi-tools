@@ -35,7 +35,7 @@ Output version information and exit.
 \fB\-h\fR, \fB\-\-help\fR
 Display help information for the command and exit.
 .SH CONSOLIDATE COMMAND
-\fBksymtypes\fR \fBconsolidate\fR \fb-o\fR \fIFILE\fR [\fICONSOLIDATE\-OPTION\fR]... \fIPATH\fR
+\fBksymtypes\fR \fBconsolidate\fR \fB\-o\fR \fIFILE\fR [\fICONSOLIDATE\-OPTION\fR]... \fIPATH\fR
 .PP
 The \fBconsolidate\fR command reads symtypes files from the specified path, consolidates their
 contents by merging duplicate types and writes the output to the specified file. The input path
@@ -50,9 +50,9 @@ Use \fINUM\fR workers to perform the operation simultaneously.
 \fB\-o\fR \fIFILE\fR, \fB\-\-output\fR=\fIFILE\fR
 Write the result to \fIFILE\fR. This option is mandatory.
 .SH SPLIT COMMAND
-\fBksymtypes\fR \fBsplit\fR \fb-o\fR \fIDIR\fR [\fISPLIT\-OPTION\fR]... \fIPATH\fR
+\fBksymtypes\fR \fBsplit\fR \fB\-o\fR \fIDIR\fR [\fISPLIT\-OPTION\fR]... \fIPATH\fR
 .PP
-The \fBsplit\fR command reads a consolidated symtypes files from the specified path and divides the
+The \fBsplit\fR command reads a consolidated symtypes file from the specified path and divides the
 data into individual symtypes files. This operation is the opposite of the \fBconsolidate\fR
 command.
 .PP

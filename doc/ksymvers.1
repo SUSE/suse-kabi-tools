@@ -43,7 +43,7 @@ Available options:
 \fB\-\-filter\-symbol\-list\fR=\fIFILE\fR
 Consider only symbols that match the patterns in \fIFILE\fR.
 .TP
-\fB-r\fR \fIFILE\fR, \fB\-\-rules\fR=\fIFILE\fR
+\fB\-r\fR \fIFILE\fR, \fB\-\-rules\fR=\fIFILE\fR
 Load kABI severity rules from \fIFILE\fR.
 .TP
 \fB\-f\fR \fITYPE[:FILE]\fR, \fB\-\-format\fR=\fITYPE[:FILE]\fR
@@ -64,7 +64,7 @@ modified,
 \fImod-symbols\fR \(en shows only the names of exported symbols that have been modified; any
 additions or removals are omitted.
 .RE
-.SH UNUSED-RULES COMMAND
+.SH UNUSED\-RULES COMMAND
 \fBksymvers\fR \fBunused\-rules\fR [\fIUNUSED\-RULES\-OPTION\fR]... \fIFILE\fR...
 .PP
 The \fBunused\-rules\fR command detects severity rules not matching any symbol records in the
@@ -73,7 +73,7 @@ takes effect.
 .PP
 Available options:
 .TP
-\fB-r\fR \fIFILE\fR, \fB\-\-rules\fR=\fIFILE\fR
+\fB\-r\fR \fIFILE\fR, \fB\-\-rules\fR=\fIFILE\fR
 Load kABI severity rules from \fIFILE\fR. This option is mandatory.
 .SH EXIT STATUS
 The exit status is 0 on success and 2 if an error occurs. The compare command returns 0 if there are

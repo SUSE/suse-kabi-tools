@@ -42,7 +42,7 @@ A type description consists of a list of tokens, separated by whitespace. A sing
 literal value directly contributing to the type definition or a type reference. References are in
 the form "<x>#<type-name>" and point to another type defined in the file.
 .PP
-A type name can be optionally enclosed in single quotes, both when when defining the type and when
+A type name can be optionally enclosed in single quotes, both when defining the type and when
 referencing it. This allows the type name to contain spaces.
 .SS EXAMPLES
 The following example shows the file \fIa.symtypes\fR. The data records the exported function "baz",
@@ -87,15 +87,15 @@ in the form "/* <file-name> */". The content of each section can be trivially sa
 the base symtypes format. However, two extensions are present to save storage space.
 .PP
 A file section can omit a type definition if it is the same as its last definition previously
-encountered in the consolidated file. A reader can implicitly determine its presence be by
-recursively walking all exports in the specific file.
+encountered in the consolidated file. A reader can implicitly determine its presence by recursively
+walking all exports in the specific file.
 .PP
 A file section can transform opaque declarations in the form "<short-type>#<name> <type> <name> {
 UNKNOWN }" to "<short-type>##<name>". For instance, "s#task_struct struct task_struct { UNKNOWN }"
 becomes "s##task_struct". Such definitions apply only to the current file section and do not
 override the last definition of the symbol.
 .SS EXAMPLES
-The following example shows two files \fIa.symtypes\fR and \fI.b.symtypes\fR using the base format.
+The following example shows two files \fIa.symtypes\fR and \fIb.symtypes\fR using the base format.
 The first file \fIa.symtypes\fR records the exported function "baz", which takes as its parameters
 the structure "foo" and a pointer to the union "bar", with the former having a complete definition
 and the latter being an opaque declaration. The second file \fIb.symtypes\fR records the exported
