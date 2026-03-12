@@ -87,7 +87,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
                 past_dash_dash = true;
                 continue;
             }
-            if arg.starts_with('-') || arg.starts_with("--") {
+            if arg.starts_with('-') {
                 return Err(Error::new_cli(format!(
                     "Unrecognized compare option '{}'",
                     arg
@@ -220,7 +220,7 @@ fn do_unused_rules<I: IntoIterator<Item = String>>(
                 past_dash_dash = true;
                 continue;
             }
-            if arg.starts_with('-') || arg.starts_with("--") {
+            if arg.starts_with('-') {
                 return Err(Error::new_cli(format!(
                     "Unrecognized unused-rules option '{}'",
                     arg

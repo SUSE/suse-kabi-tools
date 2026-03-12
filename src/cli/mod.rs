@@ -97,7 +97,7 @@ pub fn process_global_args<I: Iterator<Item = String>>(
             print!("{}", version_msg);
             return Ok(None);
         }
-        if arg.starts_with('-') || arg.starts_with("--") {
+        if arg.starts_with('-') {
             return Err(Error::new_cli(format!(
                 "Unrecognized global option '{}'",
                 arg
