@@ -339,6 +339,57 @@ fn read_comments() {
 }
 
 #[test]
+fn read_second() {
+    // Check that when a second file is read, the content is appended to the current data.
+    let mut rules = Rules::new();
+
+    // Perform the first read.
+    let result = rules.load_buffer(
+        "test.severities",
+        bytes!(
+            "foo PASS\n",
+            "bar FAIL\n", //
+        ),
+    );
+    assert_ok!(result);
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![
+                Rule::new(RuleType::Symbol, "foo", Verdict::Pass, 0, 0),
+                Rule::new(RuleType::Symbol, "bar", Verdict::Fail, 0, 1),
+            ],
+            files: vec![PathBuf::from("test.severities"),]
+        }
+    );
+
+    // Perform the second read.
+    let result = rules.load_buffer(
+        "test2.severities",
+        bytes!(
+            "baz FAIL\n",
+            "qux PASS\n", //
+        ),
+    );
+    assert_ok!(result);
+    assert_eq!(
+        rules,
+        Rules {
+            data: vec![
+                Rule::new(RuleType::Symbol, "foo", Verdict::Pass, 0, 0),
+                Rule::new(RuleType::Symbol, "bar", Verdict::Fail, 0, 1),
+                Rule::new(RuleType::Symbol, "baz", Verdict::Fail, 1, 0),
+                Rule::new(RuleType::Symbol, "qux", Verdict::Pass, 1, 1),
+            ],
+            files: vec![
+                PathBuf::from("test.severities"),
+                PathBuf::from("test2.severities"),
+            ]
+        }
+    );
+}
+
+#[test]
 fn tolerate_symbol() {
     // Check whether a symbol name match in a rules file correctly determines if changes should be
     // tolerated/ignored.
