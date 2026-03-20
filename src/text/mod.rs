@@ -61,7 +61,7 @@ struct EditChain {
 }
 
 /// A state of a diagonal during the edit graph traversal.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct DiagonalState {
     x: usize,
     edit_index: usize,
