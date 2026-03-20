@@ -145,7 +145,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(
 
     // Do the consolidation.
     let symtypes = {
-        let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
+        let _timing = Timing::new(do_timing, format!("Reading symtypes from '{}'", path));
 
         let mut symtypes = SymtypesCorpus::new();
         symtypes
@@ -163,7 +163,7 @@ fn do_consolidate<I: IntoIterator<Item = String>>(
     {
         let _timing = Timing::new(
             do_timing,
-            &format!("Writing consolidated symtypes to '{}'", output),
+            format!("Writing consolidated symtypes to '{}'", output),
         );
 
         symtypes.write_consolidated(&output).map_err(|err| {
@@ -227,7 +227,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
 
     // Do the split.
     let symtypes = {
-        let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
+        let _timing = Timing::new(do_timing, format!("Reading symtypes from '{}'", path));
 
         let mut symtypes = SymtypesCorpus::new();
         symtypes
@@ -243,10 +243,7 @@ fn do_split<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Result<
     };
 
     {
-        let _timing = Timing::new(
-            do_timing,
-            &format!("Writing split symtypes to '{}'", output),
-        );
+        let _timing = Timing::new(do_timing, format!("Writing split symtypes to '{}'", output));
 
         symtypes
             .write_split(&output, &mut JobControl::new_simple(num_workers))
@@ -330,7 +327,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         Some(symbol_filter_path) => {
             let _timing = Timing::new(
                 do_timing,
-                &format!("Reading symbol filters from '{}'", symbol_filter_path),
+                format!("Reading symbol filters from '{}'", symbol_filter_path),
             );
 
             let mut symbol_filter = Filter::new();
@@ -354,7 +351,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
 
     let (symtypes, symtypes2) = thread::scope(|scope| {
         let read_thread = scope.spawn(|| {
-            let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path));
+            let _timing = Timing::new(do_timing, format!("Reading symtypes from '{}'", path));
 
             let mut job_slots = job_slots;
             job_slots.ensure_one_reserved();
@@ -369,7 +366,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         });
 
         let read_thread2 = scope.spawn(|| {
-            let _timing = Timing::new(do_timing, &format!("Reading symtypes from '{}'", path2));
+            let _timing = Timing::new(do_timing, format!("Reading symtypes from '{}'", path2));
 
             let mut job_slots2 = job_slots2;
             job_slots2.ensure_one_reserved();

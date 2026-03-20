@@ -118,7 +118,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         Some(symbol_filter_path) => {
             let _timing = Timing::new(
                 do_timing,
-                &format!("Reading symbol filters from '{}'", symbol_filter_path),
+                format!("Reading symbol filters from '{}'", symbol_filter_path),
             );
 
             let mut symbol_filter = Filter::new();
@@ -140,7 +140,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
         Some(rules_path) => {
             let _timing = Timing::new(
                 do_timing,
-                &format!("Reading severity rules from '{}'", rules_path),
+                format!("Reading severity rules from '{}'", rules_path),
             );
 
             let mut rules = Rules::new();
@@ -156,7 +156,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     };
 
     let symvers = {
-        let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
+        let _timing = Timing::new(do_timing, format!("Reading symvers from '{}'", path));
 
         let mut symvers = SymversCorpus::new();
         symvers.load(&path).map_err(|err| {
@@ -166,7 +166,7 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
     };
 
     let symvers2 = {
-        let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path2));
+        let _timing = Timing::new(do_timing, format!("Reading symvers from '{}'", path2));
 
         let mut symvers2 = SymversCorpus::new();
         symvers2.load(&path2).map_err(|err| {
@@ -240,7 +240,7 @@ fn do_unused_rules<I: IntoIterator<Item = String>>(
     let rules = {
         let _timing = Timing::new(
             do_timing,
-            &format!("Reading severity rules from '{}'", rules_path),
+            format!("Reading severity rules from '{}'", rules_path),
         );
 
         let mut rules = Rules::new();
@@ -256,7 +256,7 @@ fn do_unused_rules<I: IntoIterator<Item = String>>(
     let mut used_rules = UsedRules::new();
     for path in paths {
         let symvers = {
-            let _timing = Timing::new(do_timing, &format!("Reading symvers from '{}'", path));
+            let _timing = Timing::new(do_timing, format!("Reading symvers from '{}'", path));
 
             let mut symvers = SymversCorpus::new();
             symvers.load(&path).map_err(|err| {
@@ -265,7 +265,7 @@ fn do_unused_rules<I: IntoIterator<Item = String>>(
             symvers
         };
 
-        let _timing = Timing::new(do_timing, &format!("Matching records in '{}'", path));
+        let _timing = Timing::new(do_timing, format!("Matching records in '{}'", path));
         symvers.mark_used_rules(&rules, &mut used_rules);
     }
 

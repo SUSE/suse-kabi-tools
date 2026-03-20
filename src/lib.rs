@@ -95,10 +95,10 @@ pub enum Timing {
 }
 
 impl Timing {
-    pub fn new(do_timing: bool, desc: &str) -> Self {
+    pub fn new<S: Into<String>>(do_timing: bool, desc: S) -> Self {
         if do_timing {
             Timing::Active {
-                desc: desc.to_string(),
+                desc: desc.into(),
                 start: Instant::now(),
             }
         } else {
