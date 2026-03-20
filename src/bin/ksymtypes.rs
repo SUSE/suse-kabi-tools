@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use std::process::ExitCode;
+use std::str::FromStr;
 use std::{env, io, thread};
 use suse_kabi_tools::burst::JobControl;
 use suse_kabi_tools::cli::{handle_value_option, process_global_args};
@@ -285,9 +286,9 @@ fn do_compare<I: IntoIterator<Item = String>>(do_timing: bool, args: I) -> Resul
             if let Some(value) = handle_value_option(&arg, &mut args, "-f", "--format")? {
                 match value.split_once(':') {
                     Some((format, path)) => {
-                        writers_conf.push((CompareFormat::try_from_str(format)?, path.to_string()))
+                        writers_conf.push((CompareFormat::from_str(format)?, path.to_string()))
                     }
-                    None => writers_conf[0].0 = CompareFormat::try_from_str(&value)?,
+                    None => writers_conf[0].0 = CompareFormat::from_str(&value)?,
                 }
                 continue;
             }

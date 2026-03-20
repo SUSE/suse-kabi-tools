@@ -14,6 +14,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::prelude::*;
 use std::iter::{self, Peekable, zip};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
 use std::{fs, mem};
 
@@ -271,16 +272,18 @@ pub enum CompareFormat {
     ModSymbols,
 }
 
-impl CompareFormat {
+impl FromStr for CompareFormat {
+    type Err = Error;
+
     /// Obtains a [`CompareFormat`] matching the given format type, specified as a string.
-    pub fn try_from_str(format: &str) -> Result<Self, Error> {
+    fn from_str(format: &str) -> Result<Self, Self::Err> {
         match format {
             "null" => Ok(Self::Null),
             "pretty" => Ok(Self::Pretty),
             "short" => Ok(Self::Short),
             "symbols" => Ok(Self::Symbols),
             "mod-symbols" => Ok(Self::ModSymbols),
-            _ => Err(Error::new_parse(format!(
+            _ => Err(Self::Err::new_parse(format!(
                 "Unrecognized format '{}'",
                 format
             ))),
