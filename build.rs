@@ -5,16 +5,16 @@ use std::env;
 use std::fs;
 use std::process::Command;
 
-fn run(name: &str, args: &[&str]) -> String {
-    let output = Command::new(name)
+fn run(program: &str, args: &[&str]) -> String {
+    let output = Command::new(program)
         .args(args)
         .output()
-        .unwrap_or_else(|err| panic!("failed to execute {}: {}", name, err));
+        .unwrap_or_else(|err| panic!("failed to execute {}: {}", program, err));
     if !output.status.success() {
-        panic!("{} exited with error: {}", name, output.status);
+        panic!("{} exited with error: {}", program, output.status);
     }
     String::from_utf8(output.stdout)
-        .unwrap_or_else(|err| panic!("output from {} is not valid UTF-8: {}", name, err))
+        .unwrap_or_else(|err| panic!("output from {} is not valid UTF-8: {}", program, err))
 }
 
 fn main() {

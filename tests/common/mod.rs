@@ -20,7 +20,7 @@ pub fn tool_run<P: AsRef<OsStr>, I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
     let output = Command::new(program)
         .args(args)
         .output()
-        .expect(&format!("failed to execute {:?}", program));
+        .unwrap_or_else(|err| panic!("failed to execute {:?}: {}", program, err));
     RunResult {
         status: output.status,
         stdout: String::from_utf8(output.stdout).unwrap(),
