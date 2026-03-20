@@ -387,15 +387,7 @@ pub fn matches_wildcard(text: &str, pattern: &str) -> bool {
 
 /// Reads data from the specified reader and returns its content as a [`Vec`] of [`String`] lines.
 pub fn read_lines<R: Read>(reader: R) -> io::Result<Vec<String>> {
-    let reader = BufReader::new(reader);
-    let mut lines = Vec::new();
-    for maybe_line in reader.lines() {
-        match maybe_line {
-            Ok(line) => lines.push(line),
-            Err(err) => return Err(err),
-        };
-    }
-    Ok(lines)
+    BufReader::new(reader).lines().collect()
 }
 
 /// A writer to the standard output, a file or an internal buffer.
