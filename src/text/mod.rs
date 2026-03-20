@@ -278,7 +278,7 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
 // Original code has been placed in the public domain.
 
 /// The result of the [`do_match()`] operation.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 enum DoMatchResult {
     True,
     False,
@@ -535,7 +535,7 @@ impl WriteGenerator<Writer> for &mut DirectoryWriter {
 }
 
 /// A collection of shell wildcard patterns used to filter symbol or file names.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct Filter {
     // Literal patterns.
     literals: HashSet<String>,

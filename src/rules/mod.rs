@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 mod tests;
 
 /// A type used in the specification of a severity rule.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum RuleType {
     Module,
     Namespace,
@@ -33,7 +33,7 @@ impl Display for RuleType {
 }
 
 /// A verdict used in the specification of a severity rule.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Verdict {
     Pass,
     Fail,
@@ -49,7 +49,7 @@ impl Display for Verdict {
 }
 
 /// A severity rule.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 struct Rule {
     rule_type: RuleType,
     pattern: String,
@@ -79,7 +79,7 @@ impl Rule {
 }
 
 /// A collection of severity rules.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct Rules {
     data: Vec<Rule>,
     files: Vec<PathBuf>,

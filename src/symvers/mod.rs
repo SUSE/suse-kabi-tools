@@ -15,7 +15,7 @@ use std::str::FromStr;
 mod tests;
 
 /// An export data.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 struct ExportInfo {
     crc: u32,
     module: String,
@@ -53,7 +53,7 @@ impl ExportInfo {
 type Exports = HashMap<String, ExportInfo>;
 
 /// A representation of a kernel ABI, loaded from symvers files.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct SymversCorpus {
     exports: Exports,
 }
