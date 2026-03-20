@@ -6,7 +6,7 @@ use std::fs;
 use std::process::Command;
 
 fn run(name: &str, args: &[&str]) -> String {
-    let output = Command::new("git")
+    let output = Command::new(name)
         .args(args)
         .output()
         .unwrap_or_else(|err| panic!("failed to execute {}: {}", name, err));
