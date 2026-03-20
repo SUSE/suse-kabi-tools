@@ -187,7 +187,7 @@ pub struct SymtypesCorpus {
 }
 
 /// An identifier indicating what kind of symtypes data is expected to be loaded.
-#[derive(Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 enum LoadKind {
     /// A plain symtypes file.
     Simple,

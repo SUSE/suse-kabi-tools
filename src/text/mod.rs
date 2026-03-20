@@ -278,7 +278,7 @@ pub fn unified_diff<T: AsRef<str> + PartialEq + Display, W: Write>(
 // Original code has been placed in the public domain.
 
 /// The result of the [`do_match()`] operation.
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 enum DoMatchResult {
     True,
     False,
