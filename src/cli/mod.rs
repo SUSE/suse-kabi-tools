@@ -71,10 +71,8 @@ pub fn process_global_args<I: Iterator<Item = String>>(
     do_timing: &mut bool,
 ) -> Result<Option<String>, Error> {
     // Skip over the program name.
-    match args.next() {
-        Some(_) => {}
-        None => return Err(Error::new_cli("Unknown program name")),
-    };
+    args.next()
+        .ok_or_else(|| Error::new_cli("Unknown program name"))?;
 
     // Handle global options and stop at the command.
     let mut maybe_command = None;
