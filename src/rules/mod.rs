@@ -293,7 +293,7 @@ fn parse_rule(
         }
     };
 
-    // Parse the type, pattern and partically verdict.
+    // Parse the type, pattern and partially verdict.
     //
     // The style of a rule is determined by the number of words. Classic rules are in the form
     // `<pattern> <verdict>`. Rules with an explicit type are in the form
