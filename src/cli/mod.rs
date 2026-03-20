@@ -27,7 +27,7 @@ pub fn handle_value_option<
     if let Some(short) = maybe_short {
         if arg == short {
             match args.next() {
-                Some(value) => return Ok(Some(value.to_string())),
+                Some(value) => return Ok(Some(value)),
                 None => {
                     return Err(Error::new_cli(format!("Missing argument for '{}'", short)));
                 }
@@ -43,7 +43,7 @@ pub fn handle_value_option<
     if let Some(long) = maybe_long {
         if arg == long {
             match args.next() {
-                Some(value) => return Ok(Some(value.to_string())),
+                Some(value) => return Ok(Some(value)),
                 None => {
                     return Err(Error::new_cli(format!("Missing argument for '{}'", long)));
                 }
