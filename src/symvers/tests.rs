@@ -786,7 +786,7 @@ fn mark_used_rules() {
         "a/test.symvers",
         bytes!(
             "0x12345678 foobar lib/test_module.ko EXPORT_SYMBOL\n",
-            "0x23456789 baz lib/test_module_ko EXPORT_SYMBOL BAZ_NS\n", //
+            "0x23456789 baz lib/test_module.ko EXPORT_SYMBOL BAZ_NS\n", //
         ),
     );
     assert_ok!(result);

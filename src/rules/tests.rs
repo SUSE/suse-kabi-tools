@@ -137,7 +137,7 @@ fn read_typed_namespace_rule() {
 
 #[test]
 fn read_typed_symbol_rule() {
-    // Check that explicitly typed NAMESPACE rules are parsed as such.
+    // Check that explicitly typed SYMBOL rules are parsed as such.
     let mut rules = Rules::new();
     let result = rules.load_buffer(
         "test.severities",
