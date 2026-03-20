@@ -195,8 +195,9 @@ pub static DEBUG_LEVEL: OnceLock<usize> = OnceLock::new();
 
 /// Initializes the global debugging level, can be called only once.
 pub fn init_debug_level(level: usize) {
-    assert!(DEBUG_LEVEL.get().is_none());
-    DEBUG_LEVEL.get_or_init(|| level);
+    DEBUG_LEVEL
+        .set(level)
+        .expect("DEBUG_LEVEL must be initialized only once");
 }
 
 /// Prints a formatted message to the standard error output if debugging is enabled.
