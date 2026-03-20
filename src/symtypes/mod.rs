@@ -91,7 +91,7 @@ struct SymtypesFile {
 
 /// A collection of symtypes files, which also provides fast lookup by a symtypes path.
 ///
-/// SAFETY: The `PathBuf` key must match the `path` member of the corresponding `SymtypesFile`
+/// INVARIANT: The `PathBuf` key must match the `path` member of the corresponding `SymtypesFile`
 /// value.
 type SymtypesFiles = HashMap<PathBuf, Arc<SymtypesFile>>;
 
@@ -715,7 +715,7 @@ impl SymtypesCorpus {
                     }
                 };
 
-                // SAFETY: Each export is included in the active types.
+                // INVARIANT: Each export is included in the active types.
                 let (_, line_idx) = active_types.get(type_name.as_str()).unwrap();
 
                 // Report the duplicate export as a warning. Although technically an error, some
@@ -1014,7 +1014,7 @@ impl SymtypesCorpus {
         processed.insert(name); // [2]
 
         // Look up how the symbol is defined in each file.
-        // SAFETY: Each type reference is guaranteed to have a corresponding definition.
+        // INVARIANT: Each type reference is guaranteed to have a corresponding definition.
         let tokens = symfile.records.get(name).unwrap().as_ref();
         let other_tokens = other_symfile.records.get(name).unwrap().as_ref();
 

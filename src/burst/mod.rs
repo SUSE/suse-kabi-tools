@@ -108,11 +108,11 @@ impl JobControl {
     pub fn new_slots(this_rc: &Arc<Mutex<Self>>, reserved: i32) -> JobSlots {
         let mut job_control = this_rc.lock().unwrap();
 
-        // SAFETY: The caller must not exceed the maximum number of jobs.
+        // INVARIANT: The caller must not exceed the maximum number of jobs.
         assert!(reserved <= job_control.maximum - job_control.active);
         job_control.active += reserved;
 
-        // SAFETY: The caller is expected to create only a limited number of subordinate job
+        // INVARIANT: The caller is expected to create only a limited number of subordinate job
         // controllers.
         assert!(job_control.num_children < usize::MAX);
         let child_id = job_control.num_children;
@@ -120,7 +120,7 @@ impl JobControl {
 
         let (sender, receiver) = mpsc::channel();
         let maybe_listener = job_control.listeners.insert(child_id, sender.clone());
-        // SAFETY: Each child identifier is uniquely allocated, ensuring no duplicate exists.
+        // INVARIANT: Each child identifier is uniquely allocated, ensuring no duplicate exists.
         assert!(maybe_listener.is_none());
 
         JobSlots {
@@ -150,7 +150,8 @@ impl JobControl {
         self.active -= reserved;
 
         let maybe_listener = self.listeners.remove(&child_id);
-        // SAFETY: A child listener is added when `new_slots()` creates a new `JobSlots` instance.
+        // INVARIANT: A child listener is added when `new_slots()` creates a new `JobSlots`
+        // instance.
         assert!(maybe_listener.is_some());
 
         if reserved > 0 {
@@ -180,8 +181,8 @@ impl JobControl {
     /// Sends a message to all subordinate job controllers.
     fn broadcast_to_listeners(&mut self, message: JobMessage) {
         for listener in self.listeners.values() {
-            // SAFETY: The code tracks only active listeners, ensuring that `send()` cannot return
-            // a `SendError`.
+            // INVARIANT: The code tracks only active listeners, ensuring that `send()` cannot
+            // return a `SendError`.
             listener.send(message).unwrap();
         }
     }
@@ -189,10 +190,10 @@ impl JobControl {
 
 impl Drop for JobControl {
     fn drop(&mut self) {
-        // SAFETY: The caller must explicitly release all acquired job slots.
+        // INVARIANT: The caller must explicitly release all acquired job slots.
         assert!(self.active == 0);
 
-        // SAFETY: Each subordinate job controller holds a reference to its parent, ensuring that
+        // INVARIANT: Each subordinate job controller holds a reference to its parent, ensuring that
         // the parent can only be dropped after all subordinate job controllers have been destroyed.
         // Additionally, each subordinate job controller must properly unregister itself by calling
         // `unregister_slots()`.
@@ -259,7 +260,7 @@ impl JobSlots {
     /// thread. It guarantees that such control code is permitted to perform any real work without
     /// exceeding the maximum number of jobs.
     pub fn ensure_one_reserved(&mut self) {
-        // SAFETY: This function should be only used when running with a single implicit thread.
+        // INVARIANT: This function should be only used when running with a single implicit thread.
         assert!(self.active == 0);
 
         if self.reserved > 0 {
@@ -286,7 +287,7 @@ impl JobSlots {
 
     /// Receives a message from the control channel. Blocks if no message is available.
     pub fn recv_ctrl_msg(&mut self) -> JobMessage {
-        // SAFETY: At a minimum, the `self` instance and its `JobControl` parent are connected to
+        // INVARIANT: At a minimum, the `self` instance and its `JobControl` parent are connected to
         // the channel, ensuring that `recv()` cannot return a `RecvError`.
         self.receiver.recv().unwrap()
     }
@@ -299,7 +300,7 @@ impl JobSlots {
 
 impl Drop for JobSlots {
     fn drop(&mut self) {
-        // SAFETY: The caller must explicitly release all acquired job slots.
+        // INVARIANT: The caller must explicitly release all acquired job slots.
         assert!(self.active == 0);
 
         // Unregister this instance from the parent controller and return any reserved jobs.
@@ -341,7 +342,7 @@ pub fn run_jobs<F: Fn(usize) -> Result<(), Error> + Send + Sync>(
                     loop {
                         let work_idx = next_work_idx.fetch_add(1, Ordering::Relaxed);
                         if work_idx >= num_works {
-                            // SAFETY: The `job_slots` receiver has a longer lifetime than the
+                            // INVARIANT: The `job_slots` receiver has a longer lifetime than the
                             // thread, ensuring that `send()` cannot return a `SendError`.
                             worker_sender.send(JobMessage::Completed).unwrap();
                             return Ok(());
